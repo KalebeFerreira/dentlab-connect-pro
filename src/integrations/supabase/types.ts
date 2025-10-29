@@ -20,33 +20,39 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          month: number | null
           order_id: string | null
           status: string
           transaction_type: string
           updated_at: string
           user_id: string
+          year: number | null
         }
         Insert: {
           amount: number
           created_at?: string
           description?: string | null
           id?: string
+          month?: number | null
           order_id?: string | null
           status?: string
           transaction_type: string
           updated_at?: string
           user_id: string
+          year?: number | null
         }
         Update: {
           amount?: number
           created_at?: string
           description?: string | null
           id?: string
+          month?: number | null
           order_id?: string | null
           status?: string
           transaction_type?: string
           updated_at?: string
           user_id?: string
+          year?: number | null
         }
         Relationships: [
           {
@@ -60,45 +66,66 @@ export type Database = {
       }
       orders: {
         Row: {
+          amount: number | null
           clinic_name: string
-          color: string
+          color: string | null
           created_at: string
+          custom_color: string | null
+          delivery_date: string | null
           dentist_name: string
+          entry_date: string | null
           id: string
           observations: string | null
+          os_number: string | null
           patient_name: string
+          signature_url: string | null
           status: string
           teeth_numbers: string
           updated_at: string
           user_id: string
+          work_name: string | null
           work_type: string
         }
         Insert: {
+          amount?: number | null
           clinic_name: string
-          color: string
+          color?: string | null
           created_at?: string
+          custom_color?: string | null
+          delivery_date?: string | null
           dentist_name: string
+          entry_date?: string | null
           id?: string
           observations?: string | null
+          os_number?: string | null
           patient_name: string
+          signature_url?: string | null
           status?: string
           teeth_numbers: string
           updated_at?: string
           user_id: string
+          work_name?: string | null
           work_type: string
         }
         Update: {
+          amount?: number | null
           clinic_name?: string
-          color?: string
+          color?: string | null
           created_at?: string
+          custom_color?: string | null
+          delivery_date?: string | null
           dentist_name?: string
+          entry_date?: string | null
           id?: string
           observations?: string | null
+          os_number?: string | null
           patient_name?: string
+          signature_url?: string | null
           status?: string
           teeth_numbers?: string
           updated_at?: string
           user_id?: string
+          work_name?: string | null
           work_type?: string
         }
         Relationships: []
@@ -110,7 +137,6 @@ export type Database = {
           name: string | null
           updated_at: string
           user_id: string
-          user_type: string
         }
         Insert: {
           created_at?: string
@@ -118,7 +144,6 @@ export type Database = {
           name?: string | null
           updated_at?: string
           user_id: string
-          user_type: string
         }
         Update: {
           created_at?: string
@@ -126,7 +151,27 @@ export type Database = {
           name?: string | null
           updated_at?: string
           user_id?: string
-          user_type?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -135,10 +180,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "clinic" | "laboratory"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -265,6 +316,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "clinic", "laboratory"],
+    },
   },
 } as const

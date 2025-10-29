@@ -40,37 +40,42 @@ const NewOrder = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Você precisa estar logado");
-        navigate("/auth");
+        navigate('/auth');
         return;
       }
 
       const formData = new FormData(e.currentTarget);
       
+      const orderData = {
+        user_id: user.id,
+        clinic_name: formData.get('clinic_name') as string,
+        dentist_name: formData.get('dentist_name') as string,
+        patient_name: formData.get('patient_name') as string,
+        work_name: formData.get('work_name') as string,
+        work_type: formData.get('work_type') as string,
+        custom_color: formData.get('custom_color') as string,
+        teeth_numbers: formData.get('teeth_numbers') as string,
+        observations: formData.get('observations') as string,
+        amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : null,
+        delivery_date: formData.get('delivery_date') as string || null,
+        status: 'pending'
+      };
+
       const { error } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
-          clinic_name: formData.get("clinicName") as string,
-          dentist_name: formData.get("dentistName") as string,
-          patient_name: formData.get("patientName") as string,
-          work_type: formData.get("workType") as string,
-          color: formData.get("color") as string,
-          teeth_numbers: formData.get("teethNumbers") as string,
-          observations: formData.get("observations") as string || null,
-          status: "pending",
-        });
+        .from('orders')
+        .insert([orderData]);
 
       if (error) throw error;
 
-      toast.success("Ordem criada!", {
-        description: "Sua ordem de trabalho foi criada com sucesso.",
+      toast.success("Ordem criada com sucesso!", {
+        description: "A ordem de trabalho foi registrada no sistema.",
       });
-      navigate("/orders");
-    } catch (error: any) {
-      console.error("Error creating order:", error);
+
+      navigate('/orders');
+    } catch (error) {
+      console.error('Error creating order:', error);
       toast.error("Erro ao criar ordem", {
-        description: error.message,
+        description: "Não foi possível criar a ordem. Tente novamente.",
       });
     } finally {
       setSubmitting(false);
@@ -113,89 +118,108 @@ const NewOrder = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Clinic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clinic-name">Nome da Clínica *</Label>
+                  <Label htmlFor="clinic_name">Nome da Clínica *</Label>
                   <Input
-                    id="clinic-name"
-                    name="clinicName"
+                    id="clinic_name"
+                    name="clinic_name"
                     placeholder="Clínica Odontológica"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dentist-name">Nome do Dentista *</Label>
+                  <Label htmlFor="dentist_name">Nome do Dentista *</Label>
                   <Input
-                    id="dentist-name"
-                    name="dentistName"
+                    id="dentist_name"
+                    name="dentist_name"
                     placeholder="Dr. João Silva"
                     required
                   />
                 </div>
               </div>
 
-              {/* Patient Info */}
               <div className="space-y-2">
-                <Label htmlFor="patient-name">Nome do Paciente *</Label>
+                <Label htmlFor="patient_name">Nome do Paciente *</Label>
                 <Input
-                  id="patient-name"
-                  name="patientName"
+                  id="patient_name"
+                  name="patient_name"
                   placeholder="Nome completo do paciente"
                   required
                 />
               </div>
 
-              {/* Work Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="work-type">Tipo de Trabalho *</Label>
-                  <Select name="workType" required>
-                    <SelectTrigger id="work-type">
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="coroa">Coroa</SelectItem>
-                      <SelectItem value="ponte">Ponte</SelectItem>
-                      <SelectItem value="protocolo">Protocolo</SelectItem>
-                      <SelectItem value="alinhador">Alinhador</SelectItem>
-                      <SelectItem value="implante">Implante</SelectItem>
-                      <SelectItem value="protese-parcial">Prótese Parcial</SelectItem>
-                      <SelectItem value="protese-total">Prótese Total</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="color">Cor do Trabalho *</Label>
-                  <Select name="color" required>
-                    <SelectTrigger id="color">
-                      <SelectValue placeholder="Selecione a cor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A1">A1</SelectItem>
-                      <SelectItem value="A2">A2</SelectItem>
-                      <SelectItem value="A3">A3</SelectItem>
-                      <SelectItem value="B1">B1</SelectItem>
-                      <SelectItem value="B2">B2</SelectItem>
-                      <SelectItem value="C1">C1</SelectItem>
-                      <SelectItem value="C2">C2</SelectItem>
-                      <SelectItem value="D2">D2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label htmlFor="teeth-numbers">Números dos Dentes *</Label>
+                <Label htmlFor="work_name">Nome do Trabalho *</Label>
                 <Input
-                  id="teeth-numbers"
-                  name="teethNumbers"
-                  placeholder="Ex: 11, 12, 13"
+                  id="work_name"
+                  name="work_name"
+                  placeholder="Ex: Coroa unitária, Ponte fixa"
                   required
                 />
               </div>
 
-              {/* Observations */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="work_type">Tipo de Trabalho *</Label>
+                  <select
+                    id="work_type"
+                    name="work_type"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    required
+                  >
+                    <option value="">Selecione o tipo</option>
+                    <option value="coroa">Coroa</option>
+                    <option value="ponte">Ponte</option>
+                    <option value="protocolo">Protocolo</option>
+                    <option value="alinhador">Alinhador</option>
+                    <option value="protese_parcial">Prótese Parcial</option>
+                    <option value="protese_total">Prótese Total</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="custom_color">Cor do Trabalho</Label>
+                  <Input
+                    id="custom_color"
+                    name="custom_color"
+                    placeholder="Ex: A1, A2, BL3, Personalizado"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="teeth_numbers">Números dos Dentes *</Label>
+                  <Input
+                    id="teeth_numbers"
+                    name="teeth_numbers"
+                    placeholder="Ex: 11, 12, 13"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="delivery_date">Data de Entrega Prevista</Label>
+                  <Input
+                    id="delivery_date"
+                    name="delivery_date"
+                    type="date"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="amount">Valor (R$)</Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0,00"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="observations">Observações</Label>
                 <Textarea

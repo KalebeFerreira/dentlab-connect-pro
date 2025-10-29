@@ -4,14 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, FileText, Clock, CheckCircle2, Package } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Building2, User, Calendar } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 
 interface Order {
   id: string;
   clinic_name: string;
   dentist_name: string;
   patient_name: string;
+  work_name: string | null;
   work_type: string;
+  custom_color: string | null;
+  amount: number | null;
   status: string;
   created_at: string;
 }
@@ -49,24 +53,6 @@ const Orders = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { label: "Pendente", variant: "secondary" as const, icon: Clock },
-      in_production: { label: "Em Produção", variant: "default" as const, icon: Package },
-      completed: { label: "Concluído", variant: "default" as const, icon: CheckCircle2 },
-      delivered: { label: "Entregue", variant: "default" as const, icon: CheckCircle2 },
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    const Icon = config.icon;
-
-    return (
-      <Badge variant={config.variant} className="gap-1">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
 
   if (loading) {
     return (
@@ -128,30 +114,49 @@ const Orders = () => {
           <div className="grid gap-4">
             {orders.map((order) => (
               <Card key={order.id} className="shadow-card hover:shadow-elevated transition-smooth">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-1">{order.patient_name}</CardTitle>
-                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                        <span>{order.clinic_name}</span>
-                        <span>•</span>
-                        <span>{order.dentist_name}</span>
-                      </div>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {order.patient_name}
+                      </h3>
+                      {order.work_name && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {order.work_name}
+                        </p>
+                      )}
                     </div>
-                    {getStatusBadge(order.status)}
+                    <StatusBadge status={order.status} />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground mb-1">Tipo de Trabalho</p>
-                      <p className="font-medium capitalize">{order.work_type.replace("_", " ")}</p>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center text-muted-foreground">
+                      <Building2 className="w-4 h-4 mr-2" />
+                      <span>{order.clinic_name}</span>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground mb-1">Data de Criação</p>
-                      <p className="font-medium">
-                        {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                      </p>
+                    <div className="flex items-center text-muted-foreground">
+                      <User className="w-4 h-4 mr-2" />
+                      <span>Dr(a). {order.dentist_name}</span>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span className="capitalize">{order.work_type.replace("_", " ")}</span>
+                    </div>
+                    {order.custom_color && (
+                      <div className="flex items-center text-muted-foreground">
+                        <span className="w-4 h-4 mr-2 rounded-full border bg-white" />
+                        <span>Cor: {order.custom_color}</span>
+                      </div>
+                    )}
+                    {order.amount && (
+                      <div className="flex items-center text-muted-foreground font-semibold">
+                        <span className="mr-2">💰</span>
+                        <span>R$ {order.amount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center text-muted-foreground pt-2 border-t">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
                     </div>
                   </div>
                 </CardContent>
