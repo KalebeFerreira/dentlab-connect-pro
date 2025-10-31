@@ -113,7 +113,11 @@ const Orders = () => {
         ) : (
           <div className="grid gap-4">
             {orders.map((order) => (
-              <Card key={order.id} className="shadow-card hover:shadow-elevated transition-smooth">
+              <Card 
+                key={order.id} 
+                className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+                onClick={() => navigate(`/orders/${order.id}`)}
+              >
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
