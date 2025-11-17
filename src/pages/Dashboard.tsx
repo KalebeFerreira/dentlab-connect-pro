@@ -12,6 +12,7 @@ import {
   LogOut,
   Plus,
   TrendingUp,
+  TrendingDown,
   Users
 } from "lucide-react";
 
@@ -20,6 +21,12 @@ interface OrderStats {
   pending: number;
   in_production: number;
   completed: number;
+}
+
+interface FinancialStats {
+  income: number;
+  expense: number;
+  profit: number;
 }
 
 const Dashboard = () => {
@@ -31,6 +38,11 @@ const Dashboard = () => {
     pending: 0,
     in_production: 0,
     completed: 0,
+  });
+  const [financialStats, setFinancialStats] = useState<FinancialStats>({
+    income: 0,
+    expense: 0,
+    profit: 0,
   });
 
   useEffect(() => {
@@ -71,8 +83,41 @@ const Dashboard = () => {
       };
 
       setStats(stats);
+      await loadFinancialStats(userId);
     } catch (error) {
       console.error("Error loading stats:", error);
+    }
+  };
+
+  const loadFinancialStats = async (userId: string) => {
+    try {
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+
+      const { data: transactions, error } = await supabase
+        .from("financial_transactions")
+        .select("transaction_type, amount, status")
+        .eq("user_id", userId)
+        .eq("month", currentMonth)
+        .eq("year", currentYear);
+
+      if (error) throw error;
+
+      const income = transactions
+        ?.filter((t) => t.transaction_type === "income" && t.status === "confirmed")
+        .reduce((sum, t) => sum + t.amount, 0) || 0;
+
+      const expense = transactions
+        ?.filter((t) => t.transaction_type === "expense" && t.status === "confirmed")
+        .reduce((sum, t) => sum + t.amount, 0) || 0;
+
+      setFinancialStats({
+        income,
+        expense,
+        profit: income - expense,
+      });
+    } catch (error) {
+      console.error("Error loading financial stats:", error);
     }
   };
 
@@ -196,17 +241,65 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-card hover:shadow-elevated transition-smooth">
+          <Card 
+            className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+            onClick={() => navigate("/financial")}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Faturamento
+                Lucro Líquido
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <TrendingUp className={`h-4 w-4 ${financialStats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ 0,00</div>
+              <div className={`text-2xl font-bold ${financialStats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                R$ {financialStats.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Total do mês
+                Este mês • Clique para detalhes
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Financial Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Card 
+            className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+            onClick={() => navigate("/financial")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Receitas do Mês
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {financialStats.income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Clique para gerenciar
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+            onClick={() => navigate("/financial")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Despesas do Mês
+              </CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                R$ {financialStats.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Clique para gerenciar
               </p>
             </CardContent>
           </Card>
