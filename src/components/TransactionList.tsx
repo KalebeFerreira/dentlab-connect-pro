@@ -43,12 +43,12 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
   const getStatusBadge = (status: string) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
-      confirmed: "bg-green-100 text-green-800",
+      completed: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
     };
     const labels = {
       pending: "Pendente",
-      confirmed: "Confirmado",
+      completed: "Confirmado",
       cancelled: "Cancelado",
     };
     return (
@@ -88,12 +88,12 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
               <div className="flex items-center gap-3 flex-1">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.transaction_type === "income"
+                    transaction.transaction_type === "receipt"
                       ? "bg-green-100"
                       : "bg-red-100"
                   }`}
                 >
-                  {transaction.transaction_type === "income" ? (
+                  {transaction.transaction_type === "receipt" ? (
                     <TrendingUp className="h-5 w-5 text-green-600" />
                   ) : (
                     <TrendingDown className="h-5 w-5 text-red-600" />
@@ -114,12 +114,12 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
                 <div className="text-right">
                   <p
                     className={`text-lg font-bold ${
-                      transaction.transaction_type === "income"
+                      transaction.transaction_type === "receipt"
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
                   >
-                    {transaction.transaction_type === "income" ? "+" : "-"} R${" "}
+                    {transaction.transaction_type === "receipt" ? "+" : "-"} R${" "}
                     {transaction.amount.toFixed(2)}
                   </p>
                 </div>
