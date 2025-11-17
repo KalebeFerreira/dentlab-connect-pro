@@ -9,11 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
+import { SignaturePad } from "@/components/SignaturePad";
 
 const NewOrder = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -47,6 +49,22 @@ const NewOrder = () => {
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
       
+      // Upload signature if present
+      let signatureUrl = null;
+      if (signature) {
+        const base64Data = signature.split(',')[1];
+        const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        const blob = new Blob([byteArray], { type: 'image/png' });
+        
+        const fileName = `signature_${Date.now()}.png`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('order-files')
+          .upload(`signatures/${fileName}`, blob);
+
+        if (uploadError) throw uploadError;
+        signatureUrl = uploadData.path;
+      }
+      
       const orderData = {
         user_id: user.id,
         clinic_name: formData.get('clinic_name') as string,
@@ -59,6 +77,7 @@ const NewOrder = () => {
         observations: formData.get('observations') as string,
         amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : null,
         delivery_date: formData.get('delivery_date') as string || null,
+        signature_url: signatureUrl,
         status: 'pending'
       };
 
@@ -230,6 +249,12 @@ const NewOrder = () => {
                   rows={4}
                 />
               </div>
+
+              {/* Signature Pad */}
+              <SignaturePad 
+                onSignatureChange={setSignature}
+                value={signature}
+              />
 
               {/* Submit */}
               <div className="flex gap-3 pt-4">

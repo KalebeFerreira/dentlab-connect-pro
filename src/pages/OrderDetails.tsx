@@ -3,10 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, User, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, Building2, User, Calendar, FileText, Download } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FileUpload } from "@/components/FileUpload";
 import { FileList } from "@/components/FileList";
+import { toast } from "sonner";
 
 interface Order {
   id: string;
@@ -30,6 +31,8 @@ const OrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [refreshFiles, setRefreshFiles] = useState(0);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndLoadOrder();
@@ -56,11 +59,56 @@ const OrderDetails = () => {
 
       if (error) throw error;
       setOrder(data);
+
+      // Load signature if exists
+      if (data.signature_url) {
+        const { data: publicUrlData } = supabase.storage
+          .from('order-files')
+          .getPublicUrl(data.signature_url);
+        
+        if (publicUrlData) {
+          setSignatureUrl(publicUrlData.publicUrl);
+        }
+      }
     } catch (error) {
       console.error("Error loading order:", error);
       navigate("/orders");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGeneratePdf = async () => {
+    try {
+      setGeneratingPdf(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-order-pdf', {
+        body: { orderId: id }
+      });
+
+      if (error) throw error;
+
+      // Create a downloadable HTML file
+      const blob = new Blob([data.html], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ordem-${order?.patient_name || 'trabalho'}-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("PDF gerado com sucesso!", {
+        description: "O arquivo HTML foi baixado. Abra-o no navegador e use Imprimir > Salvar como PDF.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Erro ao gerar PDF", {
+        description: "Não foi possível gerar o PDF da ordem.",
+      });
+    } finally {
+      setGeneratingPdf(false);
     }
   };
 
@@ -90,7 +138,26 @@ const OrderDetails = () => {
                 {order.patient_name}
               </p>
             </div>
-            <StatusBadge status={order.status} />
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleGeneratePdf}
+                disabled={generatingPdf}
+                size="sm"
+              >
+                {generatingPdf ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Gerar PDF
+                  </>
+                )}
+              </Button>
+              <StatusBadge status={order.status} />
+            </div>
           </div>
         </div>
       </header>
@@ -175,6 +242,19 @@ const OrderDetails = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">Observações</p>
                   <p className="text-sm">{order.observations}</p>
+                </div>
+              )}
+
+              {signatureUrl && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Assinatura Digital</p>
+                  <div className="border rounded-lg p-4 bg-white inline-block">
+                    <img 
+                      src={signatureUrl} 
+                      alt="Assinatura" 
+                      className="max-w-xs h-24 object-contain"
+                    />
+                  </div>
                 </div>
               )}
             </CardContent>
