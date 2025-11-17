@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import html2pdf from "html2pdf.js";
 
@@ -24,6 +24,7 @@ export const PriceTableGenerator = () => {
   ]);
   const [tableName, setTableName] = useState("Tabela de Preços - Laboratório");
   const [exporting, setExporting] = useState(false);
+  const [generatingAll, setGeneratingAll] = useState(false);
 
   const addItem = () => {
     const newItem: PriceItem = {
@@ -86,6 +87,73 @@ export const PriceTableGenerator = () => {
         description: error.message,
       });
       setItems(items.map((i) => (i.id === id ? { ...i, generating: false } : i)));
+    }
+  };
+
+  const generateAllImages = async () => {
+    // Find items that need images (have workType but no imageUrl)
+    const itemsNeedingImages = items.filter(
+      (item) => item.workType && !item.imageUrl && !item.generating
+    );
+
+    if (itemsNeedingImages.length === 0) {
+      toast.error("Nenhum item precisa de imagem", {
+        description: "Todos os itens já possuem imagem ou não têm tipo de trabalho definido",
+      });
+      return;
+    }
+
+    setGeneratingAll(true);
+    toast.info(`Gerando ${itemsNeedingImages.length} imagens...`, {
+      description: "Aguarde enquanto as imagens são geradas",
+    });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of itemsNeedingImages) {
+      setItems((currentItems) =>
+        currentItems.map((i) => (i.id === item.id ? { ...i, generating: true } : i))
+      );
+
+      try {
+        const prompt = `Trabalho odontológico profissional: ${item.workType}. ${item.description}. Imagem técnica de alta qualidade, iluminação de laboratório, fundo branco neutro, foco nítido, estilo fotografia odontológica profissional.`;
+
+        const { data, error } = await supabase.functions.invoke("generate-dental-image", {
+          body: {
+            prompt,
+            workType: item.workType,
+            teethNumbers: "N/A",
+            color: "natural",
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.imageUrl) {
+          setItems((currentItems) =>
+            currentItems.map((i) =>
+              i.id === item.id ? { ...i, imageUrl: data.imageUrl, generating: false } : i
+            )
+          );
+          successCount++;
+        }
+      } catch (error: any) {
+        console.error("Error generating image:", error);
+        setItems((currentItems) =>
+          currentItems.map((i) => (i.id === item.id ? { ...i, generating: false } : i))
+        );
+        errorCount++;
+      }
+    }
+
+    setGeneratingAll(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} imagem(ns) gerada(s) com sucesso!`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} imagem(ns) falharam`);
     }
   };
 
@@ -252,10 +320,23 @@ export const PriceTableGenerator = () => {
           </Table>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button onClick={addItem} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" />
             Adicionar Item
+          </Button>
+          <Button
+            onClick={generateAllImages}
+            disabled={generatingAll || items.every((i) => !i.workType || i.imageUrl)}
+            variant="secondary"
+            className="gap-2"
+          >
+            {generatingAll ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            Gerar Todas Imagens
           </Button>
           <Button onClick={exportToPDF} disabled={exporting} className="gap-2">
             {exporting ? (
