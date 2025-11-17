@@ -298,14 +298,37 @@ export const PriceTableGenerator = () => {
       container.innerHTML = data.html;
       container.style.position = "absolute";
       container.style.left = "-9999px";
+      container.style.width = "210mm";
       document.body.appendChild(container);
+
+      // Wait for images to load
+      const images = container.querySelectorAll("img");
+      await Promise.all(
+        Array.from(images).map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) {
+                resolve(null);
+              } else {
+                img.onload = () => resolve(null);
+                img.onerror = () => resolve(null);
+              }
+            })
+        )
+      );
 
       // Configure pdf options
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`,
         image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          logging: false,
+          letterRendering: true,
+          allowTaint: false
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
       };
 

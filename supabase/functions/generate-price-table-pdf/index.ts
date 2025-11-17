@@ -167,22 +167,21 @@ function generatePDFHTML(tableName: string, items: any[]): string {
         }
         
         .total-row {
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          gap: 20px;
-          font-size: 18px;
-          font-weight: 700;
-          color: #1f2937;
+          text-align: right;
+          padding: 20px 0;
         }
         
         .total-label {
           color: #6b7280;
+          font-size: 18px;
+          font-weight: 600;
+          margin-right: 10px;
         }
         
         .total-value {
           color: #3b82f6;
           font-size: 24px;
+          font-weight: 700;
         }
         
         .footer-info {
@@ -244,7 +243,7 @@ function generatePDFHTML(tableName: string, items: any[]): string {
         </div>
         
         <div class="footer-info">
-          <p>Tabela gerada automaticamente pelo sistema DentLab Connect</p>
+          <p style="margin-bottom: 5px;">Tabela gerada automaticamente pelo sistema DentLab Connect</p>
           <p>Este documento é válido como orçamento e pode ser usado para consultas e aprovações</p>
         </div>
       </div>
