@@ -33,6 +33,7 @@ export const PriceTableGenerator = () => {
     { id: "1", workType: "", description: "", price: "", imageUrl: null, generating: false },
   ]);
   const [tableName, setTableName] = useState("Tabela de Preços - Laboratório");
+  const [notes, setNotes] = useState("");
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
@@ -184,32 +185,42 @@ export const PriceTableGenerator = () => {
   };
 
   const generateCompleteTable = async () => {
-    setGeneratingTable(true);
-    
-    // Create items from default works
-    const newItems: PriceItem[] = DEFAULT_DENTAL_WORKS.map((work, index) => ({
-      id: `generated_${Date.now()}_${index}`,
-      workType: work.workType,
-      description: work.description,
-      price: work.price,
-      imageUrl: null,
-      generating: false,
-    }));
+    if (items.length === 1 && !items[0].workType) {
+      // If there's only the default empty item, populate with defaults
+      setGeneratingTable(true);
+      
+      const newItems: PriceItem[] = DEFAULT_DENTAL_WORKS.map((work, index) => ({
+        id: `generated_${Date.now()}_${index}`,
+        workType: work.workType,
+        description: work.description,
+        price: work.price,
+        imageUrl: null,
+        generating: false,
+      }));
 
-    setItems(newItems);
-    
-    toast.info("Tabela gerada! Gerando imagens...", {
-      description: `${newItems.length} trabalhos adicionados`,
-    });
+      setItems(newItems);
+      
+      toast.info("Tabela gerada! Gerando imagens...", {
+        description: `${newItems.length} trabalhos adicionados`,
+      });
 
-    // Wait a bit for state to update
-    await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Generate images for the new items
+      await generateImagesForItems(newItems);
+      setGeneratingTable(false);
+    } else {
+      // Generate images only for items that have workType but no image
+      toast.info("Gerando imagens para os trabalhos existentes...");
+      await generateAllImages();
+    }
+  };
 
-    // Generate all images
+  const generateImagesForItems = async (itemsToGenerate: PriceItem[]) => {
     let successCount = 0;
     let errorCount = 0;
 
-    for (const item of newItems) {
+    for (const item of itemsToGenerate) {
       setItems((currentItems) =>
         currentItems.map((i) => (i.id === item.id ? { ...i, generating: true } : i))
       );
@@ -251,20 +262,17 @@ export const PriceTableGenerator = () => {
         errorCount++;
       }
 
-      // Small delay between requests to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    setGeneratingTable(false);
-
     if (successCount > 0) {
-      toast.success("Tabela completa gerada!", {
+      toast.success("Imagens geradas!", {
         description: `${successCount} imagens criadas com sucesso`,
       });
     }
     if (errorCount > 0) {
       toast.warning(`${errorCount} imagens falharam`, {
-        description: "Você pode gerar as imagens manualmente",
+        description: "Você pode tentar gerar novamente",
       });
     }
   };
@@ -286,6 +294,7 @@ export const PriceTableGenerator = () => {
         body: {
           tableName,
           items: validItems,
+          notes,
         },
       });
 
@@ -403,14 +412,25 @@ export const PriceTableGenerator = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="tableName">Nome da Tabela</Label>
-          <Input
-            id="tableName"
-            value={tableName}
-            onChange={(e) => setTableName(e.target.value)}
-            placeholder="Ex: Tabela de Preços - Laboratório DentTech"
-          />
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tableName">Nome da Tabela</Label>
+            <Input
+              id="tableName"
+              value={tableName}
+              onChange={(e) => setTableName(e.target.value)}
+              placeholder="Ex: Tabela de Preços - Laboratório DentTech"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Observações (aparece no rodapé do PDF)</Label>
+            <Input
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Ex: Preços válidos até 31/12/2025 - Consulte condições especiais"
+            />
+          </div>
         </div>
 
         <div className="border rounded-lg overflow-hidden">

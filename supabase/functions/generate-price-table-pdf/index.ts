@@ -11,17 +11,18 @@ serve(async (req) => {
   }
 
   try {
-    const { tableName, items } = await req.json();
+    const { tableName, items, notes } = await req.json();
 
     console.log('Generating PDF for:', tableName);
     console.log('Number of items:', items?.length);
+    console.log('Notes:', notes);
 
     if (!items || items.length === 0) {
       throw new Error('Nenhum item para gerar PDF');
     }
 
     // Generate HTML for PDF
-    const html = generatePDFHTML(tableName, items);
+    const html = generatePDFHTML(tableName, items, notes || "");
     
     // For now, we'll return the HTML that can be used with a client-side PDF library
     // In a production environment, you could use a service like Puppeteer
@@ -46,7 +47,7 @@ serve(async (req) => {
   }
 });
 
-function generatePDFHTML(tableName: string, items: any[]): string {
+function generatePDFHTML(tableName: string, items: any[], notes: string): string {
   const date = new Date().toLocaleDateString('pt-BR');
   
   const itemsHTML = items
@@ -184,6 +185,29 @@ function generatePDFHTML(tableName: string, items: any[]): string {
           font-weight: 700;
         }
         
+        .notes {
+          margin-top: 30px;
+          margin-bottom: 20px;
+          padding: 15px 20px;
+          background-color: #f8f9fa;
+          border-left: 4px solid #3b82f6;
+          border-radius: 4px;
+        }
+        
+        .notes strong {
+          color: #1f2937;
+          font-size: 14px;
+          display: block;
+          margin-bottom: 8px;
+        }
+        
+        .notes p {
+          color: #4b5563;
+          font-size: 13px;
+          line-height: 1.6;
+          margin: 0;
+        }
+        
         .footer-info {
           margin-top: 30px;
           text-align: center;
@@ -241,6 +265,13 @@ function generatePDFHTML(tableName: string, items: any[]): string {
           <span class="total-label">Valor Total:</span>
           <span class="total-value">R$ ${formattedTotal}</span>
         </div>
+        
+        ${notes ? `
+        <div class="notes">
+          <strong>Observações:</strong>
+          <p>${notes}</p>
+        </div>
+        ` : ''}
         
         <div class="footer-info">
           <p style="margin-bottom: 5px;">Tabela gerada automaticamente pelo sistema DentLab Connect</p>
