@@ -26,10 +26,10 @@ interface TransactionFormProps {
 export const TransactionForm = ({ onSuccess, onCancel, editTransaction }: TransactionFormProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    transaction_type: editTransaction?.transaction_type || "income",
+    transaction_type: editTransaction?.transaction_type || "receipt",
     amount: editTransaction?.amount || "",
     description: editTransaction?.description || "",
-    status: editTransaction?.status || "confirmed",
+    status: editTransaction?.status || "completed",
     month: editTransaction?.month || new Date().getMonth() + 1,
     year: editTransaction?.year || new Date().getFullYear(),
   });
@@ -104,8 +104,8 @@ export const TransactionForm = ({ onSuccess, onCancel, editTransaction }: Transa
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="income">Receita</SelectItem>
-                <SelectItem value="expense">Despesa</SelectItem>
+                <SelectItem value="receipt">Receita</SelectItem>
+                <SelectItem value="payment">Despesa</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -193,7 +193,7 @@ export const TransactionForm = ({ onSuccess, onCancel, editTransaction }: Transa
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="confirmed">Confirmado</SelectItem>
+                <SelectItem value="completed">Confirmado</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>
             </Select>

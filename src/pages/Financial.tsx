@@ -70,11 +70,11 @@ const Financial = () => {
 
   const calculateTotals = () => {
     const income = transactions
-      .filter((t) => t.transaction_type === "income" && t.status === "confirmed")
+      .filter((t) => t.transaction_type === "receipt" && t.status === "completed")
       .reduce((sum, t) => sum + t.amount, 0);
 
     const expense = transactions
-      .filter((t) => t.transaction_type === "expense" && t.status === "confirmed")
+      .filter((t) => t.transaction_type === "payment" && t.status === "completed")
       .reduce((sum, t) => sum + t.amount, 0);
 
     const pending = transactions
