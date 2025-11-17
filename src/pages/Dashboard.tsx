@@ -14,7 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Users,
-  Sparkles
+  Sparkles,
+  FileSpreadsheet
 } from "lucide-react";
 
 interface OrderStats {
@@ -346,6 +347,14 @@ const Dashboard = () => {
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Gerador de Imagens IA
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate("/price-table")}
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Tabela de Preços com IA
               </Button>
             </CardContent>
           </Card>
