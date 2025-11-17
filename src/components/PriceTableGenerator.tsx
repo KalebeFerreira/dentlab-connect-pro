@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import html2pdf from "html2pdf.js";
 
@@ -18,6 +18,15 @@ interface PriceItem {
   generating: boolean;
 }
 
+const DEFAULT_DENTAL_WORKS = [
+  { workType: "Coroa de Porcelana", description: "Cerâmica pura, alta estética", price: "1200.00" },
+  { workType: "Implante Dentário", description: "Titânio com componente protético", price: "2500.00" },
+  { workType: "Protocolo Superior", description: "Prótese fixa sobre implantes", price: "8500.00" },
+  { workType: "Ponte Fixa 3 Elementos", description: "Metal-cerâmica", price: "2800.00" },
+  { workType: "Faceta de Porcelana", description: "Laminado ultra fino", price: "1500.00" },
+  { workType: "Prótese Total", description: "Resina acrílica completa", price: "1800.00" },
+];
+
 export const PriceTableGenerator = () => {
   const [items, setItems] = useState<PriceItem[]>([
     { id: "1", workType: "", description: "", price: "", imageUrl: null, generating: false },
@@ -25,6 +34,7 @@ export const PriceTableGenerator = () => {
   const [tableName, setTableName] = useState("Tabela de Preços - Laboratório");
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
+  const [generatingTable, setGeneratingTable] = useState(false);
 
   const addItem = () => {
     const newItem: PriceItem = {
@@ -128,7 +138,14 @@ export const PriceTableGenerator = () => {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error from function:", error);
+          throw error;
+        }
+
+        if (data?.error) {
+          throw new Error(data.error);
+        }
 
         if (data?.imageUrl) {
           setItems((currentItems) =>
@@ -145,6 +162,9 @@ export const PriceTableGenerator = () => {
         );
         errorCount++;
       }
+
+      // Small delay between requests to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     setGeneratingAll(false);
@@ -153,7 +173,95 @@ export const PriceTableGenerator = () => {
       toast.success(`${successCount} imagem(ns) gerada(s) com sucesso!`);
     }
     if (errorCount > 0) {
-      toast.error(`${errorCount} imagem(ns) falharam`);
+      toast.warning(`${errorCount} imagem(ns) falharam`, {
+        description: "Você pode tentar gerar novamente",
+      });
+    }
+  };
+
+  const generateCompleteTable = async () => {
+    setGeneratingTable(true);
+    
+    // Create items from default works
+    const newItems: PriceItem[] = DEFAULT_DENTAL_WORKS.map((work, index) => ({
+      id: `generated_${Date.now()}_${index}`,
+      workType: work.workType,
+      description: work.description,
+      price: work.price,
+      imageUrl: null,
+      generating: false,
+    }));
+
+    setItems(newItems);
+    
+    toast.info("Tabela gerada! Gerando imagens...", {
+      description: `${newItems.length} trabalhos adicionados`,
+    });
+
+    // Wait a bit for state to update
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Generate all images
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of newItems) {
+      setItems((currentItems) =>
+        currentItems.map((i) => (i.id === item.id ? { ...i, generating: true } : i))
+      );
+
+      try {
+        const prompt = `Trabalho odontológico profissional: ${item.workType}. ${item.description}. Imagem técnica de alta qualidade, iluminação de laboratório, fundo branco neutro, foco nítido, estilo fotografia odontológica profissional.`;
+
+        const { data, error } = await supabase.functions.invoke("generate-dental-image", {
+          body: {
+            prompt,
+            workType: item.workType,
+            teethNumbers: "N/A",
+            color: "natural",
+          },
+        });
+
+        if (error) {
+          console.error("Error from function:", error);
+          throw error;
+        }
+
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+
+        if (data?.imageUrl) {
+          setItems((currentItems) =>
+            currentItems.map((i) =>
+              i.id === item.id ? { ...i, imageUrl: data.imageUrl, generating: false } : i
+            )
+          );
+          successCount++;
+        }
+      } catch (error: any) {
+        console.error("Error generating image for item:", item.workType, error);
+        setItems((currentItems) =>
+          currentItems.map((i) => (i.id === item.id ? { ...i, generating: false } : i))
+        );
+        errorCount++;
+      }
+
+      // Small delay between requests to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    setGeneratingTable(false);
+
+    if (successCount > 0) {
+      toast.success("Tabela completa gerada!", {
+        description: `${successCount} imagens criadas com sucesso`,
+      });
+    }
+    if (errorCount > 0) {
+      toast.warning(`${errorCount} imagens falharam`, {
+        description: "Você pode gerar as imagens manualmente",
+      });
     }
   };
 
@@ -321,13 +429,26 @@ export const PriceTableGenerator = () => {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={generateCompleteTable}
+            disabled={generatingTable}
+            variant="default"
+            className="gap-2"
+          >
+            {generatingTable ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Wand2 className="h-4 w-4" />
+            )}
+            Gerar Tabela Completa
+          </Button>
           <Button onClick={addItem} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" />
             Adicionar Item
           </Button>
           <Button
             onClick={generateAllImages}
-            disabled={generatingAll || items.every((i) => !i.workType || i.imageUrl)}
+            disabled={generatingAll || generatingTable || items.every((i) => !i.workType || i.imageUrl)}
             variant="secondary"
             className="gap-2"
           >
@@ -338,7 +459,7 @@ export const PriceTableGenerator = () => {
             )}
             Gerar Todas Imagens
           </Button>
-          <Button onClick={exportToPDF} disabled={exporting} className="gap-2">
+          <Button onClick={exportToPDF} disabled={exporting || generatingTable} className="gap-2">
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
