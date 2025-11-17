@@ -44,7 +44,8 @@ const NewOrder = () => {
         return;
       }
 
-      const formData = new FormData(e.currentTarget);
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
       
       const orderData = {
         user_id: user.id,
