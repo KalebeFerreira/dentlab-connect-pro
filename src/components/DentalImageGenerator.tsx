@@ -1,12 +1,51 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Download } from "lucide-react";
+import { Loader2, Sparkles, Download, Image as ImageIcon } from "lucide-react";
+
+const DENTAL_TEMPLATES = [
+  {
+    id: "crown",
+    name: "Coroa de Porcelana",
+    description: "Coroa unitária em cerâmica pura",
+    prompt: "Coroa dentária em cerâmica translúcida, textura natural, anatomia detalhada, iluminação de estúdio odontológico, fundo branco neutro, vista frontal, alta resolução",
+  },
+  {
+    id: "implant",
+    name: "Implante Dentário",
+    description: "Implante com componente protético",
+    prompt: "Implante dentário em titânio com componente protético, coroa em cerâmica, estrutura detalhada mostrando parafuso, pilar e coroa, iluminação profissional, fundo branco, vista em corte",
+  },
+  {
+    id: "protocol",
+    name: "Protocolo Superior",
+    description: "Prótese protocolo fixa sobre implantes",
+    prompt: "Prótese tipo protocolo superior, estrutura metálica em titânio, base em resina acrílica rosada, dentes em cerâmica com translucidez, gengiva artificial com textura natural, vista frontal superior, iluminação de laboratório protético",
+  },
+  {
+    id: "bridge",
+    name: "Ponte Fixa",
+    description: "Ponte de 3 elementos em metal-cerâmica",
+    prompt: "Ponte fixa de 3 elementos em metal-cerâmica, anatomia dental detalhada, conexão entre os elementos, acabamento em porcelana translúcida, iluminação de estúdio, fundo neutro, vista lateral",
+  },
+  {
+    id: "veneer",
+    name: "Faceta de Porcelana",
+    description: "Faceta laminada ultra fina",
+    prompt: "Faceta de porcelana ultra fina, translucidez natural, espessura mínima, borda cervical delicada, iluminação que destaca a translucidez, fundo escuro para contraste, vista frontal",
+  },
+  {
+    id: "denture",
+    name: "Prótese Total",
+    description: "Dentadura completa superior",
+    prompt: "Prótese total superior em resina acrílica, dentes artificiais com anatomia natural, base com textura de gengiva, acabamento polido, iluminação de laboratório, fundo branco, vista frontal e palatina",
+  },
+];
 
 export const DentalImageGenerator = () => {
   const [loading, setLoading] = useState(false);
@@ -85,8 +124,32 @@ export const DentalImageGenerator = () => {
             <Sparkles className="h-5 w-5 text-primary" />
             Gerador de Visualizações com IA
           </CardTitle>
+          <CardDescription>
+            Escolha um template ou descreva o trabalho dentário que deseja visualizar
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Templates Gallery */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Templates Pré-definidos
+            </Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {DENTAL_TEMPLATES.map((template) => (
+                <Card
+                  key={template.id}
+                  className="cursor-pointer hover:shadow-elevated transition-smooth hover:border-primary"
+                  onClick={() => setPrompt(template.prompt)}
+                >
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-sm mb-1">{template.name}</h4>
+                    <p className="text-xs text-muted-foreground">{template.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
           <div>
             <Label htmlFor="prompt">Descrição do Trabalho *</Label>
             <Textarea
