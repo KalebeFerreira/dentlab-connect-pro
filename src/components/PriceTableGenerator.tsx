@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, Eye } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2pdf from "html2pdf.js";
 
 interface PriceItem {
@@ -35,6 +36,9 @@ export const PriceTableGenerator = () => {
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
 
   const addItem = () => {
     const newItem: PriceItem = {
@@ -265,18 +269,16 @@ export const PriceTableGenerator = () => {
     }
   };
 
-  const exportToPDF = async () => {
+  const generatePDFBlob = async () => {
     // Validate items
     const validItems = items.filter(
       (item) => item.workType && item.price
     );
 
     if (validItems.length === 0) {
-      toast.error("Adicione pelo menos um item válido para exportar");
-      return;
+      toast.error("Adicione pelo menos um item válido");
+      return null;
     }
-
-    setExporting(true);
 
     try {
       // Call edge function to get formatted HTML
@@ -320,7 +322,6 @@ export const PriceTableGenerator = () => {
       // Configure pdf options
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`,
         image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { 
           scale: 2, 
@@ -332,20 +333,64 @@ export const PriceTableGenerator = () => {
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
       };
 
-      // Generate PDF
-      await html2pdf().set(opt).from(container).save();
+      // Generate PDF as blob
+      const pdfBlob = await html2pdf().set(opt).from(container).output("blob");
 
       // Clean up
       document.body.removeChild(container);
 
-      toast.success("PDF gerado com sucesso!");
+      return pdfBlob;
     } catch (error: any) {
-      console.error("Error exporting PDF:", error);
-      toast.error("Erro ao exportar PDF", {
+      console.error("Error generating PDF:", error);
+      toast.error("Erro ao gerar PDF", {
         description: error.message,
       });
-    } finally {
-      setExporting(false);
+      return null;
+    }
+  };
+
+  const openPreview = async () => {
+    setGeneratingPreview(true);
+    
+    const blob = await generatePDFBlob();
+    
+    if (blob) {
+      // Clean up previous preview URL if exists
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewOpen(true);
+    }
+    
+    setGeneratingPreview(false);
+  };
+
+  const downloadPDF = async () => {
+    setExporting(true);
+
+    const blob = await generatePDFBlob();
+    
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF baixado com sucesso!");
+    }
+
+    setExporting(false);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
     }
   };
 
@@ -482,16 +527,62 @@ export const PriceTableGenerator = () => {
             )}
             Gerar Todas Imagens
           </Button>
-          <Button onClick={exportToPDF} disabled={exporting || generatingTable} className="gap-2">
+          <Button 
+            onClick={openPreview} 
+            disabled={generatingPreview || generatingTable || exporting} 
+            variant="outline"
+            className="gap-2"
+          >
+            {generatingPreview ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+            Preview PDF
+          </Button>
+          <Button onClick={downloadPDF} disabled={exporting || generatingTable || generatingPreview} className="gap-2">
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <FileDown className="h-4 w-4" />
             )}
-            Exportar PDF
+            Baixar PDF
           </Button>
         </div>
       </CardContent>
+
+      <Dialog open={previewOpen} onOpenChange={handleClosePreview}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Preview do PDF</DialogTitle>
+            <DialogDescription>
+              Confira a formatação antes de fazer o download
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden rounded-lg border">
+            {previewUrl && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full"
+                title="PDF Preview"
+              />
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleClosePreview}>
+              Fechar
+            </Button>
+            <Button onClick={downloadPDF} disabled={exporting} className="gap-2">
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
+              Baixar PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
