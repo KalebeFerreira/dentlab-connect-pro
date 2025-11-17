@@ -1,1 +1,7 @@
 project_id = "idotyktgeqkpsypmztrg"
+
+[functions.generate-order-pdf]
+verify_jwt = false
+
+[functions.generate-dental-image]
+verify_jwt = true
