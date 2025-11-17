@@ -13,7 +13,8 @@ import {
   Plus,
   TrendingUp,
   TrendingDown,
-  Users
+  Users,
+  Sparkles
 } from "lucide-react";
 
 interface OrderStats {
@@ -104,11 +105,11 @@ const Dashboard = () => {
       if (error) throw error;
 
       const income = transactions
-        ?.filter((t) => t.transaction_type === "income" && t.status === "confirmed")
+        ?.filter((t) => t.transaction_type === "receipt" && t.status === "completed")
         .reduce((sum, t) => sum + t.amount, 0) || 0;
 
       const expense = transactions
-        ?.filter((t) => t.transaction_type === "expense" && t.status === "confirmed")
+        ?.filter((t) => t.transaction_type === "payment" && t.status === "completed")
         .reduce((sum, t) => sum + t.amount, 0) || 0;
 
       setFinancialStats({
@@ -337,6 +338,14 @@ const Dashboard = () => {
               >
                 <DollarSign className="mr-2 h-4 w-4" />
                 Controle Financeiro
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate("/image-generator")}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Gerador de Imagens IA
               </Button>
             </CardContent>
           </Card>
