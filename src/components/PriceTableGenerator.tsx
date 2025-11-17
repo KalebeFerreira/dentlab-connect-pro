@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import html2pdf from "html2pdf.js";
 
 interface PriceItem {
   id: string;
@@ -88,12 +89,65 @@ export const PriceTableGenerator = () => {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
+    // Validate items
+    const validItems = items.filter(
+      (item) => item.workType && item.price
+    );
+
+    if (validItems.length === 0) {
+      toast.error("Adicione pelo menos um item válido para exportar");
+      return;
+    }
+
     setExporting(true);
-    toast.info("Funcionalidade em desenvolvimento", {
-      description: "A exportação em PDF será implementada em breve",
-    });
-    setTimeout(() => setExporting(false), 1000);
+
+    try {
+      // Call edge function to get formatted HTML
+      const { data, error } = await supabase.functions.invoke("generate-price-table-pdf", {
+        body: {
+          tableName,
+          items: validItems,
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data?.html) {
+        throw new Error("Erro ao gerar HTML do PDF");
+      }
+
+      // Create temporary container
+      const container = document.createElement("div");
+      container.innerHTML = data.html;
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      document.body.appendChild(container);
+
+      // Configure pdf options
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
+      };
+
+      // Generate PDF
+      await html2pdf().set(opt).from(container).save();
+
+      // Clean up
+      document.body.removeChild(container);
+
+      toast.success("PDF gerado com sucesso!");
+    } catch (error: any) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Erro ao exportar PDF", {
+        description: error.message,
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (

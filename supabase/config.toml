@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-dental-image]
 verify_jwt = true
+
+[functions.generate-price-table-pdf]
+verify_jwt = true
