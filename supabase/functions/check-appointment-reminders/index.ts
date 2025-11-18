@@ -89,27 +89,48 @@ serve(async (req) => {
           minute: '2-digit',
         });
 
-        // Here you would send actual push notification or WhatsApp message
-        // For now, we'll just log and mark as sent
-        console.log(`Sending reminder for appointment ${appointment.id}`);
+        // Buscar template personalizado
+        const { data: templates } = await supabase
+          .from('message_templates')
+          .select('*')
+          .eq('user_id', appointment.user_id)
+          .eq('template_type', 'appointment_reminder')
+          .eq('is_active', true)
+          .limit(1);
+
+        let message = '';
+        if (templates && templates.length > 0) {
+          // Usar template personalizado
+          message = templates[0].message_content
+            .replace(/{patient_name}/g, appointment.patients.name)
+            .replace(/{appointment_date}/g, formattedDate)
+            .replace(/{appointment_time}/g, formattedTime)
+            .replace(/{appointment_type}/g, appointment.type);
+        } else {
+          // Usar mensagem padrão
+          message = `Olá ${appointment.patients.name}! Lembrando seu agendamento para ${formattedDate} às ${formattedTime}. Tipo: ${appointment.type}`;
+        }
+
+        // Preparar link do WhatsApp
+        const phone = appointment.patients.phone.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+
+        console.log(`Reminder prepared for appointment ${appointment.id}`);
         console.log(`Patient: ${appointment.patients.name}`);
         console.log(`Date: ${formattedDate} at ${formattedTime}`);
-        console.log(`Phone: ${appointment.patients.phone}`);
+        console.log(`WhatsApp URL: ${whatsappUrl}`);
 
         notifications.push({
           appointment_id: appointment.id,
           patient_name: appointment.patients.name,
           appointment_time: `${formattedDate} às ${formattedTime}`,
           phone: appointment.patients.phone,
+          message: message,
+          whatsapp_url: whatsappUrl,
         });
 
-        // Mark as sent
-        await supabase
-          .from('appointments')
-          .update({ whatsapp_sent: true })
-          .eq('id', appointment.id);
-
-        console.log(`✓ Reminder sent for appointment ${appointment.id}`);
+        // Mark as ready to send (not auto-sent, requires manual action)
+        console.log(`✓ Reminder prepared for appointment ${appointment.id}`);
       } catch (error) {
         console.error(`Error processing appointment ${appointment.id}:`, error);
       }

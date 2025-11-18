@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Send } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { NotificationSettings } from "@/components/NotificationSettings";
 
 interface Patient {
@@ -185,6 +185,59 @@ const Appointments = () => {
       status: "scheduled",
       notes: "",
     });
+  };
+
+  const sendWhatsAppReminder = async (appointment: Appointment) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      // Buscar template de lembrete de agendamento
+      const { data: templates, error: templateError } = await supabase
+        .from("message_templates")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("template_type", "appointment_reminder")
+        .eq("is_active", true)
+        .limit(1);
+
+      if (templateError) throw templateError;
+
+      let message = "";
+      if (templates && templates.length > 0) {
+        // Usar template personalizado
+        const appointmentDate = new Date(appointment.appointment_date);
+        message = templates[0].message_content
+          .replace(/{patient_name}/g, appointment.patients.name)
+          .replace(/{appointment_date}/g, appointmentDate.toLocaleDateString('pt-BR'))
+          .replace(/{appointment_time}/g, appointmentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+          .replace(/{appointment_type}/g, appointment.type);
+      } else {
+        // Usar mensagem padrão
+        const appointmentDate = new Date(appointment.appointment_date);
+        message = `Olá ${appointment.patients.name}! Lembrando seu agendamento para ${appointmentDate.toLocaleDateString('pt-BR')} às ${appointmentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Tipo: ${appointment.type}`;
+      }
+
+      // Limpar número de telefone e criar link do WhatsApp
+      const phone = appointment.patients.phone.replace(/\D/g, '');
+      const whatsappUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+      
+      // Abrir WhatsApp
+      window.open(whatsappUrl, '_blank');
+
+      // Marcar como enviado
+      const { error: updateError } = await supabase
+        .from("appointments")
+        .update({ whatsapp_sent: true })
+        .eq("id", appointment.id);
+
+      if (updateError) throw updateError;
+
+      toast.success("WhatsApp aberto com a mensagem!");
+      loadAppointments();
+    } catch (error: any) {
+      toast.error("Erro ao enviar lembrete", { description: error.message });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -375,10 +428,10 @@ const Appointments = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        disabled
-                        title="Integração WhatsApp em desenvolvimento"
+                        onClick={() => sendWhatsAppReminder(appointment)}
+                        title="Enviar lembrete via WhatsApp"
                       >
-                        <Send className="h-4 w-4" />
+                        <MessageCircle className="h-4 w-4" />
                       </Button>
                     </TableCell>
                     <TableCell className="text-right">
