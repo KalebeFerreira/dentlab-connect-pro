@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface LaboratoryData {
   id?: string;
@@ -29,8 +31,20 @@ interface Document {
   file_type: string;
   file_size: number;
   description: string | null;
+  category: string;
   created_at: string;
 }
+
+const DOCUMENT_CATEGORIES = [
+  { value: "geral", label: "Geral" },
+  { value: "contrato", label: "Contrato" },
+  { value: "certificado", label: "Certificado" },
+  { value: "nota_fiscal", label: "Nota Fiscal" },
+  { value: "alvara", label: "Alvará" },
+  { value: "licenca", label: "Licença" },
+  { value: "comprovante", label: "Comprovante" },
+  { value: "outros", label: "Outros" },
+];
 
 const Laboratory = () => {
   const navigate = useNavigate();
@@ -48,7 +62,10 @@ const Laboratory = () => {
     country: "Brasil",
   });
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [userId, setUserId] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("geral");
+  const [filterCategory, setFilterCategory] = useState<string>("todos");
 
   useEffect(() => {
     checkAuth();
@@ -113,8 +130,18 @@ const Laboratory = () => {
 
       if (error) throw error;
       setDocuments(data || []);
+      setFilteredDocuments(data || []);
     } catch (error: any) {
       toast.error("Erro ao carregar documentos", { description: error.message });
+    }
+  };
+
+  const handleFilterChange = (category: string) => {
+    setFilterCategory(category);
+    if (category === "todos") {
+      setFilteredDocuments(documents);
+    } else {
+      setFilteredDocuments(documents.filter(doc => doc.category === category));
     }
   };
 
@@ -189,18 +216,34 @@ const Laboratory = () => {
           file_path: publicUrl,
           file_type: file.type,
           file_size: file.size,
+          category: selectedCategory,
         });
 
       if (dbError) throw dbError;
 
       toast.success("Arquivo enviado com sucesso!");
       loadDocuments();
+      setSelectedCategory("geral");
       e.target.value = '';
     } catch (error: any) {
       toast.error("Erro ao enviar arquivo", { description: error.message });
     } finally {
       setUploading(false);
     }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const cat = DOCUMENT_CATEGORIES.find(c => c.value === category);
+    return cat ? cat.label : category;
+  };
+
+  const getCategoryColor = (category: string): "default" | "secondary" | "outline" => {
+    const colors: Record<string, "default" | "secondary" | "outline"> = {
+      contrato: "default",
+      certificado: "secondary",
+      nota_fiscal: "outline",
+    };
+    return colors[category] || "outline";
   };
 
   const handleDeleteDocument = async (doc: Document) => {
@@ -485,42 +528,85 @@ const Laboratory = () => {
         {/* Card de Documentos */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Documentos e Arquivos
-              </div>
-              <Label htmlFor="file-upload" className="cursor-pointer">
-                <Button type="button" variant="outline" size="sm" disabled={uploading} asChild>
-                  <span>
-                    {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                    Enviar Arquivo
-                  </span>
-                </Button>
-              </Label>
-              <Input
-                id="file-upload"
-                type="file"
-                onChange={handleFileUpload}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-              />
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Documentos e Arquivos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Envie fotos, escaneamentos, PDFs e outros documentos (máx. 20MB)
-            </p>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="category">Categoria *</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Label htmlFor="file-upload" className="cursor-pointer">
+                    <Button type="button" variant="default" disabled={uploading} asChild>
+                      <span>
+                        {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                        {uploading ? "Enviando..." : "Enviar Arquivo"}
+                      </span>
+                    </Button>
+                  </Label>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Formatos aceitos: Imagens, PDF, Word, Excel (máx. 20MB)
+              </p>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="h-4 w-4" />
+                  <Label>Filtrar por categoria:</Label>
+                  <Select value={filterCategory} onValueChange={handleFilterChange}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {DOCUMENT_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
             
-            {documents.length === 0 ? (
+            {filteredDocuments.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhum documento enviado ainda
+                {documents.length === 0 
+                  ? "Nenhum documento enviado ainda" 
+                  : "Nenhum documento encontrado nesta categoria"}
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome do Arquivo</TableHead>
+                    <TableHead>Categoria</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Tamanho</TableHead>
                     <TableHead>Data</TableHead>
@@ -528,9 +614,14 @@ const Laboratory = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documents.map((doc) => (
+                  {filteredDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium">{doc.file_name}</TableCell>
+                      <TableCell>
+                        <Badge variant={getCategoryColor(doc.category)}>
+                          {getCategoryLabel(doc.category)}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{doc.file_type || "N/A"}</TableCell>
                       <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                       <TableCell>
