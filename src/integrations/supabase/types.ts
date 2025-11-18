@@ -117,33 +117,98 @@ export type Database = {
           },
         ]
       }
+      laboratory_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          laboratory_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          laboratory_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          laboratory_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laboratory_documents_laboratory_id_fkey"
+            columns: ["laboratory_id"]
+            isOneToOne: false
+            referencedRelation: "laboratory_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       laboratory_info: {
         Row: {
+          address: string | null
+          city: string | null
+          country: string | null
           created_at: string
           email: string
           id: string
           lab_name: string
+          logo_url: string | null
+          state: string | null
           updated_at: string
           user_id: string
           whatsapp: string
+          zip_code: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           email: string
           id?: string
           lab_name: string
+          logo_url?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
           whatsapp: string
+          zip_code?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           email?: string
           id?: string
           lab_name?: string
+          logo_url?: string | null
+          state?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string
+          zip_code?: string | null
         }
         Relationships: []
       }
