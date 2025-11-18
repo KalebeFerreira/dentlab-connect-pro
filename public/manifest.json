@@ -1,0 +1,23 @@
+{
+  "name": "DentLab Connect",
+  "short_name": "DentLab",
+  "description": "Sistema de gestão para laboratórios odontológicos",
+  "theme_color": "#1c4587",
+  "background_color": "#e5f1ff",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
