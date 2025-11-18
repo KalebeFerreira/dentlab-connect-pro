@@ -225,6 +225,20 @@ const Appointments = () => {
       // Abrir WhatsApp
       window.open(whatsappUrl, '_blank');
 
+      // Registrar no histórico de mensagens
+      const { error: historyError } = await supabase
+        .from("message_history")
+        .insert({
+          user_id: user.id,
+          patient_id: appointment.patient_id,
+          appointment_id: appointment.id,
+          message_type: "appointment_reminder",
+          message_content: message,
+          status: "sent",
+        });
+
+      if (historyError) console.error("Erro ao registrar histórico:", historyError);
+
       // Marcar como enviado
       const { error: updateError } = await supabase
         .from("appointments")
