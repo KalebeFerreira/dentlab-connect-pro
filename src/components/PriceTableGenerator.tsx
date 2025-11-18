@@ -462,15 +462,15 @@ export const PriceTableGenerator = () => {
           </div>
         </div>
 
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Tipo de Trabalho</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="w-[120px]">Preço (R$)</TableHead>
-                <TableHead className="w-[150px]">Imagem</TableHead>
-                <TableHead className="w-[80px]">Ações</TableHead>
+                <TableHead className="min-w-[180px]">Tipo de Trabalho</TableHead>
+                <TableHead className="min-w-[180px]">Descrição</TableHead>
+                <TableHead className="min-w-[120px]">Preço (R$)</TableHead>
+                <TableHead className="min-w-[140px]">Imagem</TableHead>
+                <TableHead className="min-w-[80px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -481,7 +481,7 @@ export const PriceTableGenerator = () => {
                       value={item.workType}
                       onChange={(e) => updateItem(item.id, "workType", e.target.value)}
                       placeholder="Ex: Coroa"
-                      className="w-full"
+                      className="w-full min-w-[160px]"
                     />
                   </TableCell>
                   <TableCell>
@@ -489,7 +489,7 @@ export const PriceTableGenerator = () => {
                       value={item.description}
                       onChange={(e) => updateItem(item.id, "description", e.target.value)}
                       placeholder="Ex: Porcelana pura"
-                      className="w-full"
+                      className="w-full min-w-[160px]"
                     />
                   </TableCell>
                   <TableCell>
@@ -499,7 +499,7 @@ export const PriceTableGenerator = () => {
                       placeholder="0,00"
                       type="number"
                       step="0.01"
-                      className="w-full"
+                      className="w-full min-w-[100px]"
                     />
                   </TableCell>
                   <TableCell>

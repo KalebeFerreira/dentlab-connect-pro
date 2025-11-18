@@ -117,6 +117,36 @@ export type Database = {
           },
         ]
       }
+      laboratory_info: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          lab_name: string
+          updated_at: string
+          user_id: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          lab_name: string
+          updated_at?: string
+          user_id: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          lab_name?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       order_files: {
         Row: {
           created_at: string | null
