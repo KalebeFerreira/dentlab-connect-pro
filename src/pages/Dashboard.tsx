@@ -18,6 +18,8 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { MessageTemplates } from "@/components/MessageTemplates";
 
 interface OrderStats {
   total: number;
@@ -361,6 +363,12 @@ const Dashboard = () => {
           </Card>
 
           <LaboratoryInfo />
+        </div>
+
+        {/* Notifications and Templates Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <NotificationSettings />
+          <MessageTemplates />
         </div>
 
         {/* Activity Section */}
