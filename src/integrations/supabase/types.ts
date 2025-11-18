@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          appointment_date: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          patient_id: string
+          status: string
+          type: string
+          updated_at: string
+          user_id: string
+          whatsapp_confirmed: boolean | null
+          whatsapp_sent: boolean | null
+        }
+        Insert: {
+          appointment_date: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          patient_id: string
+          status?: string
+          type: string
+          updated_at?: string
+          user_id: string
+          whatsapp_confirmed?: boolean | null
+          whatsapp_sent?: boolean | null
+        }
+        Update: {
+          appointment_date?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_confirmed?: boolean | null
+          whatsapp_sent?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -168,6 +221,48 @@ export type Database = {
           user_id?: string
           work_name?: string | null
           work_type?: string
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          address: string | null
+          birth_date: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          birth_date?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          birth_date?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

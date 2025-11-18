@@ -395,6 +395,35 @@ export const PriceTableGenerator = () => {
     setExporting(false);
   };
 
+  const saveTable = async () => {
+    if (!items.some((item) => item.workType && item.price)) {
+      toast.error("Adicione pelo menos um item com tipo de trabalho e preço");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      // Convert items to plain JSON format (remove id and generating fields)
+      const itemsToSave = items
+        .filter((item) => item.workType && item.price)
+        .map(({ id, generating, ...item }) => item);
+
+      const { error } = await supabase.from("price_tables").insert([{
+        user_id: user.id,
+        table_name: tableName,
+        notes: notes || null,
+        items: itemsToSave as any,
+      }]);
+
+      if (error) throw error;
+      toast.success("Tabela salva no banco de dados com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao salvar tabela", { description: error.message });
+    }
+  };
+
   const handleClosePreview = () => {
     setPreviewOpen(false);
     if (previewUrl) {
@@ -559,6 +588,14 @@ export const PriceTableGenerator = () => {
               <Eye className="h-4 w-4" />
             )}
             Preview PDF
+          </Button>
+          <Button 
+            onClick={saveTable} 
+            disabled={!items.some(i => i.workType && i.price)}
+            variant="secondary"
+            className="gap-2"
+          >
+            Salvar Tabela
           </Button>
           <Button onClick={downloadPDF} disabled={exporting || generatingTable || generatingPreview} className="gap-2">
             {exporting ? (
