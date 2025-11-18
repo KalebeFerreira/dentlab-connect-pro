@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Send } from "lucide-react";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 interface Patient {
   id: string;
@@ -206,6 +207,10 @@ const Appointments = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <NotificationSettings />
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Agendamentos</h1>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
