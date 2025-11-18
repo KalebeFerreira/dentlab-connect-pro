@@ -17,6 +17,7 @@ import {
   Sparkles,
   FileSpreadsheet
 } from "lucide-react";
+import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 
 interface OrderStats {
   total: number;
@@ -307,8 +308,8 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quick Actions and Lab Info */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle>Ações Rápidas</CardTitle>
@@ -359,24 +360,27 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Atividade Recente</CardTitle>
-              <CardDescription>
-                Últimas atualizações do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Nenhuma atividade registrada</p>
-                <p className="text-sm mt-1">
-                  Comece criando sua primeira ordem de trabalho
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <LaboratoryInfo />
         </div>
+
+        {/* Activity Section */}
+        <Card className="shadow-card mb-6">
+          <CardHeader>
+            <CardTitle>Atividade Recente</CardTitle>
+            <CardDescription>
+              Últimas atualizações do sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>Nenhuma atividade registrada</p>
+              <p className="text-sm mt-1">
+                Comece criando sua primeira ordem de trabalho
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Info Banner */}
         <Card className="mt-6 border-primary/20 bg-primary/5">
