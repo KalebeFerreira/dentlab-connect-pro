@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.generate-price-table-pdf]
 verify_jwt = true
+
+[functions.check-appointment-reminders]
+verify_jwt = false
