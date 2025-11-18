@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { MessageHistory } from "@/components/MessageHistory";
 
 interface Patient {
   id: string;
@@ -28,6 +29,8 @@ const Patients = () => {
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -292,6 +295,17 @@ const Patients = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => {
+                            setSelectedPatient(patient);
+                            setHistoryDialogOpen(true);
+                          }}
+                          title="Ver histórico de mensagens"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleEdit(patient)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -312,6 +326,21 @@ const Patients = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialog para histórico de mensagens */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Histórico de Mensagens</DialogTitle>
+          </DialogHeader>
+          {selectedPatient && (
+            <MessageHistory
+              patientId={selectedPatient.id}
+              patientName={selectedPatient.name}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

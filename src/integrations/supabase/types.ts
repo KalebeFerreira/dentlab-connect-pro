@@ -147,6 +147,57 @@ export type Database = {
         }
         Relationships: []
       }
+      message_history: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          id: string
+          message_content: string
+          message_type: string
+          patient_id: string
+          sent_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          message_content: string
+          message_type: string
+          patient_id: string
+          sent_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          message_content?: string
+          message_type?: string
+          patient_id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_history_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_templates: {
         Row: {
           created_at: string
