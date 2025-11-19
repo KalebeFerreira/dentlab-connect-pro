@@ -37,12 +37,12 @@ const App = () => (
           <Route
             path="/*"
             element={
-              <SidebarProvider defaultOpen={false}>
+              <SidebarProvider>
                 <div className="flex min-h-screen w-full bg-background">
                   <AppSidebar />
                   <main className="flex-1 w-full min-w-0">
                     <header className="sticky top-0 z-50 h-14 flex items-center gap-2 border-b bg-card shadow-sm px-4">
-                      <SidebarTrigger className="md:hidden" />
+                      <SidebarTrigger />
                       <h1 className="text-base font-semibold text-foreground">DentLab Connect</h1>
                     </header>
                     <Routes>
