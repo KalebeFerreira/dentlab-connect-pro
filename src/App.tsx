@@ -20,6 +20,7 @@ import Appointments from "./pages/Appointments";
 import MessagesAnalytics from "./pages/MessagesAnalytics";
 import Laboratory from "./pages/Laboratory";
 import Billing from "./pages/Billing";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
                       <Route path="/messages-analytics" element={<MessagesAnalytics />} />
                       <Route path="/laboratory" element={<Laboratory />} />
                       <Route path="/billing" element={<Billing />} />
+                      <Route path="/settings" element={<Settings />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </main>
