@@ -12,6 +12,7 @@ import { Trash2, FileText, Receipt, Send } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ServicesListProps {
   services: Service[];
@@ -27,14 +28,53 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
     });
   };
 
-  const handleGenerateReceipt = (service: Service) => {
-    // TODO: Implementar geração de recibo PDF
-    console.log("Gerar recibo para:", service);
+  const handleGenerateReceipt = async (service: Service) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
+        body: {
+          services: [service],
+          companyInfo,
+          totalValue: Number(service.service_value)
+        }
+      });
+
+      if (error) throw error;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar recibo:', error);
+      alert('Erro ao gerar recibo. Tente novamente.');
+    }
   };
 
-  const handleGenerateInvoice = (service: Service) => {
-    // TODO: Implementar geração de nota fiscal PDF
-    console.log("Gerar nota fiscal para:", service);
+  const handleGenerateInvoice = async (service: Service) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: {
+          services: [service],
+          companyInfo,
+          totalValue: Number(service.service_value),
+          observations: ''
+        }
+      });
+
+      if (error) throw error;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar nota fiscal:', error);
+      alert('Erro ao gerar nota fiscal. Tente novamente.');
+    }
   };
 
   const handleSendWhatsApp = (service: Service) => {

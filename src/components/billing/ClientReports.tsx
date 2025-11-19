@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ClientReportsProps {
   services: Service[];
@@ -56,9 +57,28 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
     });
   };
 
-  const handleExportPDF = () => {
-    // TODO: Implementar exportação PDF
-    console.log("Exportar PDF do cliente");
+  const handleExportPDF = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
+        body: {
+          services: clientServices,
+          companyInfo,
+          totalValue: totalClient
+        }
+      });
+
+      if (error) throw error;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    }
   };
 
   const handleExportExcel = () => {

@@ -1,0 +1,130 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface Service {
+  service_name: string;
+  service_value: number;
+  service_date: string;
+  client_name?: string;
+}
+
+interface CompanyInfo {
+  company_name: string;
+  cpf_cnpj: string;
+  email: string;
+  phone: string;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const { services, companyInfo, totalValue } = await req.json() as {
+      services: Service[];
+      companyInfo: CompanyInfo;
+      totalValue: number;
+    };
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .header h1 { font-size: 32px; margin-bottom: 10px; }
+            .header p { color: #666; }
+            .company-info { margin-bottom: 30px; }
+            .company-info h2 { font-size: 18px; margin-bottom: 15px; }
+            .company-info p { margin-bottom: 5px; color: #444; }
+            .services-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+            .services-table th, .services-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            .services-table th { background-color: #f5f5f5; font-weight: bold; }
+            .services-table tr:hover { background-color: #f9f9f9; }
+            .total { text-align: right; margin-top: 20px; font-size: 20px; font-weight: bold; }
+            .signature { margin-top: 80px; }
+            .signature-line { border-top: 1px solid #333; width: 300px; margin: 0 auto; padding-top: 10px; text-align: center; }
+            .footer { margin-top: 50px; text-align: center; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>RECIBO</h1>
+            <p>Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+          </div>
+          
+          <div class="company-info">
+            <h2>Dados da Empresa</h2>
+            <p><strong>Razão Social:</strong> ${companyInfo.company_name}</p>
+            <p><strong>CPF/CNPJ:</strong> ${companyInfo.cpf_cnpj}</p>
+            <p><strong>E-mail:</strong> ${companyInfo.email}</p>
+            <p><strong>Telefone:</strong> ${companyInfo.phone}</p>
+          </div>
+          
+          <table class="services-table">
+            <thead>
+              <tr>
+                <th>Serviço</th>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th style="text-align: right;">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${services.map(service => `
+                <tr>
+                  <td>${service.service_name}</td>
+                  <td>${service.client_name || '-'}</td>
+                  <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
+                  <td style="text-align: right;">${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(service.service_value)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="total">
+            Total: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
+          </div>
+          
+          <div class="signature">
+            <div class="signature-line">
+              Assinatura
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>Este documento é um recibo válido de serviços prestados.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Use Deno's built-in text encoder to convert HTML to PDF would require additional libraries
+    // For now, we'll return the HTML and let the frontend handle PDF generation
+    // In production, you'd use a service like Puppeteer or a PDF generation library
+    
+    return new Response(
+      JSON.stringify({ html }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: (error as Error).message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      },
+    );
+  }
+});

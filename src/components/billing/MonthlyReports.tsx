@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MonthlyReportsProps {
   services: Service[];
@@ -67,9 +68,28 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
     });
   };
 
-  const handleExportPDF = () => {
-    // TODO: Implementar exportação PDF
-    console.log("Exportar PDF mensal");
+  const handleExportPDF = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
+        body: {
+          services: monthlyServices,
+          companyInfo,
+          totalValue: totalMonth
+        }
+      });
+
+      if (error) throw error;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    }
   };
 
   const handleExportExcel = () => {
