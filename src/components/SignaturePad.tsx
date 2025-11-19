@@ -15,6 +15,8 @@ export const SignaturePad = ({ onSignatureChange, value }: SignaturePadProps) =>
   useEffect(() => {
     if (value && sigPadRef.current) {
       sigPadRef.current.fromDataURL(value);
+    } else if (!value && sigPadRef.current) {
+      sigPadRef.current.clear();
     }
   }, [value]);
 
