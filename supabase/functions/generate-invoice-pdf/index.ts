@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +26,19 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')!;
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
     const { services, companyInfo, totalValue, observations } = await req.json() as {
       services: Service[];
       companyInfo: CompanyInfo;
@@ -32,7 +46,13 @@ serve(async (req) => {
       observations?: string;
     };
 
-    const invoiceNumber = `NF-${Date.now()}`;
+    // Get next invoice number
+    const { data: invoiceNumber, error: numberError } = await supabase.rpc(
+      'get_next_document_number',
+      { p_user_id: user.id, p_document_type: 'invoice' }
+    );
+
+    if (numberError) throw numberError;
 
     const html = `
       <!DOCTYPE html>

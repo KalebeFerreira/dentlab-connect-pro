@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,11 +26,32 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')!;
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
     const { services, companyInfo, totalValue } = await req.json() as {
       services: Service[];
       companyInfo: CompanyInfo;
       totalValue: number;
     };
+
+    // Get next receipt number
+    const { data: receiptNumber, error: numberError } = await supabase.rpc(
+      'get_next_document_number',
+      { p_user_id: user.id, p_document_type: 'receipt' }
+    );
+
+    if (numberError) throw numberError;
 
     const html = `
       <!DOCTYPE html>
@@ -41,6 +63,7 @@ serve(async (req) => {
             body { font-family: Arial, sans-serif; padding: 40px; }
             .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
             .header h1 { font-size: 32px; margin-bottom: 10px; }
+            .header .doc-number { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px; }
             .header p { color: #666; }
             .company-info { margin-bottom: 30px; }
             .company-info h2 { font-size: 18px; margin-bottom: 15px; }
@@ -58,6 +81,7 @@ serve(async (req) => {
         <body>
           <div class="header">
             <h1>RECIBO</h1>
+            <p class="doc-number">Número: ${receiptNumber}</p>
             <p>Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
           </div>
           
