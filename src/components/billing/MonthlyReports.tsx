@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from 'xlsx';
 
 interface MonthlyReportsProps {
   services: Service[];
@@ -93,8 +94,36 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   };
 
   const handleExportExcel = () => {
-    // TODO: Implementar exportação Excel
-    console.log("Exportar Excel mensal");
+    const worksheetData = [
+      ['Relatório Mensal de Serviços'],
+      [`Mês: ${selectedMonth}`],
+      [`Total: ${formatCurrency(totalMonth)}`],
+      [],
+      ['Serviço', 'Cliente', 'Valor', 'Data'],
+      ...monthlyServices.map(service => [
+        service.service_name,
+        service.client_name || '-',
+        Number(service.service_value),
+        new Date(service.service_date).toLocaleDateString('pt-BR')
+      ]),
+      [],
+      ['TOTAL', '', totalMonth, '']
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Define largura das colunas
+    worksheet['!cols'] = [
+      { wch: 30 }, // Serviço
+      { wch: 20 }, // Cliente
+      { wch: 15 }, // Valor
+      { wch: 12 }  // Data
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Mensal');
+    
+    XLSX.writeFile(workbook, `relatorio_mensal_${selectedMonth}.xlsx`);
   };
 
   const availableMonths = getAvailableMonths();

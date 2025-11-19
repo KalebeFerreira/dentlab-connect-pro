@@ -8,11 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from 'xlsx';
 
 interface ServicesListProps {
   services: Service[];
@@ -89,6 +90,65 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
     window.open(whatsappUrl, "_blank");
   };
 
+  const handleExportAllPDF = async () => {
+    try {
+      const totalValue = services.reduce((sum, s) => sum + Number(s.service_value), 0);
+      const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
+        body: {
+          services,
+          companyInfo,
+          totalValue
+        }
+      });
+
+      if (error) throw error;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    }
+  };
+
+  const handleExportAllExcel = () => {
+    const worksheetData = [
+      ['Relatório Completo de Serviços'],
+      companyInfo ? [`Empresa: ${companyInfo.company_name}`] : [],
+      [`Total de Serviços: ${services.length}`],
+      [`Valor Total: ${formatCurrency(services.reduce((sum, s) => sum + Number(s.service_value), 0))}`],
+      [],
+      ['Serviço', 'Cliente', 'Valor', 'Data'],
+      ...services.map(service => [
+        service.service_name,
+        service.client_name || '-',
+        Number(service.service_value),
+        format(new Date(service.service_date), 'dd/MM/yyyy', { locale: ptBR })
+      ]),
+      [],
+      ['TOTAL', '', services.reduce((sum, s) => sum + Number(s.service_value), 0), '']
+    ].filter(row => row.length > 0);
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Define largura das colunas
+    worksheet['!cols'] = [
+      { wch: 30 }, // Serviço
+      { wch: 20 }, // Cliente
+      { wch: 15 }, // Valor
+      { wch: 12 }  // Data
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Todos os Serviços');
+    
+    XLSX.writeFile(workbook, `relatorio_completo_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   if (services.length === 0) {
     return (
       <Card>
@@ -104,7 +164,21 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Serviços Cadastrados</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Serviços Cadastrados</CardTitle>
+          {services.length > 0 && (
+            <div className="flex gap-2">
+              <Button onClick={handleExportAllPDF} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+              <Button onClick={handleExportAllExcel} variant="outline" size="sm">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
