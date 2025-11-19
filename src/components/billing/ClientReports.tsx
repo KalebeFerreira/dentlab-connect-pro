@@ -1,0 +1,149 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileDown, FileSpreadsheet } from "lucide-react";
+import { Service, CompanyInfo } from "@/pages/Billing";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface ClientReportsProps {
+  services: Service[];
+  companyInfo: CompanyInfo | null;
+}
+
+export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => {
+  const [selectedClient, setSelectedClient] = useState<string>("");
+
+  const getAvailableClients = () => {
+    const clients = new Set<string>();
+    services.forEach((service) => {
+      if (service.client_name) {
+        clients.add(service.client_name);
+      }
+    });
+    return Array.from(clients).sort();
+  };
+
+  const getClientServices = () => {
+    if (!selectedClient) return [];
+
+    return services.filter((service) => service.client_name === selectedClient);
+  };
+
+  const clientServices = getClientServices();
+  const totalClient = clientServices.reduce(
+    (sum, service) => sum + Number(service.service_value),
+    0
+  );
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
+  const handleExportPDF = () => {
+    // TODO: Implementar exportação PDF
+    console.log("Exportar PDF do cliente");
+  };
+
+  const handleExportExcel = () => {
+    // TODO: Implementar exportação Excel
+    console.log("Exportar Excel do cliente");
+  };
+
+  const availableClients = getAvailableClients();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Relatórios de Clientes</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <Select value={selectedClient} onValueChange={setSelectedClient}>
+            <SelectTrigger className="w-full md:w-[250px]">
+              <SelectValue placeholder="Selecione o cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableClients.map((client) => (
+                <SelectItem key={client} value={client}>
+                  {client}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {selectedClient && (
+            <div className="flex gap-2">
+              <Button onClick={handleExportPDF} variant="outline">
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+              <Button onClick={handleExportExcel} variant="outline">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {selectedClient && clientServices.length > 0 && (
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Total do Cliente</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalClient)}</p>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Serviço</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Data</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clientServices.map((service) => (
+                  <TableRow key={service.id}>
+                    <TableCell>{service.service_name}</TableCell>
+                    <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
+                    <TableCell>
+                      {new Date(service.service_date).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {selectedClient && clientServices.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            Nenhum serviço encontrado para este cliente.
+          </p>
+        )}
+
+        {availableClients.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            Nenhum cliente com serviços cadastrados.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

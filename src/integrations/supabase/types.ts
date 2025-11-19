@@ -67,6 +67,42 @@ export type Database = {
           },
         ]
       }
+      company_info: {
+        Row: {
+          company_name: string
+          cpf_cnpj: string
+          created_at: string
+          email: string
+          id: string
+          logo_url: string | null
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          cpf_cnpj: string
+          created_at?: string
+          email: string
+          id?: string
+          logo_url?: string | null
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          cpf_cnpj?: string
+          created_at?: string
+          email?: string
+          id?: string
+          logo_url?: string | null
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -500,6 +536,42 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          id: string
+          service_date: string
+          service_name: string
+          service_value: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          service_date?: string
+          service_name: string
+          service_value: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          service_date?: string
+          service_name?: string
+          service_value?: number
+          status?: string
           updated_at?: string
           user_id?: string
         }
