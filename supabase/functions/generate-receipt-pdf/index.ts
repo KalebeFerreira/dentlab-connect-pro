@@ -27,6 +27,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')!;
+    console.log('Auth header present:', !!authHeader);
     
     // Create client for user authentication
     const supabaseAuth = createClient(
@@ -37,9 +38,14 @@ serve(async (req) => {
 
     // Get user
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    console.log('User auth result:', { user: !!user, error: userError?.message });
+    
     if (userError || !user) {
+      console.error('Authentication failed:', userError);
       throw new Error('Unauthorized');
     }
+
+    console.log('User authenticated:', user.id);
 
     // Create service role client for privileged operations
     const supabase = createClient(
@@ -54,12 +60,17 @@ serve(async (req) => {
     };
 
     // Get next receipt number
+    console.log('Calling get_next_document_number for user:', user.id);
     const { data: receiptNumber, error: numberError } = await supabase.rpc(
       'get_next_document_number',
       { p_user_id: user.id, p_document_type: 'receipt' }
     );
 
-    if (numberError) throw numberError;
+    console.log('Receipt number result:', { receiptNumber, error: numberError?.message });
+    if (numberError) {
+      console.error('Error getting receipt number:', numberError);
+      throw numberError;
+    }
 
     const html = `
       <!DOCTYPE html>
