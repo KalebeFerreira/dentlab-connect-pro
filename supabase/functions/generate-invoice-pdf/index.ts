@@ -28,24 +28,20 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')!;
     
-    // Create client for user authentication
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Get user
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    // Create service role client for privileged operations
+    // Create service role client to verify JWT and perform operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Verify the JWT token and get user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('Authentication failed:', userError);
+      throw new Error('Unauthorized');
+    }
 
     const { services, companyInfo, totalValue, observations } = await req.json() as {
       services: Service[];

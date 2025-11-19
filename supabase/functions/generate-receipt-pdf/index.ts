@@ -27,31 +27,21 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')!;
-    console.log('Auth header present:', !!authHeader);
     
-    // Create client for user authentication
-    const supabaseAuth = createClient(
+    // Create service role client to verify JWT and perform operations
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get user
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
-    console.log('User auth result:', { user: !!user, error: userError?.message });
+    // Verify the JWT token and get user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
       console.error('Authentication failed:', userError);
       throw new Error('Unauthorized');
     }
-
-    console.log('User authenticated:', user.id);
-
-    // Create service role client for privileged operations
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     const { services, companyInfo, totalValue } = await req.json() as {
       services: Service[];
@@ -60,17 +50,12 @@ serve(async (req) => {
     };
 
     // Get next receipt number
-    console.log('Calling get_next_document_number for user:', user.id);
     const { data: receiptNumber, error: numberError } = await supabase.rpc(
       'get_next_document_number',
       { p_user_id: user.id, p_document_type: 'receipt' }
     );
 
-    console.log('Receipt number result:', { receiptNumber, error: numberError?.message });
-    if (numberError) {
-      console.error('Error getting receipt number:', numberError);
-      throw numberError;
-    }
+    if (numberError) throw numberError;
 
     const html = `
       <!DOCTYPE html>
