@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from 'xlsx';
 
 interface ClientReportsProps {
   services: Service[];
@@ -82,8 +83,34 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
   };
 
   const handleExportExcel = () => {
-    // TODO: Implementar exportação Excel
-    console.log("Exportar Excel do cliente");
+    const worksheetData = [
+      ['Relatório de Cliente'],
+      [`Cliente: ${selectedClient}`],
+      [`Total: ${formatCurrency(totalClient)}`],
+      [],
+      ['Serviço', 'Valor', 'Data'],
+      ...clientServices.map(service => [
+        service.service_name,
+        Number(service.service_value),
+        new Date(service.service_date).toLocaleDateString('pt-BR')
+      ]),
+      [],
+      ['TOTAL', totalClient, '']
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Define largura das colunas
+    worksheet['!cols'] = [
+      { wch: 30 }, // Serviço
+      { wch: 15 }, // Valor
+      { wch: 12 }  // Data
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Cliente');
+    
+    XLSX.writeFile(workbook, `relatorio_cliente_${selectedClient.replace(/\s+/g, '_')}.xlsx`);
   };
 
   const availableClients = getAvailableClients();
