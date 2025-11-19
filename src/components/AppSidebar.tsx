@@ -36,13 +36,11 @@ const toolsItems = [
 ];
 
 export function AppSidebar() {
-  const { state, open, setOpen } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const isMobile = useIsMobile();
-
-  const isActive = (path: string) => currentPath === path;
+  const { setOpen } = useSidebar();
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -62,12 +60,10 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar>
       <SidebarContent>
         <div className="p-4 border-b border-sidebar-border">
-          <h2 className={state === "collapsed" ? "text-xs text-center" : "text-lg font-bold text-sidebar-foreground"}>
-            {state === "collapsed" ? "DL" : "DentLab Connect"}
-          </h2>
+          <h2 className="text-lg font-bold text-sidebar-foreground">DentLab Connect</h2>
         </div>
 
         <SidebarGroup>
@@ -84,7 +80,7 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {state === "expanded" && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -107,7 +103,7 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {state === "expanded" && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -122,7 +118,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout} className="hover:bg-destructive/10 hover:text-destructive">
               <LogOut className="h-4 w-4" />
-              {state === "expanded" && <span>Sair</span>}
+              <span>Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
