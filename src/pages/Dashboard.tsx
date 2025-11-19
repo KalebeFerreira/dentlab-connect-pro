@@ -15,11 +15,20 @@ import {
   TrendingDown,
   Users,
   Sparkles,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Moon,
+  Sun
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { MessageTemplates } from "@/components/MessageTemplates";
+import { useTheme } from "next-themes";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface OrderStats {
   total: number;
@@ -36,6 +45,7 @@ interface FinancialStats {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<OrderStats>({
@@ -180,6 +190,29 @@ const Dashboard = () => {
               <p className="text-sm font-medium">{userName}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Alterar tema</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Claro</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Escuro</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  <span className="mr-2 h-4 w-4">💻</span>
+                  <span>Sistema</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="icon" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
             </Button>

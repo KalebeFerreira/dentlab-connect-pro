@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Service } from "@/pages/Billing";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -53,15 +53,34 @@ export const BillingCharts = ({ services }: BillingChartsProps) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Faturamento Mensal (Linha)</CardTitle>
+          <CardTitle>Faturamento Mensal (Área)</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
+          <ResponsiveContainer width="100%" height={350}>
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                stroke="hsl(var(--border))"
+              />
+              <YAxis 
+                tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                stroke="hsl(var(--border))"
+              />
               <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
                 formatter={(value: number) =>
                   value.toLocaleString("pt-BR", {
                     style: "currency",
@@ -69,15 +88,18 @@ export const BillingCharts = ({ services }: BillingChartsProps) => {
                   })
                 }
               />
-              <Legend />
-              <Line
+              <Legend 
+                wrapperStyle={{ color: 'hsl(var(--foreground))' }}
+              />
+              <Area
                 type="monotone"
                 dataKey="valor"
                 stroke="hsl(var(--primary))"
-                strokeWidth={2}
+                strokeWidth={3}
+                fill="url(#colorValor)"
                 name="Faturamento"
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
@@ -87,12 +109,31 @@ export const BillingCharts = ({ services }: BillingChartsProps) => {
           <CardTitle>Faturamento Mensal (Barras)</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={350}>
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
+              <defs>
+                <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.9}/>
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.6}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis 
+                dataKey="month"
+                tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                stroke="hsl(var(--border))"
+              />
+              <YAxis 
+                tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                stroke="hsl(var(--border))"
+              />
               <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
                 formatter={(value: number) =>
                   value.toLocaleString("pt-BR", {
                     style: "currency",
@@ -100,8 +141,15 @@ export const BillingCharts = ({ services }: BillingChartsProps) => {
                   })
                 }
               />
-              <Legend />
-              <Bar dataKey="valor" fill="hsl(var(--primary))" name="Faturamento" />
+              <Legend 
+                wrapperStyle={{ color: 'hsl(var(--foreground))' }}
+              />
+              <Bar 
+                dataKey="valor" 
+                fill="url(#colorBar)"
+                name="Faturamento"
+                radius={[8, 8, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
