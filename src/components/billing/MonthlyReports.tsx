@@ -71,11 +71,12 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
   const handleExportPDF = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
+      const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
         body: {
           services: monthlyServices,
           companyInfo,
-          totalValue: totalMonth
+          totalValue: totalMonth,
+          month: selectedMonth
         }
       });
 
@@ -88,8 +89,8 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
         printWindow.print();
       }
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
+      console.error('Erro ao gerar relatório:', error);
+      alert('Erro ao gerar relatório. Tente novamente.');
     }
   };
 
