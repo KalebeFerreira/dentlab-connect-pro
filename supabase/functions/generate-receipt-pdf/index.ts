@@ -27,17 +27,25 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')!;
-    const supabase = createClient(
+    
+    // Create client for user authentication
+    const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
     // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
       throw new Error('Unauthorized');
     }
+
+    // Create service role client for privileged operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     const { services, companyInfo, totalValue } = await req.json() as {
       services: Service[];
