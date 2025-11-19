@@ -38,11 +38,12 @@ const App = () => (
             path="/*"
             element={
               <SidebarProvider>
-                <div className="flex min-h-screen w-full">
+                <div className="flex min-h-screen w-full bg-background">
                   <AppSidebar />
-                  <main className="flex-1">
-                    <header className="sticky top-0 z-10 h-12 flex items-center border-b bg-card">
+                  <main className="flex-1 w-full min-w-0">
+                    <header className="sticky top-0 z-10 h-12 flex items-center border-b bg-card shadow-sm">
                       <SidebarTrigger className="ml-2" />
+                      <h1 className="ml-4 text-sm font-medium text-foreground">DentLab Connect</h1>
                     </header>
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />

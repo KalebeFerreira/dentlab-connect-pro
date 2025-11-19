@@ -3,6 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   Sidebar,
@@ -35,12 +36,19 @@ const toolsItems = [
 ];
 
 export function AppSidebar() {
-  const { state, open } = useSidebar();
+  const { state, open, setOpen } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
+  const isMobile = useIsMobile();
 
   const isActive = (path: string) => currentPath === path;
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpen(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -71,6 +79,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
+                      onClick={handleNavClick}
                       className="hover:bg-sidebar-accent/50 transition-colors" 
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
@@ -92,7 +101,8 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
-                      to={item.url} 
+                      to={item.url}
+                      onClick={handleNavClick}
                       className="hover:bg-sidebar-accent/50 transition-colors" 
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
