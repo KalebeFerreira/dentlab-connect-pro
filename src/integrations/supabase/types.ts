@@ -103,6 +103,36 @@ export type Database = {
         }
         Relationships: []
       }
+      document_numbers: {
+        Row: {
+          created_at: string
+          document_type: string
+          id: string
+          last_number: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          id?: string
+          last_number?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          id?: string
+          last_number?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -603,6 +633,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_document_number: {
+        Args: { p_document_type: string; p_user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
+import { SignaturePad } from "./SignaturePad";
+import { toast } from "sonner";
 
 interface ClientReportsProps {
   services: Service[];
@@ -28,6 +30,7 @@ interface ClientReportsProps {
 
 export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => {
   const [selectedClient, setSelectedClient] = useState<string>("");
+  const [signature, setSignature] = useState<string>("");
 
   const getAvailableClients = () => {
     const clients = new Set<string>();
@@ -59,6 +62,11 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
   };
 
   const handleExportPDF = async () => {
+    if (!signature) {
+      toast.error("Por favor, adicione sua assinatura digital primeiro");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
         body: {
@@ -70,16 +78,34 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
 
       if (error) throw error;
 
+      // Add signature to the HTML
+      const htmlWithSignature = data.html.replace(
+        '</body>',
+        `<div style="margin-top: 50px; text-align: center;">
+          <img src="${signature}" style="max-width: 300px; border: 1px solid #ddd; padding: 10px;" />
+          <p style="margin-top: 10px; color: #666; font-size: 12px;">Assinatura Digital</p>
+        </div></body>`
+      );
+
       const printWindow = window.open('', '_blank');
       if (printWindow) {
-        printWindow.document.write(data.html);
+        printWindow.document.write(htmlWithSignature);
         printWindow.document.close();
         printWindow.print();
       }
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
+      toast.error('Erro ao gerar PDF. Tente novamente.');
     }
+  };
+
+  const handleSaveSignature = (sig: string) => {
+    setSignature(sig);
+    toast.success("Assinatura salva com sucesso!");
+  };
+
+  const handleClearSignature = () => {
+    setSignature("");
   };
 
   const handleExportExcel = () => {
@@ -151,6 +177,8 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
 
         {selectedClient && clientServices.length > 0 && (
           <div className="space-y-4">
+            <SignaturePad onSave={handleSaveSignature} onClear={handleClearSignature} />
+            
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">Total do Cliente</p>
               <p className="text-2xl font-bold">{formatCurrency(totalClient)}</p>
