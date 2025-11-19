@@ -22,7 +22,7 @@ serve(async (req) => {
       });
     }
 
-    const { services, companyInfo, totalValue, month } = await req.json();
+    const { services, companyInfo, totalValue, month, isConsolidated, months } = await req.json();
 
     const html = `
       <!DOCTYPE html>
@@ -100,7 +100,7 @@ serve(async (req) => {
       </head>
       <body>
         <div class="header">
-          <h1>Relatório Mensal de Serviços</h1>
+          <h1>${isConsolidated ? 'Relatório Consolidado de Serviços' : 'Relatório Mensal de Serviços'}</h1>
           <p>Data de emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
         </div>
 
@@ -116,6 +116,7 @@ serve(async (req) => {
 
         <div class="report-info">
           <p><strong>Período:</strong> ${month}</p>
+          ${isConsolidated && months ? `<p><strong>Meses incluídos:</strong> ${months.join(', ')}</p>` : ''}
           <p><strong>Total de Serviços:</strong> ${services.length}</p>
         </div>
 
