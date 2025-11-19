@@ -62,9 +62,9 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className="p-4">
+        <div className="p-4 border-b border-sidebar-border">
           <h2 className={state === "collapsed" ? "text-xs text-center" : "text-lg font-bold text-sidebar-foreground"}>
             {state === "collapsed" ? "DL" : "DentLab Connect"}
           </h2>
