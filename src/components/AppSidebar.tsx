@@ -62,9 +62,8 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
-        <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
+        <div className="p-4 border-b border-sidebar-border">
           <h2 className="text-lg font-bold text-sidebar-foreground">DentLab Connect</h2>
-          <SidebarTrigger />
         </div>
 
         <SidebarGroup>
