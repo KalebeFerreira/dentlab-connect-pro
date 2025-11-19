@@ -141,6 +141,7 @@ export type Database = {
           id: string
           month: number | null
           order_id: string | null
+          service_id: string | null
           status: string
           transaction_type: string
           updated_at: string
@@ -154,6 +155,7 @@ export type Database = {
           id?: string
           month?: number | null
           order_id?: string | null
+          service_id?: string | null
           status?: string
           transaction_type: string
           updated_at?: string
@@ -167,6 +169,7 @@ export type Database = {
           id?: string
           month?: number | null
           order_id?: string | null
+          service_id?: string | null
           status?: string
           transaction_type?: string
           updated_at?: string
@@ -179,6 +182,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]

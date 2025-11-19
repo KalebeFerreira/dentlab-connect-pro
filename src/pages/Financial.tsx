@@ -38,6 +38,28 @@ const Financial = () => {
     }
   }, [loading, filterMonth, filterYear]);
 
+  useEffect(() => {
+    // Setup realtime subscription for financial transactions
+    const channel = supabase
+      .channel('transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'financial_transactions'
+        },
+        () => {
+          loadTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [filterMonth, filterYear]);
+
   const checkAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
