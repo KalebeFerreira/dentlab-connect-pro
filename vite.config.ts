@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
-        name: "DentLab Connect",
-        short_name: "DentLab",
+        name: "Essência dental-lab",
+        short_name: "Essência",
         description: "Sistema de gestão para laboratórios odontológicos",
         theme_color: "#1c4587",
         background_color: "#e5f1ff",

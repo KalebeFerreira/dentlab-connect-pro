@@ -196,7 +196,7 @@ const Dashboard = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold">DentLab Connect</h1>
+              <h1 className="text-xl font-bold">Essência dental-lab</h1>
               <p className="text-xs text-muted-foreground">
                 {userType === "clinic" ? "Painel da Clínica" : "Painel do Laboratório"}
               </p>
