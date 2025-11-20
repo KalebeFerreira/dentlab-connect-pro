@@ -7,12 +7,15 @@ import { Check, Crown, ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription, PLANS } from "@/hooks/useSubscription";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const Planos = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
+  const [isAnnual, setIsAnnual] = useState(false);
   const { subscribed, currentPlan, loading: subLoading, refresh } = useSubscription();
 
   useEffect(() => {
@@ -141,9 +144,29 @@ const Planos = () => {
           </div>
         )}
 
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <Label htmlFor="billing-toggle" className={!isAnnual ? "font-semibold" : ""}>
+            Mensal
+          </Label>
+          <Switch
+            id="billing-toggle"
+            checked={isAnnual}
+            onCheckedChange={setIsAnnual}
+          />
+          <Label htmlFor="billing-toggle" className={isAnnual ? "font-semibold" : ""}>
+            Anual
+          </Label>
+          {isAnnual && (
+            <Badge variant="secondary" className="bg-green-500/10 text-green-600">
+              Economize 15%
+            </Badge>
+          )}
+        </div>
+
         <div className="grid md:grid-cols-3 gap-6">
           {Object.entries(PLANS).map(([key, plan]) => {
-            const isCurrentPlan = currentPlan?.price_id === plan.price_id;
+            const currentPriceId = isAnnual ? plan.annual_price_id : plan.price_id;
+            const isCurrentPlan = currentPlan?.price_id === currentPriceId;
             const isPremium = key === "premium";
 
             return (
@@ -163,9 +186,18 @@ const Planos = () => {
                   <CardDescription>
                     <div className="space-y-1">
                       <div>
-                        <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                        <span className="text-muted-foreground">/mês</span>
+                        <span className="text-3xl font-bold text-foreground">
+                          {isAnnual ? plan.annual_price : plan.price}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {isAnnual ? "/ano" : "/mês"}
+                        </span>
                       </div>
+                      {isAnnual && (
+                        <p className="text-sm text-muted-foreground">
+                          ou {plan.price}/mês
+                        </p>
+                      )}
                       <Badge variant="secondary" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
                         1º mês grátis
                       </Badge>
@@ -185,11 +217,11 @@ const Planos = () => {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    onClick={() => handleSubscribe(plan.price_id)}
-                    disabled={loading === plan.price_id || isCurrentPlan}
+                    onClick={() => handleSubscribe(currentPriceId)}
+                    disabled={loading === currentPriceId || isCurrentPlan}
                     variant={isPremium ? "default" : "outline"}
                   >
-                    {loading === plan.price_id ? (
+                    {loading === currentPriceId ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : isCurrentPlan ? (
                       "Plano Ativo"
