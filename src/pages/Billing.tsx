@@ -8,7 +8,6 @@ import { CompanyInfoForm } from "@/components/billing/CompanyInfoForm";
 import { ServiceForm } from "@/components/billing/ServiceForm";
 import { ServicesList } from "@/components/billing/ServicesList";
 import { BillingStats } from "@/components/billing/BillingStats";
-import { BillingCharts } from "@/components/billing/BillingCharts";
 import { MonthlyReports } from "@/components/billing/MonthlyReports";
 import { ClientReports } from "@/components/billing/ClientReports";
 import { Loader2 } from "lucide-react";
@@ -182,9 +181,8 @@ const Billing = () => {
       <BillingStats services={services} />
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="services">Serviços</TabsTrigger>
-          <TabsTrigger value="charts">Gráficos</TabsTrigger>
           <TabsTrigger value="monthly">Relatórios Mensais</TabsTrigger>
           <TabsTrigger value="clients">Relatórios de Clientes</TabsTrigger>
         </TabsList>
@@ -196,10 +194,6 @@ const Billing = () => {
             onDelete={handleServiceDelete}
             companyInfo={companyInfo}
           />
-        </TabsContent>
-
-        <TabsContent value="charts">
-          <BillingCharts services={services} />
         </TabsContent>
 
         <TabsContent value="monthly">
