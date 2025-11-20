@@ -19,11 +19,13 @@ import {
   Moon,
   Sun,
   Table2,
-  Calendar
+  Calendar,
+  Search
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { MessageTemplates } from "@/components/MessageTemplates";
+import { QuickSearch } from "@/components/QuickSearch";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -50,6 +52,7 @@ const Dashboard = () => {
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [stats, setStats] = useState<OrderStats>({
     total: 0,
     pending: 0,
@@ -64,6 +67,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     checkUser();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const checkUser = async () => {
@@ -226,12 +241,27 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            Bem-vindo, {userName?.split(" ")[0]}!
-          </h2>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Gerencie suas ordens de trabalho e acompanhe seus resultados
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                Bem-vindo, {userName?.split(" ")[0]}!
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Gerencie suas ordens de trabalho e acompanhe seus resultados
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full md:w-auto"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Busca Rápida
+              <kbd className="hidden md:inline-flex ml-2 pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </Button>
+          </div>
         </div>
 
         {/* Quick Actions - Mobile Optimized */}
@@ -543,6 +573,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Quick Search Dialog */}
+      <QuickSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 };
