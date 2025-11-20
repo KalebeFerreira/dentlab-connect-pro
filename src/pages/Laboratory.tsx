@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { STLViewer, STLViewerLoading } from "@/components/STLViewer";
+import { WhatsAppTemplateManager } from "@/components/WhatsAppTemplateManager";
+import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
 
 interface LaboratoryData {
   id?: string;
@@ -71,6 +73,8 @@ const Laboratory = () => {
   const [filterCategory, setFilterCategory] = useState<string>("todos");
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedSTL, setSelectedSTL] = useState<Document | null>(null);
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
+  const [documentToShare, setDocumentToShare] = useState<Document | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -356,13 +360,11 @@ const Laboratory = () => {
   };
 
   const handleShareWhatsApp = (doc: Document) => {
-    const labName = labData.lab_name || "Laboratório";
-    const fileName = doc.file_name;
-    const fileSize = formatFileSize(doc.file_size);
-    const category = getCategoryLabel(doc.category);
-    
-    const message = `🦷 *${labName}*\n\n📄 *Arquivo STL:* ${fileName}\n📁 *Categoria:* ${category}\n📊 *Tamanho:* ${fileSize}\n\n💬 Arquivo disponível para visualização e download.`;
-    
+    setDocumentToShare(doc);
+    setTemplateSelectorOpen(true);
+  };
+
+  const handleTemplateSelect = (message: string) => {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -747,6 +749,9 @@ const Laboratory = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Templates de Mensagens WhatsApp */}
+        <WhatsAppTemplateManager />
       </div>
 
       <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
@@ -763,6 +768,16 @@ const Laboratory = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <WhatsAppTemplateSelector
+        open={templateSelectorOpen}
+        onOpenChange={setTemplateSelectorOpen}
+        document={documentToShare}
+        labName={labData.lab_name || "Laboratório"}
+        onTemplateSelect={handleTemplateSelect}
+        getCategoryLabel={getCategoryLabel}
+        formatFileSize={formatFileSize}
+      />
     </div>
   );
 };
