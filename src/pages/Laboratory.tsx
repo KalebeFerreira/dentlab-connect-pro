@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { STLViewer, STLViewerLoading } from "@/components/STLViewer";
 
 interface LaboratoryData {
   id?: string;
@@ -67,6 +69,8 @@ const Laboratory = () => {
   const [userId, setUserId] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("geral");
   const [filterCategory, setFilterCategory] = useState<string>("todos");
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedSTL, setSelectedSTL] = useState<Document | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -340,6 +344,15 @@ const Laboratory = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const isSTLFile = (fileName: string) => {
+    return fileName.toLowerCase().endsWith('.stl');
+  };
+
+  const handleViewSTL = (doc: Document) => {
+    setSelectedSTL(doc);
+    setViewerOpen(true);
   };
 
   if (loading) {
@@ -631,6 +644,16 @@ const Laboratory = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {isSTLFile(doc.file_name) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewSTL(doc)}
+                              title="Visualizar 3D"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -655,6 +678,21 @@ const Laboratory = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Visualizador 3D - {selectedSTL?.file_name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedSTL && (
+            <Suspense fallback={<STLViewerLoading />}>
+              <STLViewer fileUrl={selectedSTL.file_path} />
+            </Suspense>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
