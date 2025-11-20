@@ -46,7 +46,8 @@ serve(async (req) => {
 
     // Define plan limits - Plano Premium has unlimited images (0 = unlimited)
     const PLAN_LIMITS: Record<string, number> = {
-      'price_1QYkYUBNMuaYAZcYu12VIrpZ': 60, // Plano Profissional
+      'price_1QYkYUBNMuaYAZcYu12VIrpZ': 60, // Plano Profissional (antigo)
+      'price_1SVYyx2X6ylDIgld3AQAlS8h': 60, // Plano Profissional (novo)
       'price_1SVYsz2X6ylDIgldiuS3Yh2z': 0,  // Plano Premium - ilimitado
     };
 
