@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { STLViewer, STLViewerLoading } from "@/components/STLViewer";
 import { WhatsAppTemplateManager } from "@/components/WhatsAppTemplateManager";
 import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
+import { EmailSendDialog } from "@/components/EmailSendDialog";
 
 interface LaboratoryData {
   id?: string;
@@ -75,6 +76,8 @@ const Laboratory = () => {
   const [selectedSTL, setSelectedSTL] = useState<Document | null>(null);
   const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
   const [documentToShare, setDocumentToShare] = useState<Document | null>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [documentToEmail, setDocumentToEmail] = useState<Document | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -367,6 +370,11 @@ const Laboratory = () => {
   const handleTemplateSelect = (message: string) => {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSendEmail = (doc: Document) => {
+    setDocumentToEmail(doc);
+    setEmailDialogOpen(true);
   };
 
   if (loading) {
@@ -679,6 +687,14 @@ const Laboratory = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleSendEmail(doc)}
+                            title="Enviar por Email"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => window.open(doc.file_path, '_blank')}
                           >
                             <Download className="h-4 w-4" />
@@ -727,6 +743,15 @@ const Laboratory = () => {
         document={documentToShare}
         labName={labData.lab_name || "Laboratório"}
         onTemplateSelect={handleTemplateSelect}
+        getCategoryLabel={getCategoryLabel}
+        formatFileSize={formatFileSize}
+      />
+
+      <EmailSendDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        document={documentToEmail}
+        labName={labData.lab_name || "Laboratório"}
         getCategoryLabel={getCategoryLabel}
         formatFileSize={formatFileSize}
       />
