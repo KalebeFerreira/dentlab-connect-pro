@@ -18,7 +18,8 @@ import {
   FileSpreadsheet,
   Moon,
   Sun,
-  Table2
+  Table2,
+  Calendar
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -308,6 +309,30 @@ const Dashboard = () => {
                   <FileSpreadsheet className="h-6 w-6 text-orange-600" />
                 </div>
                 <span className="text-sm font-medium text-center">Faturamento</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/appointments")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-cyan-500/10 flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-cyan-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Agendamentos</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/patients")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-indigo-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Pacientes</span>
               </CardContent>
             </Card>
           </div>
