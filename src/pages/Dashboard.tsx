@@ -17,7 +17,8 @@ import {
   Sparkles,
   FileSpreadsheet,
   Moon,
-  Sun
+  Sun,
+  Table2
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -223,13 +224,93 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">
             Bem-vindo, {userName?.split(" ")[0]}!
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             Gerencie suas ordens de trabalho e acompanhe seus resultados
           </p>
+        </div>
+
+        {/* Quick Actions - Mobile Optimized */}
+        <div className="mb-6 lg:hidden">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Ações Rápidas
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/orders/new")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-center">Novo Pedido</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/orders")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Ver Pedidos</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/price-table")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <Table2 className="h-6 w-6 text-purple-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Tabela Preços</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/image-generator")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center">
+                  <Sparkles className="h-6 w-6 text-pink-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Gerar Imagem</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/financial")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Financeiro</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/billing")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <FileSpreadsheet className="h-6 w-6 text-orange-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Faturamento</span>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Stats Grid */}
