@@ -161,8 +161,15 @@ const Planos = () => {
                 <CardHeader>
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
                   <CardDescription>
-                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-muted-foreground">/mês</span>
+                    <div className="space-y-1">
+                      <div>
+                        <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                        <span className="text-muted-foreground">/mês</span>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+                        1º mês grátis
+                      </Badge>
+                    </div>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

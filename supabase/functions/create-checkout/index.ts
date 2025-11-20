@@ -44,6 +44,9 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
+      subscription_data: {
+        trial_period_days: 30,
+      },
       success_url: `${req.headers.get("origin")}/planos?success=true`,
       cancel_url: `${req.headers.get("origin")}/planos?canceled=true`,
     });
