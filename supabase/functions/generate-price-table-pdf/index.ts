@@ -172,15 +172,15 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
         
         .notes strong {
           color: #1f2937;
-          font-size: 13px;
+          font-size: 14px;
           display: block;
-          margin-bottom: 6px;
+          margin-bottom: 8px;
         }
         
         .notes p {
           color: #4b5563;
-          font-size: 12px;
-          line-height: 1.5;
+          font-size: 13px;
+          line-height: 1.6;
           margin: 0;
           word-wrap: break-word;
         }

@@ -1,12 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 interface PriceItem {
   workType: string;
@@ -117,22 +116,42 @@ serve(async (req) => {
       </html>
     `;
 
-    const { data, error } = await resend.emails.send({
+    const pdfHtml = generatePDFHTML(tableName, items, notes || "");
+    const pdfBase64 = btoa(unescape(encodeURIComponent(pdfHtml)));
+
+    const emailPayload = {
       from: 'DentLab Connect <onboarding@resend.dev>',
       to: [to],
       subject: `${tableName} - Tabela de Preços`,
       html: emailHtml,
+      attachments: [
+        {
+          filename: `${tableName}.html`,
+          content: pdfBase64,
+        }
+      ]
+    };
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify(emailPayload),
     });
 
-    if (error) {
-      console.error('Resend error:', error);
-      throw error;
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Resend API error:', error);
+      throw new Error(`Failed to send email: ${error}`);
     }
 
+    const data = await response.json();
     console.log('Email sent successfully:', data);
 
     return new Response(
-      JSON.stringify({ success: true, messageId: data?.id }),
+      JSON.stringify({ success: true, messageId: data.id }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
@@ -148,3 +167,196 @@ serve(async (req) => {
     );
   }
 });
+
+function generatePDFHTML(tableName: string, items: PriceItem[], notes: string): string {
+  const date = new Date().toLocaleDateString('pt-BR');
+  
+  const itemsHTML = items
+    .map((item) => {
+      const imageHTML = item.imageUrl
+        ? `<img src="${item.imageUrl}" alt="${item.workType}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;" />`
+        : `<div style="width: 80px; height: 80px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #999;">Sem imagem</div>`;
+
+      const price = parseFloat(item.price || '0');
+      const formattedPrice = price.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      return `
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 16px;">${item.workType || '-'}</td>
+          <td style="padding: 16px;">${item.description || '-'}</td>
+          <td style="padding: 16px; text-align: right; font-weight: 600;">R$ ${formattedPrice}</td>
+          <td style="padding: 16px; text-align: center;">${imageHTML}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${tableName}</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          padding: 20px;
+          background: white;
+          color: #1f2937;
+          font-size: 14px;
+        }
+        
+        .header {
+          text-align: center;
+          margin-bottom: 40px;
+          padding-bottom: 20px;
+          border-bottom: 3px solid #3b82f6;
+        }
+        
+        .header h1 {
+          font-size: 28px;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        
+        .header .date {
+          color: #6b7280;
+          font-size: 14px;
+        }
+        
+        .table-container {
+          margin-bottom: 30px;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e5e7eb;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: white;
+        }
+        
+        thead {
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+        }
+        
+        thead th {
+          padding: 12px 8px;
+          text-align: left;
+          font-weight: 600;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+        
+        thead th:nth-child(3),
+        thead th:nth-child(4) {
+          text-align: center;
+        }
+        
+        tbody tr:hover {
+          background: #f9fafb;
+        }
+        
+        tbody td {
+          font-size: 13px;
+          color: #374151;
+          padding: 12px 8px !important;
+        }
+        
+        .footer {
+          margin-top: 20px;
+          padding-top: 15px;
+          border-top: 2px solid #e5e7eb;
+        }
+        
+        .notes {
+          margin-top: 20px;
+          margin-bottom: 15px;
+          padding: 12px 16px;
+          background-color: #f8f9fa;
+          border-left: 4px solid #3b82f6;
+          border-radius: 4px;
+        }
+        
+        .notes strong {
+          color: #1f2937;
+          font-size: 14px;
+          display: block;
+          margin-bottom: 8px;
+        }
+        
+        .notes p {
+          color: #4b5563;
+          font-size: 13px;
+          line-height: 1.6;
+          margin: 0;
+          word-wrap: break-word;
+        }
+        
+        @media print {
+          body {
+            padding: 15px;
+          }
+          
+          .header {
+            page-break-after: avoid;
+          }
+          
+          table {
+            page-break-inside: auto;
+          }
+          
+          tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${tableName}</h1>
+        <p class="date">Gerado em ${date}</p>
+      </div>
+      
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 200px;">Tipo de Trabalho</th>
+              <th>Descrição</th>
+              <th style="width: 120px;">Preço</th>
+              <th style="width: 120px;">Imagem</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHTML}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="footer">
+        ${notes ? `
+        <div class="notes">
+          <strong>Observações:</strong>
+          <p>${notes}</p>
+        </div>
+        ` : ''}
+      </div>
+    </body>
+    </html>
+  `;
+}
