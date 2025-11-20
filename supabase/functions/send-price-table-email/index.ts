@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -57,7 +57,6 @@ serve(async (req) => {
 
       return `
         <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px 8px; text-align: center; color: #374151;">${index + 1}</td>
           <td style="padding: 12px 8px; color: #374151;">${item.workType || '-'}</td>
           <td style="padding: 12px 8px; color: #374151;">${item.description || '-'}</td>
           <td style="padding: 12px 8px; text-align: right; font-weight: 600; color: #374151;">R$ ${formattedPrice}</td>
@@ -93,7 +92,6 @@ serve(async (req) => {
             <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
               <thead>
                 <tr style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">
-                  <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; text-transform: uppercase;">#</th>
                   <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase;">Tipo de Trabalho</th>
                   <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase;">Descrição</th>
                   <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; text-transform: uppercase;">Preço</th>
@@ -114,12 +112,6 @@ serve(async (req) => {
             </div>
           </div>
           ` : ''}
-
-          <!-- Footer -->
-          <div style="padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; background: #f9fafb;">
-            <p style="margin: 0 0 5px 0; font-size: 12px; color: #6b7280;">Tabela gerada automaticamente pelo sistema DentLab Connect</p>
-            <p style="margin: 0; font-size: 12px; color: #9ca3af;">Este documento é válido como orçamento e pode ser usado para consultas e aprovações</p>
-          </div>
         </div>
       </body>
       </html>

@@ -64,7 +64,6 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
 
       return `
         <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 16px; text-align: center;">${index + 1}</td>
           <td style="padding: 16px;">${item.workType || '-'}</td>
           <td style="padding: 16px;">${item.description || '-'}</td>
           <td style="padding: 16px; text-align: right; font-weight: 600;">R$ ${formattedPrice}</td>
@@ -141,9 +140,8 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
           letter-spacing: 0.3px;
         }
         
-        thead th:first-child,
-        thead th:nth-child(4),
-        thead th:nth-child(5) {
+        thead th:nth-child(3),
+        thead th:nth-child(4) {
           text-align: center;
         }
         
@@ -251,7 +249,6 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
         <table>
           <thead>
             <tr>
-              <th style="width: 60px;">#</th>
               <th style="width: 200px;">Tipo de Trabalho</th>
               <th>Descrição</th>
               <th style="width: 120px;">Preço</th>
@@ -271,11 +268,6 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
           <p>${notes}</p>
         </div>
         ` : ''}
-        
-        <div class="footer-info">
-          <p style="margin-bottom: 5px;">Tabela gerada automaticamente pelo sistema DentLab Connect</p>
-          <p>Este documento é válido como orçamento e pode ser usado para consultas e aprovações</p>
-        </div>
       </div>
     </body>
     </html>
