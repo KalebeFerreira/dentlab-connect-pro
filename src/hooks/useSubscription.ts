@@ -14,6 +14,8 @@ export const PLANS = {
     name: "Plano Básico",
     price: "R$ 49,00",
     price_id: "price_1SVYnh2X6ylDIgldatijXVCS",
+    annual_price: "R$ 499,80",
+    annual_price_id: "price_1SVaDz2X6ylDIgldqfDF6bWW",
     product_id: "prod_RnOcvwzovB68GJ",
     features: [
       "20 gerações de imagem por mês",
@@ -26,6 +28,8 @@ export const PLANS = {
     name: "Plano Profissional",
     price: "R$ 99,00",
     price_id: "price_1SVYyx2X6ylDIgld3AQAlS8h",
+    annual_price: "R$ 1.009,80",
+    annual_price_id: "price_1SVaEQ2X6ylDIgld6KEjptJn",
     product_id: "prod_SLaYaNRg51EX4H",
     features: [
       "60 gerações de imagem por mês",
@@ -39,6 +43,8 @@ export const PLANS = {
     name: "Plano Premium",
     price: "R$ 199,00",
     price_id: "price_1SVYsz2X6ylDIgldiuS3Yh2z",
+    annual_price: "R$ 2.029,80",
+    annual_price_id: "price_1SVaEk2X6ylDIgldqtSK3LHu",
     product_id: "prod_SLaT5AjT2GUu39",
     features: [
       "Gerações ilimitadas",
