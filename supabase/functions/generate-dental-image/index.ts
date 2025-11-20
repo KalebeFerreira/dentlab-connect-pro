@@ -44,15 +44,16 @@ serve(async (req) => {
 
     const currentUsage = usageData || 0;
 
-    // Define plan limits - Plano Profissional has 60 images/month
+    // Define plan limits - Plano Premium has unlimited images (0 = unlimited)
     const PLAN_LIMITS: Record<string, number> = {
       'price_1QYkYUBNMuaYAZcYu12VIrpZ': 60, // Plano Profissional
+      'price_1SVYsz2X6ylDIgldiuS3Yh2z': 0,  // Plano Premium - ilimitado
     };
 
-    // Check if user has reached their limit
-    if (subscription?.stripe_price_id && PLAN_LIMITS[subscription.stripe_price_id]) {
+    // Check if user has reached their limit (skip check for unlimited plans)
+    if (subscription?.stripe_price_id && PLAN_LIMITS[subscription.stripe_price_id] !== undefined) {
       const limit = PLAN_LIMITS[subscription.stripe_price_id];
-      if (currentUsage >= limit) {
+      if (limit > 0 && currentUsage >= limit) {
         return new Response(
           JSON.stringify({ 
             error: `Você atingiu o limite de ${limit} imagens por mês do seu plano. Faça upgrade para continuar gerando imagens.`
@@ -135,14 +136,20 @@ serve(async (req) => {
     // Increment usage counter after successful generation
     await supabaseClient.rpc('increment_image_usage', { p_user_id: user.id });
 
+    // Calculate usage info for response
+    const planLimit = subscription?.stripe_price_id && PLAN_LIMITS[subscription.stripe_price_id] !== undefined
+      ? PLAN_LIMITS[subscription.stripe_price_id]
+      : null;
+    
+    const isUnlimited = planLimit === 0;
+
     return new Response(
       JSON.stringify({ 
         imageUrl,
         message: data.choices?.[0]?.message?.content || 'Image generated successfully',
         usageCount: currentUsage + 1,
-        usageLimit: subscription?.stripe_price_id && PLAN_LIMITS[subscription.stripe_price_id] 
-          ? PLAN_LIMITS[subscription.stripe_price_id] 
-          : null
+        usageLimit: isUnlimited ? null : planLimit,
+        isUnlimited
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
