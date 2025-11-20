@@ -54,6 +54,8 @@ export const DentalImageGenerator = () => {
   const [teethNumbers, setTeethNumbers] = useState("");
   const [color, setColor] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [usageCount, setUsageCount] = useState<number | null>(null);
+  const [usageLimit, setUsageLimit] = useState<number | null>(null);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -95,7 +97,13 @@ export const DentalImageGenerator = () => {
       }
 
       setGeneratedImage(data.imageUrl);
-      toast.success('Imagem gerada com sucesso!');
+      setUsageCount(data.usageCount ?? null);
+      setUsageLimit(data.usageLimit ?? null);
+      
+      const usageMessage = data.usageLimit 
+        ? ` (${data.usageCount}/${data.usageLimit} imagens este mês)` 
+        : '';
+      toast.success(`Imagem gerada com sucesso!${usageMessage}`);
     } catch (error) {
       console.error('Error generating image:', error);
       toast.error('Erro ao gerar imagem. Tente novamente.');
@@ -127,6 +135,11 @@ export const DentalImageGenerator = () => {
           <CardDescription>
             Escolha um template ou descreva o trabalho dentário que deseja visualizar
           </CardDescription>
+          {usageLimit && (
+            <div className="mt-2 text-sm text-muted-foreground">
+              Uso mensal: <span className="font-semibold">{usageCount}/{usageLimit}</span> imagens geradas
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Templates Gallery */}

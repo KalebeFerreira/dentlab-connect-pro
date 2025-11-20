@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,54 @@ serve(async (req) => {
 
   try {
     const { prompt, workType, teethNumbers, color } = await req.json();
+    
+    // Authenticate user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Unauthorized');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    // Check user subscription and usage limits
+    const { data: subscription } = await supabaseClient
+      .from('user_subscriptions')
+      .select('plan_name, stripe_price_id')
+      .eq('user_id', user.id)
+      .single();
+
+    // Get current month's usage
+    const { data: usageData } = await supabaseClient
+      .rpc('get_monthly_image_usage', { p_user_id: user.id });
+
+    const currentUsage = usageData || 0;
+
+    // Define plan limits - Plano Profissional has 60 images/month
+    const PLAN_LIMITS: Record<string, number> = {
+      'price_1QYkYUBNMuaYAZcYu12VIrpZ': 60, // Plano Profissional
+    };
+
+    // Check if user has reached their limit
+    if (subscription?.stripe_price_id && PLAN_LIMITS[subscription.stripe_price_id]) {
+      const limit = PLAN_LIMITS[subscription.stripe_price_id];
+      if (currentUsage >= limit) {
+        return new Response(
+          JSON.stringify({ 
+            error: `Você atingiu o limite de ${limit} imagens por mês do seu plano. Faça upgrade para continuar gerando imagens.`
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
     
     console.log('Generating dental image with prompt:', prompt);
 
@@ -83,10 +132,17 @@ serve(async (req) => {
       throw new Error('No image generated in response');
     }
 
+    // Increment usage counter after successful generation
+    await supabaseClient.rpc('increment_image_usage', { p_user_id: user.id });
+
     return new Response(
       JSON.stringify({ 
         imageUrl,
-        message: data.choices?.[0]?.message?.content || 'Image generated successfully'
+        message: data.choices?.[0]?.message?.content || 'Image generated successfully',
+        usageCount: currentUsage + 1,
+        usageLimit: subscription?.stripe_price_id && PLAN_LIMITS[subscription.stripe_price_id] 
+          ? PLAN_LIMITS[subscription.stripe_price_id] 
+          : null
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
