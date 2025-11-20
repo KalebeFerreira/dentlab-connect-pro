@@ -15,6 +15,7 @@ import OrderDetails from "./pages/OrderDetails";
 import Financial from "./pages/Financial";
 import ImageGenerator from "./pages/ImageGenerator";
 import PriceTable from "./pages/PriceTable";
+import Planos from "./pages/Planos";
 import Patients from "./pages/Patients";
 import Appointments from "./pages/Appointments";
 import MessagesAnalytics from "./pages/MessagesAnalytics";
@@ -54,6 +55,7 @@ const App = () => (
                       <Route path="/financial" element={<Financial />} />
                       <Route path="/image-generator" element={<ImageGenerator />} />
                       <Route path="/price-table" element={<PriceTable />} />
+                      <Route path="/planos" element={<Planos />} />
                       <Route path="/patients" element={<Patients />} />
                       <Route path="/appointments" element={<Appointments />} />
                       <Route path="/messages-analytics" element={<MessagesAnalytics />} />
