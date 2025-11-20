@@ -163,6 +163,36 @@ const Planos = () => {
           )}
         </div>
 
+        {isAnnual && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 border border-green-500/20 rounded-lg">
+            <h3 className="text-lg font-bold mb-4 text-center">💰 Economia Anual vs Mensal</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              {Object.entries(PLANS).map(([key, plan]) => {
+                const monthlyTotal = parseFloat(plan.price.replace('R$ ', '').replace(',', '.')) * 12;
+                const annualPrice = parseFloat(plan.annual_price.replace('R$ ', '').replace('.', '').replace(',', '.')) / 100;
+                const savings = monthlyTotal - annualPrice;
+                
+                return (
+                  <div key={key} className="bg-background/80 backdrop-blur-sm p-4 rounded-lg border border-border">
+                    <p className="font-semibold text-sm mb-2">{plan.name}</p>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-muted-foreground">
+                        Mensal: <span className="line-through">R$ {monthlyTotal.toFixed(2)}</span>
+                      </p>
+                      <p className="text-muted-foreground">
+                        Anual: {plan.annual_price}
+                      </p>
+                      <p className="text-green-600 font-bold text-lg">
+                        Economize R$ {savings.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6">
           {Object.entries(PLANS).map(([key, plan]) => {
             const currentPriceId = isAnnual ? plan.annual_price_id : plan.price_id;
