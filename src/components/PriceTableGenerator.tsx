@@ -308,8 +308,13 @@ export const PriceTableGenerator = () => {
 
       // Create temporary container
       const container = document.createElement("div");
-      // Sanitize HTML before setting to prevent XSS
-      container.innerHTML = DOMPurify.sanitize(data.html);
+      // Sanitize HTML before setting to prevent XSS, but allow styles and common attributes
+      container.innerHTML = DOMPurify.sanitize(data.html, {
+        ALLOWED_TAGS: ['html', 'head', 'body', 'meta', 'title', 'style', 'div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'br', 'img'],
+        ALLOWED_ATTR: ['class', 'style', 'id', 'src', 'alt', 'width', 'height', 'border', 'cellpadding', 'cellspacing'],
+        ALLOW_DATA_ATTR: false,
+        ADD_ATTR: ['style']
+      });
       container.style.position = "absolute";
       container.style.left = "-9999px";
       container.style.width = "210mm";
