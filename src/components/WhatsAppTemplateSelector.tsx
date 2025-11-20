@@ -17,6 +17,7 @@ interface Document {
   file_name: string;
   file_size: number;
   category: string;
+  file_type: string;
 }
 
 interface WhatsAppTemplateSelectorProps {
@@ -78,7 +79,8 @@ export const WhatsAppTemplateSelector = ({
       .replace(/\{labName\}/g, labName)
       .replace(/\{fileName\}/g, document.file_name)
       .replace(/\{category\}/g, getCategoryLabel(document.category))
-      .replace(/\{fileSize\}/g, formatFileSize(document.file_size));
+      .replace(/\{fileSize\}/g, formatFileSize(document.file_size))
+      .replace(/\{fileType\}/g, document.file_type || "N/A");
 
     onTemplateSelect(message);
     onOpenChange(false);
@@ -87,7 +89,7 @@ export const WhatsAppTemplateSelector = ({
   const useDefaultMessage = () => {
     if (!document) return;
 
-    const message = `🦷 *${labName}*\n\n📄 *Arquivo STL:* ${document.file_name}\n📁 *Categoria:* ${getCategoryLabel(document.category)}\n📊 *Tamanho:* ${formatFileSize(document.file_size)}\n\n💬 Arquivo disponível para visualização e download.`;
+    const message = `🦷 *${labName}*\n\n📄 *Arquivo:* ${document.file_name}\n📁 *Categoria:* ${getCategoryLabel(document.category)}\n📊 *Tamanho:* ${formatFileSize(document.file_size)}\n📋 *Tipo:* ${document.file_type || "N/A"}\n\n💬 Arquivo disponível para visualização e download.`;
     
     onTemplateSelect(message);
     onOpenChange(false);
@@ -123,7 +125,7 @@ export const WhatsAppTemplateSelector = ({
                     </div>
                     {document && (
                       <pre className="text-sm whitespace-pre-wrap text-muted-foreground mt-2 p-3 bg-muted rounded-lg">
-                        {`🦷 *${labName}*\n\n📄 *Arquivo STL:* ${document.file_name}\n📁 *Categoria:* ${getCategoryLabel(document.category)}\n📊 *Tamanho:* ${formatFileSize(document.file_size)}\n\n💬 Arquivo disponível para visualização e download.`}
+                        {`🦷 *${labName}*\n\n📄 *Arquivo:* ${document.file_name}\n📁 *Categoria:* ${getCategoryLabel(document.category)}\n📊 *Tamanho:* ${formatFileSize(document.file_size)}\n📋 *Tipo:* ${document.file_type || "N/A"}\n\n💬 Arquivo disponível para visualização e download.`}
                       </pre>
                     )}
                   </CardContent>
@@ -151,7 +153,8 @@ export const WhatsAppTemplateSelector = ({
                             .replace(/\{labName\}/g, labName)
                             .replace(/\{fileName\}/g, document.file_name)
                             .replace(/\{category\}/g, getCategoryLabel(document.category))
-                            .replace(/\{fileSize\}/g, formatFileSize(document.file_size))}
+                            .replace(/\{fileSize\}/g, formatFileSize(document.file_size))
+                            .replace(/\{fileType\}/g, document.file_type || "N/A")}
                         </pre>
                       )}
                     </CardContent>

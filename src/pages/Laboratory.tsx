@@ -707,25 +707,23 @@ const Laboratory = () => {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           {isSTLFile(doc.file_name) && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleViewSTL(doc)}
-                                title="Visualizar 3D"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleShareWhatsApp(doc)}
-                                title="Compartilhar via WhatsApp"
-                              >
-                                <MessageSquare className="h-4 w-4" />
-                              </Button>
-                            </>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewSTL(doc)}
+                              title="Visualizar 3D"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleShareWhatsApp(doc)}
+                            title="Compartilhar via WhatsApp"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
