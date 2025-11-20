@@ -63,7 +63,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r">
       <SidebarContent>
         <div className="p-3 md:p-4 border-b border-sidebar-border">
-          <h2 className="text-base md:text-lg font-bold text-sidebar-foreground">DentLab Connect</h2>
+          <h2 className="text-base md:text-lg font-bold text-sidebar-foreground">Essência dental-lab</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Gestão Odontológica</p>
         </div>
 
