@@ -306,15 +306,28 @@ export const PriceTableGenerator = () => {
         throw new Error("Erro ao gerar HTML do PDF");
       }
 
-      // Create temporary container
+      // Parse the HTML to extract styles and body content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.html, 'text/html');
+      
+      // Extract the styles from head
+      const styles = Array.from(doc.querySelectorAll('style'))
+        .map(style => style.textContent)
+        .join('\n');
+      
+      // Extract body content
+      const bodyContent = doc.body?.innerHTML || '';
+
+      // Create temporary container with both styles and content
       const container = document.createElement("div");
-      // Sanitize HTML before setting to prevent XSS, but allow styles and common attributes
-      container.innerHTML = DOMPurify.sanitize(data.html, {
-        ALLOWED_TAGS: ['html', 'head', 'body', 'meta', 'title', 'style', 'div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'br', 'img'],
-        ALLOWED_ATTR: ['class', 'style', 'id', 'src', 'alt', 'width', 'height', 'border', 'cellpadding', 'cellspacing'],
-        ALLOW_DATA_ATTR: false,
-        ADD_ATTR: ['style']
-      });
+      container.innerHTML = `
+        <style>${styles}</style>
+        ${DOMPurify.sanitize(bodyContent, {
+          ALLOWED_TAGS: ['div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'br', 'img'],
+          ALLOWED_ATTR: ['class', 'style', 'id', 'src', 'alt', 'width', 'height'],
+          ADD_ATTR: ['style']
+        })}
+      `;
       container.style.position = "absolute";
       container.style.left = "-9999px";
       container.style.width = "210mm";
@@ -368,21 +381,23 @@ export const PriceTableGenerator = () => {
 
   const openPreview = async () => {
     setGeneratingPreview(true);
+    setPreviewOpen(true);
     
-    const blob = await generatePDFBlob();
-    
-    if (blob) {
-      // Clean up previous preview URL if exists
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+    try {
+      const blob = await generatePDFBlob();
       
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewOpen(true);
+      if (blob) {
+        // Clean up previous preview URL if exists
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+        }
+        
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+      }
+    } finally {
+      setGeneratingPreview(false);
     }
-    
-    setGeneratingPreview(false);
   };
 
   const downloadPDF = async () => {
@@ -651,23 +666,31 @@ export const PriceTableGenerator = () => {
       </CardContent>
 
       <Dialog open={previewOpen} onOpenChange={handleClosePreview}>
-        <DialogContent className="max-w-4xl h-[90vh]">
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Preview do PDF</DialogTitle>
             <DialogDescription>
               Confira a formatação antes de fazer o download
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden rounded-lg border">
-            {previewUrl && (
+          <div className="flex-1 overflow-hidden rounded-lg border min-h-[500px]">
+            {generatingPreview ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : previewUrl ? (
               <iframe
                 src={previewUrl}
                 className="w-full h-full"
                 title="PDF Preview"
               />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                Nenhum preview disponível
+              </div>
             )}
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={handleClosePreview}>
               Fechar
             </Button>
