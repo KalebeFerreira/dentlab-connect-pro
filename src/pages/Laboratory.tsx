@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -355,6 +355,18 @@ const Laboratory = () => {
     setViewerOpen(true);
   };
 
+  const handleShareWhatsApp = (doc: Document) => {
+    const labName = labData.lab_name || "Laboratório";
+    const fileName = doc.file_name;
+    const fileSize = formatFileSize(doc.file_size);
+    const category = getCategoryLabel(doc.category);
+    
+    const message = `🦷 *${labName}*\n\n📄 *Arquivo STL:* ${fileName}\n📁 *Categoria:* ${category}\n📊 *Tamanho:* ${fileSize}\n\n💬 Arquivo disponível para visualização e download.`;
+    
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -693,14 +705,24 @@ const Laboratory = () => {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           {isSTLFile(doc.file_name) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleViewSTL(doc)}
-                              title="Visualizar 3D"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleViewSTL(doc)}
+                                title="Visualizar 3D"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleShareWhatsApp(doc)}
+                                title="Compartilhar via WhatsApp"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
                           <Button
                             variant="ghost"
