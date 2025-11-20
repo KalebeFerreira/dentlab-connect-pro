@@ -266,23 +266,62 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               <p className="text-2xl font-bold">{formatCurrency(totalMonth)}</p>
             </div>
 
-            <ScrollArea className="w-full rounded-md border">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {monthlyServices.map((service) => (
+                <Card key={service.id} className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-sm">{service.service_name}</h3>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          service.status === "paid"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {service.status === "paid" ? "Pago" : "Pendente"}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cliente:</span>
+                        <span className="font-medium">{service.client_name || "-"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Valor:</span>
+                        <span className="font-semibold text-primary">
+                          {formatCurrency(Number(service.service_value))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Data:</span>
+                        <span>{new Date(service.service_date).toLocaleDateString("pt-BR")}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <ScrollArea className="hidden md:block w-full rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs md:text-sm">Serviço</TableHead>
-                    <TableHead className="text-xs md:text-sm">Cliente</TableHead>
-                    <TableHead className="text-xs md:text-sm">Valor</TableHead>
-                    <TableHead className="text-xs md:text-sm">Data</TableHead>
+                    <TableHead>Serviço</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {monthlyServices.map((service) => (
                     <TableRow key={service.id}>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.service_name}</TableCell>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.client_name || "-"}</TableCell>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{formatCurrency(Number(service.service_value))}</TableCell>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">
+                      <TableCell>{service.service_name}</TableCell>
+                      <TableCell>{service.client_name || "-"}</TableCell>
+                      <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
+                      <TableCell>
                         {new Date(service.service_date).toLocaleDateString("pt-BR")}
                       </TableCell>
                     </TableRow>
@@ -302,23 +341,62 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               <p className="text-xs text-muted-foreground mt-2">{consolidatedServices.length} serviços</p>
             </div>
 
-            <ScrollArea className="w-full rounded-md border">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {consolidatedServices.map((service) => (
+                <Card key={service.id} className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-sm">{service.service_name}</h3>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          service.status === "paid"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {service.status === "paid" ? "Pago" : "Pendente"}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cliente:</span>
+                        <span className="font-medium">{service.client_name || "-"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Valor:</span>
+                        <span className="font-semibold text-primary">
+                          {formatCurrency(Number(service.service_value))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Data:</span>
+                        <span>{new Date(service.service_date).toLocaleDateString("pt-BR")}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <ScrollArea className="hidden md:block w-full rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs md:text-sm">Serviço</TableHead>
-                    <TableHead className="text-xs md:text-sm">Cliente</TableHead>
-                    <TableHead className="text-xs md:text-sm">Valor</TableHead>
-                    <TableHead className="text-xs md:text-sm">Data</TableHead>
+                    <TableHead>Serviço</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {consolidatedServices.map((service) => (
                     <TableRow key={service.id}>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.service_name}</TableCell>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.client_name || "-"}</TableCell>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{formatCurrency(Number(service.service_value))}</TableCell>
-                      <TableCell className="text-xs md:text-sm px-2 md:px-4">
+                      <TableCell>{service.service_name}</TableCell>
+                      <TableCell>{service.client_name || "-"}</TableCell>
+                      <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
+                      <TableCell>
                         {new Date(service.service_date).toLocaleDateString("pt-BR")}
                       </TableCell>
                     </TableRow>
