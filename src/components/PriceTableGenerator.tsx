@@ -306,68 +306,102 @@ export const PriceTableGenerator = () => {
         throw new Error("Erro ao gerar HTML do PDF");
       }
 
-      // Parse the HTML to extract styles and body content
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.html, 'text/html');
-      
-      // Extract the styles from head
-      const styles = Array.from(doc.querySelectorAll('style'))
-        .map(style => style.textContent)
-        .join('\n');
-      
-      // Extract body content
-      const bodyContent = doc.body?.innerHTML || '';
+      console.log("HTML received from edge function, length:", data.html.length);
 
-      // Create temporary container with both styles and content
-      const container = document.createElement("div");
-      container.innerHTML = `
-        <style>${styles}</style>
-        ${DOMPurify.sanitize(bodyContent, {
-          ALLOWED_TAGS: ['div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'br', 'img'],
-          ALLOWED_ATTR: ['class', 'style', 'id', 'src', 'alt', 'width', 'height'],
-          ADD_ATTR: ['style']
-        })}
-      `;
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
-      container.style.width = "210mm";
-      document.body.appendChild(container);
+      // Create a temporary iframe to render the HTML properly
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.left = "-9999px";
+      iframe.style.width = "210mm";
+      iframe.style.height = "297mm";
+      document.body.appendChild(iframe);
+
+      // Write the complete HTML to iframe
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        throw new Error("Could not access iframe document");
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(data.html);
+      iframeDoc.close();
+
+      // Wait for iframe content to load
+      await new Promise((resolve) => {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.onload = resolve;
+          // Fallback timeout
+          setTimeout(resolve, 1000);
+        } else {
+          setTimeout(resolve, 1000);
+        }
+      });
 
       // Wait for images to load
-      const images = container.querySelectorAll("img");
-      await Promise.all(
-        Array.from(images).map(
-          (img) =>
-            new Promise((resolve) => {
-              if (img.complete) {
-                resolve(null);
-              } else {
-                img.onload = () => resolve(null);
-                img.onerror = () => resolve(null);
-              }
-            })
-        )
-      );
+      const images = iframeDoc.querySelectorAll("img");
+      if (images.length > 0) {
+        console.log("Waiting for", images.length, "images to load");
+        await Promise.all(
+          Array.from(images).map(
+            (img) =>
+              new Promise((resolve) => {
+                if (img.complete) {
+                  resolve(null);
+                } else {
+                  img.onload = () => resolve(null);
+                  img.onerror = () => {
+                    console.warn("Image failed to load:", img.src);
+                    resolve(null);
+                  };
+                  // Timeout for each image
+                  setTimeout(() => resolve(null), 5000);
+                }
+              })
+          )
+        );
+      }
 
-      // Configure pdf options
+      // Get the body element from iframe
+      const body = iframeDoc.body;
+      if (!body) {
+        throw new Error("No body content found in generated HTML");
+      }
+
+      console.log("Generating PDF from iframe body");
+
+      // Configure pdf options with better settings
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`,
         image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
+          scale: 2,
+          useCORS: true,
+          logging: true,
           letterRendering: true,
-          allowTaint: false
+          allowTaint: true,
+          backgroundColor: "#ffffff"
         },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
+        jsPDF: { 
+          unit: "mm", 
+          format: "a4", 
+          orientation: "portrait" as const,
+          compress: true
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      // Generate PDF as blob
-      const pdfBlob = await html2pdf().set(opt).from(container).output("blob");
+      // Generate PDF as blob from the iframe body
+      const pdfBlob = await html2pdf().set(opt).from(body).output("blob");
+
+      console.log("PDF generated, blob size:", pdfBlob.size);
 
       // Clean up
-      document.body.removeChild(container);
+      document.body.removeChild(iframe);
+
+      if (pdfBlob.size < 1000) {
+        throw new Error("PDF gerado está muito pequeno, pode estar vazio");
+      }
 
       return pdfBlob;
     } catch (error: any) {
