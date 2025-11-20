@@ -230,6 +230,77 @@ All colors MUST be HSL.
     }
   }
 
+  /* Responsive spacing utilities */
+  .p-responsive {
+    @apply p-3;
+  }
+  
+  @media (min-width: 768px) {
+    .p-responsive {
+      @apply p-6;
+    }
+  }
+
+  .p-responsive-sm {
+    @apply p-2;
+  }
+  
+  @media (min-width: 768px) {
+    .p-responsive-sm {
+      @apply p-4;
+    }
+  }
+
+  .px-responsive {
+    @apply px-3;
+  }
+  
+  @media (min-width: 768px) {
+    .px-responsive {
+      @apply px-6;
+    }
+  }
+
+  .py-responsive {
+    @apply py-3;
+  }
+  
+  @media (min-width: 768px) {
+    .py-responsive {
+      @apply py-6;
+    }
+  }
+
+  .gap-responsive {
+    @apply gap-3;
+  }
+  
+  @media (min-width: 768px) {
+    .gap-responsive {
+      @apply gap-6;
+    }
+  }
+
+  .gap-responsive-sm {
+    @apply gap-2;
+  }
+  
+  @media (min-width: 768px) {
+    .gap-responsive-sm {
+      @apply gap-4;
+    }
+  }
+
+  .space-y-responsive > * + * {
+    @apply mt-3;
+  }
+  
+  @media (min-width: 768px) {
+    .space-y-responsive > * + * {
+      @apply mt-6;
+    }
+  }
+
   /* Force sidebar to stay on left on mobile */
   @media (max-width: 768px) {
     [data-sidebar] {
