@@ -13,7 +13,7 @@ export const PLANS = {
   basic: {
     name: "Plano Básico",
     price: "R$ 49,00",
-    price_id: "price_1QYkXTBNMuaYAZcYPb7yrCBi",
+    price_id: "price_1SVYnh2X6ylDIgldatijXVCS",
     product_id: "prod_RnOcvwzovB68GJ",
     features: [
       "20 gerações de imagem por mês",
