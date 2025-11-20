@@ -14,7 +14,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
   SidebarFooter,
 } from "@/components/ui/sidebar";
@@ -39,7 +38,6 @@ const toolsItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentPath = location.pathname;
   const isMobile = useIsMobile();
   const { setOpen } = useSidebar();
 
@@ -61,27 +59,30 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon" className="border-r">
       <SidebarContent>
-        <div className="p-4 border-b border-sidebar-border">
-          <h2 className="text-lg font-bold text-sidebar-foreground">DentLab Connect</h2>
+        <div className="p-3 md:p-4 border-b border-sidebar-border">
+          <h2 className="text-base md:text-lg font-bold text-sidebar-foreground">DentLab Connect</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Gestão Odontológica</p>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider font-medium px-2">
+            Menu Principal
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
                       onClick={handleNavClick}
-                      className="hover:bg-sidebar-accent/50 transition-colors" 
+                      className="hover:bg-sidebar-accent/50 transition-colors group py-2.5" 
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5 md:h-4 md:w-4" />
+                      <span className="text-sm">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -91,20 +92,22 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Ferramentas IA</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider font-medium px-2">
+            Ferramentas IA
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {toolsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url}
                       onClick={handleNavClick}
-                      className="hover:bg-sidebar-accent/50 transition-colors" 
+                      className="hover:bg-sidebar-accent/50 transition-colors group py-2.5" 
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5 md:h-4 md:w-4" />
+                      <span className="text-sm">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -114,12 +117,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} className="hover:bg-destructive/10 hover:text-destructive">
-              <LogOut className="h-4 w-4" />
-              <span>Sair</span>
+            <SidebarMenuButton 
+              onClick={handleLogout} 
+              className="hover:bg-destructive/10 text-destructive hover:text-destructive py-2.5"
+            >
+              <LogOut className="h-5 w-5 md:h-4 md:w-4" />
+              <span className="text-sm font-medium">Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
