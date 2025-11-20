@@ -9,6 +9,8 @@ import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, E
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2pdf from "html2pdf.js";
+import DOMPurify from "dompurify";
+import { priceTableSchema } from "@/lib/validationSchemas";
 
 interface PriceItem {
   id: string;
@@ -306,7 +308,8 @@ export const PriceTableGenerator = () => {
 
       // Create temporary container
       const container = document.createElement("div");
-      container.innerHTML = data.html;
+      // Sanitize HTML before setting to prevent XSS
+      container.innerHTML = DOMPurify.sanitize(data.html);
       container.style.position = "absolute";
       container.style.left = "-9999px";
       container.style.width = "210mm";
@@ -378,6 +381,23 @@ export const PriceTableGenerator = () => {
   };
 
   const downloadPDF = async () => {
+    // Validate inputs
+    const validationResult = priceTableSchema.safeParse({
+      tableName,
+      notes: notes || "",
+      items: items.filter(item => item.workType && item.price).map(item => ({
+        workType: item.workType,
+        description: item.description,
+        price: item.price,
+      })),
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast.error("Erro de validação", { description: errors });
+      return;
+    }
+
     setExporting(true);
 
     const blob = await generatePDFBlob();
@@ -396,6 +416,23 @@ export const PriceTableGenerator = () => {
   };
 
   const saveTable = async () => {
+    // Validate inputs
+    const validationResult = priceTableSchema.safeParse({
+      tableName,
+      notes: notes || "",
+      items: items.filter(item => item.workType && item.price).map(item => ({
+        workType: item.workType,
+        description: item.description,
+        price: item.price,
+      })),
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast.error("Erro de validação", { description: errors });
+      return;
+    }
+
     if (!items.some((item) => item.workType && item.price)) {
       toast.error("Adicione pelo menos um item com tipo de trabalho e preço");
       return;

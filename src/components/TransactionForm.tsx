@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { X } from "lucide-react";
+import { transactionFormSchema } from "@/lib/validationSchemas";
 
 interface TransactionFormProps {
   onSuccess: () => void;
@@ -42,11 +43,28 @@ export const TransactionForm = ({ onSuccess, onCancel, editTransaction }: Transa
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Validate input
+      const validationResult = transactionFormSchema.safeParse({
+        transaction_type: formData.transaction_type,
+        amount: parseFloat(formData.amount.toString()),
+        description: formData.description || null,
+        status: formData.status,
+        month: formData.month,
+        year: formData.year,
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(err => err.message).join(", ");
+        toast.error("Erro de validação", { description: errors });
+        setLoading(false);
+        return;
+      }
+
       const transactionData = {
         user_id: user.id,
         transaction_type: formData.transaction_type,
         amount: parseFloat(formData.amount.toString()),
-        description: formData.description,
+        description: formData.description?.trim() || null,
         status: formData.status,
         month: formData.month,
         year: formData.year,

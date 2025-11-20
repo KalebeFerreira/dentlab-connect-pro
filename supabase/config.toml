@@ -1,7 +1,7 @@
 project_id = "idotyktgeqkpsypmztrg"
 
 [functions.generate-order-pdf]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-dental-image]
 verify_jwt = true
@@ -10,4 +10,4 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.check-appointment-reminders]
-verify_jwt = false
+verify_jwt = true
