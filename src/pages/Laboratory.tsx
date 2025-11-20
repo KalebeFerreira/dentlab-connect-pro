@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -373,6 +373,54 @@ const Laboratory = () => {
       </div>
 
       <div className="grid gap-6 max-w-6xl">
+        {/* Ações Rápidas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Ações Rápidas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Button 
+                variant="outline" 
+                className="h-auto flex-col gap-2 p-6"
+                onClick={() => document.getElementById('logo')?.click()}
+              >
+                <Upload className="h-8 w-8" />
+                <div className="text-center">
+                  <div className="font-semibold">Enviar Logo</div>
+                  <div className="text-xs text-muted-foreground">Atualize a identidade visual</div>
+                </div>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-auto flex-col gap-2 p-6"
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                <FileUp className="h-8 w-8" />
+                <div className="text-center">
+                  <div className="font-semibold">Enviar Documento</div>
+                  <div className="text-xs text-muted-foreground">Adicione arquivos e STL</div>
+                </div>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-auto flex-col gap-2 p-6"
+                onClick={() => {
+                  const docsSection = document.querySelector('[class*="Card"]:last-of-type');
+                  docsSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <FolderOpen className="h-8 w-8" />
+                <div className="text-center">
+                  <div className="font-semibold">Ver Documentos</div>
+                  <div className="text-xs text-muted-foreground">Acesse arquivos salvos</div>
+                </div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         {/* Card de Logo */}
         <Card>
           <CardHeader>
