@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 
@@ -265,28 +266,31 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               <p className="text-2xl font-bold">{formatCurrency(totalMonth)}</p>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Serviço</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Data</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {monthlyServices.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell>{service.service_name}</TableCell>
-                    <TableCell>{service.client_name || "-"}</TableCell>
-                    <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
-                    <TableCell>
-                      {new Date(service.service_date).toLocaleDateString("pt-BR")}
-                    </TableCell>
+            <ScrollArea className="w-full rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs md:text-sm">Serviço</TableHead>
+                    <TableHead className="text-xs md:text-sm">Cliente</TableHead>
+                    <TableHead className="text-xs md:text-sm">Valor</TableHead>
+                    <TableHead className="text-xs md:text-sm">Data</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {monthlyServices.map((service) => (
+                    <TableRow key={service.id}>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.service_name}</TableCell>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.client_name || "-"}</TableCell>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{formatCurrency(Number(service.service_value))}</TableCell>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">
+                        {new Date(service.service_date).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         )}
 
@@ -298,28 +302,31 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               <p className="text-xs text-muted-foreground mt-2">{consolidatedServices.length} serviços</p>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Serviço</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Data</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {consolidatedServices.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell>{service.service_name}</TableCell>
-                    <TableCell>{service.client_name || "-"}</TableCell>
-                    <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
-                    <TableCell>
-                      {new Date(service.service_date).toLocaleDateString("pt-BR")}
-                    </TableCell>
+            <ScrollArea className="w-full rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs md:text-sm">Serviço</TableHead>
+                    <TableHead className="text-xs md:text-sm">Cliente</TableHead>
+                    <TableHead className="text-xs md:text-sm">Valor</TableHead>
+                    <TableHead className="text-xs md:text-sm">Data</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {consolidatedServices.map((service) => (
+                    <TableRow key={service.id}>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.service_name}</TableCell>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{service.client_name || "-"}</TableCell>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">{formatCurrency(Number(service.service_value))}</TableCell>
+                      <TableCell className="text-xs md:text-sm px-2 md:px-4">
+                        {new Date(service.service_date).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         )}
 
