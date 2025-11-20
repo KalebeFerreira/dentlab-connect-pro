@@ -37,6 +37,7 @@ interface Document {
 
 const DOCUMENT_CATEGORIES = [
   { value: "geral", label: "Geral" },
+  { value: "stl", label: "Arquivos Digitais STL" },
   { value: "contrato", label: "Contrato" },
   { value: "certificado", label: "Certificado" },
   { value: "nota_fiscal", label: "Nota Fiscal" },
@@ -239,6 +240,7 @@ const Laboratory = () => {
 
   const getCategoryColor = (category: string): "default" | "secondary" | "outline" => {
     const colors: Record<string, "default" | "secondary" | "outline"> = {
+      stl: "default",
       contrato: "default",
       certificado: "secondary",
       nota_fiscal: "outline",
