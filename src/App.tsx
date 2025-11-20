@@ -42,9 +42,9 @@ const App = () => (
                 <div className="flex min-h-screen w-full bg-background">
                   <AppSidebar />
                   <main className="flex-1 w-full min-w-0">
-                    <header className="sticky top-0 z-50 h-14 flex items-center gap-2 border-b bg-card shadow-sm px-4">
-                      <SidebarTrigger />
-                      <h1 className="text-base font-semibold text-foreground">DentLab Connect</h1>
+                    <header className="sticky top-0 z-50 h-14 flex items-center gap-2 border-b bg-card shadow-sm px-3 md:px-4">
+                      <SidebarTrigger className="-ml-1" />
+                      <h1 className="text-sm md:text-base font-semibold text-foreground truncate">DentLab Connect</h1>
                     </header>
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
