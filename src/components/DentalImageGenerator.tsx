@@ -56,6 +56,7 @@ export const DentalImageGenerator = () => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState<number | null>(null);
   const [usageLimit, setUsageLimit] = useState<number | null>(null);
+  const [isUnlimited, setIsUnlimited] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -99,10 +100,13 @@ export const DentalImageGenerator = () => {
       setGeneratedImage(data.imageUrl);
       setUsageCount(data.usageCount ?? null);
       setUsageLimit(data.usageLimit ?? null);
+      setIsUnlimited(data.isUnlimited ?? false);
       
-      const usageMessage = data.usageLimit 
-        ? ` (${data.usageCount}/${data.usageLimit} imagens este mês)` 
-        : '';
+      const usageMessage = data.isUnlimited 
+        ? ' (Plano ilimitado)' 
+        : data.usageLimit 
+          ? ` (${data.usageCount}/${data.usageLimit} imagens este mês)` 
+          : '';
       toast.success(`Imagem gerada com sucesso!${usageMessage}`);
     } catch (error) {
       console.error('Error generating image:', error);
@@ -135,11 +139,15 @@ export const DentalImageGenerator = () => {
           <CardDescription>
             Escolha um template ou descreva o trabalho dentário que deseja visualizar
           </CardDescription>
-          {usageLimit && (
+          {isUnlimited ? (
+            <div className="mt-2 text-sm font-semibold text-primary">
+              ✨ Gerações ilimitadas (Plano Premium)
+            </div>
+          ) : usageLimit ? (
             <div className="mt-2 text-sm text-muted-foreground">
               Uso mensal: <span className="font-semibold">{usageCount}/{usageLimit}</span> imagens geradas
             </div>
-          )}
+          ) : null}
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Templates Gallery */}
