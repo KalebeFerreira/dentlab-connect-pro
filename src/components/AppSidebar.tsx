@@ -1,4 +1,4 @@
-import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, BarChart, Building, LogOut, Receipt, Settings } from "lucide-react";
+import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, BarChart, Building, LogOut, Receipt, Settings, Crown } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ const menuItems = [
   { title: "Agendamentos", url: "/appointments", icon: Calendar },
   { title: "Análise de Mensagens", url: "/messages-analytics", icon: BarChart },
   { title: "Laboratório", url: "/laboratory", icon: Building },
+  { title: "Planos", url: "/planos", icon: Crown },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
