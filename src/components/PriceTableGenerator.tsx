@@ -5,9 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, Eye } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import html2pdf from "html2pdf.js";
 import DOMPurify from "dompurify";
 import { priceTableSchema } from "@/lib/validationSchemas";
@@ -39,9 +39,6 @@ export const PriceTableGenerator = () => {
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [generatingPreview, setGeneratingPreview] = useState(false);
 
   const addItem = () => {
     const newItem: PriceItem = {
@@ -413,27 +410,6 @@ export const PriceTableGenerator = () => {
     }
   };
 
-  const openPreview = async () => {
-    setGeneratingPreview(true);
-    setPreviewOpen(true);
-    
-    try {
-      const blob = await generatePDFBlob();
-      
-      if (blob) {
-        // Clean up previous preview URL if exists
-        if (previewUrl) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-      }
-    } finally {
-      setGeneratingPreview(false);
-    }
-  };
-
   const downloadPDF = async () => {
     // Validate inputs
     const validationResult = priceTableSchema.safeParse({
@@ -512,14 +488,6 @@ export const PriceTableGenerator = () => {
       toast.success("Tabela salva no banco de dados com sucesso!");
     } catch (error: any) {
       toast.error("Erro ao salvar tabela", { description: error.message });
-    }
-  };
-
-  const handleClosePreview = () => {
-    setPreviewOpen(false);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
     }
   };
 
@@ -667,20 +635,7 @@ export const PriceTableGenerator = () => {
             )}
             Gerar Todas Imagens
           </Button>
-          <Button 
-            onClick={openPreview} 
-            disabled={generatingPreview || generatingTable || exporting} 
-            variant="outline"
-            className="gap-2"
-          >
-            {generatingPreview ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
-            Preview PDF
-          </Button>
-          <Button 
+          <Button
             onClick={saveTable} 
             disabled={!items.some(i => i.workType && i.price)}
             variant="secondary"
@@ -688,7 +643,7 @@ export const PriceTableGenerator = () => {
           >
             Salvar Tabela
           </Button>
-          <Button onClick={downloadPDF} disabled={exporting || generatingTable || generatingPreview} className="gap-2">
+          <Button onClick={downloadPDF} disabled={exporting || generatingTable} className="gap-2">
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -698,47 +653,6 @@ export const PriceTableGenerator = () => {
           </Button>
         </div>
       </CardContent>
-
-      <Dialog open={previewOpen} onOpenChange={handleClosePreview}>
-        <DialogContent className="max-w-4xl h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Preview do PDF</DialogTitle>
-            <DialogDescription>
-              Confira a formatação antes de fazer o download
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden rounded-lg border min-h-[500px]">
-            {generatingPreview ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : previewUrl ? (
-              <iframe
-                src={previewUrl}
-                className="w-full h-full"
-                title="PDF Preview"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Nenhum preview disponível
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={handleClosePreview}>
-              Fechar
-            </Button>
-            <Button onClick={downloadPDF} disabled={exporting} className="gap-2">
-              {exporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileDown className="h-4 w-4" />
-              )}
-              Baixar PDF
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

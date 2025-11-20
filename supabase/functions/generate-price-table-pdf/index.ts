@@ -74,12 +74,6 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
     })
     .join('');
 
-  const total = items.reduce((sum, item) => sum + parseFloat(item.price || '0'), 0);
-  const formattedTotal = total.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
   return `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -96,9 +90,10 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
         
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          padding: 40px;
+          padding: 20px;
           background: white;
           color: #1f2937;
+          font-size: 14px;
         }
         
         .header {
@@ -138,12 +133,12 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
         }
         
         thead th {
-          padding: 16px;
+          padding: 12px 8px;
           text-align: left;
           font-weight: 600;
-          font-size: 14px;
+          font-size: 12px;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.3px;
         }
         
         thead th:first-child,
@@ -157,38 +152,21 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
         }
         
         tbody td {
-          font-size: 14px;
+          font-size: 13px;
           color: #374151;
+          padding: 12px 8px !important;
         }
         
         .footer {
-          margin-top: 30px;
-          padding-top: 20px;
+          margin-top: 20px;
+          padding-top: 15px;
           border-top: 2px solid #e5e7eb;
         }
         
-        .total-row {
-          text-align: right;
-          padding: 20px 0;
-        }
-        
-        .total-label {
-          color: #6b7280;
-          font-size: 18px;
-          font-weight: 600;
-          margin-right: 10px;
-        }
-        
-        .total-value {
-          color: #3b82f6;
-          font-size: 24px;
-          font-weight: 700;
-        }
-        
         .notes {
-          margin-top: 30px;
-          margin-bottom: 20px;
-          padding: 15px 20px;
+          margin-top: 20px;
+          margin-bottom: 15px;
+          padding: 12px 16px;
           background-color: #f8f9fa;
           border-left: 4px solid #3b82f6;
           border-radius: 4px;
@@ -196,16 +174,17 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
         
         .notes strong {
           color: #1f2937;
-          font-size: 14px;
+          font-size: 13px;
           display: block;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         
         .notes p {
           color: #4b5563;
-          font-size: 13px;
-          line-height: 1.6;
+          font-size: 12px;
+          line-height: 1.5;
           margin: 0;
+          word-wrap: break-word;
         }
         
         .footer-info {
@@ -217,9 +196,34 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
           border-top: 1px solid #e5e7eb;
         }
         
+        @media screen and (max-width: 768px) {
+          body {
+            padding: 10px;
+            font-size: 12px;
+          }
+          
+          .header h1 {
+            font-size: 20px;
+          }
+          
+          thead th {
+            padding: 8px 4px;
+            font-size: 10px;
+          }
+          
+          tbody td {
+            padding: 8px 4px !important;
+            font-size: 11px;
+          }
+          
+          .notes {
+            padding: 10px 12px;
+          }
+        }
+        
         @media print {
           body {
-            padding: 20px;
+            padding: 15px;
           }
           
           .header {
@@ -261,11 +265,6 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
       </div>
       
       <div class="footer">
-        <div class="total-row">
-          <span class="total-label">Valor Total:</span>
-          <span class="total-value">R$ ${formattedTotal}</span>
-        </div>
-        
         ${notes ? `
         <div class="notes">
           <strong>Observações:</strong>
