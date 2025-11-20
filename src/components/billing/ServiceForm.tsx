@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { serviceFormSchema } from "@/lib/validationSchemas";
 
 interface ServiceFormProps {
   onServiceAdd: () => Promise<void>;
@@ -46,12 +47,25 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         serviceValue.replace("R$", "").replace(/\./g, "").replace(",", ".")
       );
 
+      // Validate input
+      const validationResult = serviceFormSchema.safeParse({
+        service_name: serviceName,
+        service_value: numericValue,
+        client_name: clientName || null,
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(err => err.message).join(", ");
+        toast.error("Erro de validação", { description: errors });
+        return;
+      }
+
       const { error } = await supabase.from("services").insert([
         {
           user_id: user.id,
-          service_name: serviceName,
+          service_name: serviceName.trim(),
           service_value: numericValue,
-          client_name: clientName || null,
+          client_name: clientName?.trim() || null,
           service_date: new Date().toISOString().split("T")[0],
           status: "active",
         },

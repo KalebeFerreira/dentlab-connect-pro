@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/SignaturePad";
+import { orderFormSchema } from "@/lib/validationSchemas";
 
 const NewOrder = () => {
   const navigate = useNavigate();
@@ -49,6 +50,29 @@ const NewOrder = () => {
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
       
+      // Validate input
+      const validationData = {
+        clinic_name: formData.get('clinic_name') as string,
+        dentist_name: formData.get('dentist_name') as string,
+        patient_name: formData.get('patient_name') as string,
+        work_name: (formData.get('work_name') as string) || null,
+        work_type: formData.get('work_type') as string,
+        custom_color: (formData.get('custom_color') as string) || null,
+        teeth_numbers: formData.get('teeth_numbers') as string,
+        observations: (formData.get('observations') as string) || null,
+        amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : null,
+        delivery_date: (formData.get('delivery_date') as string) || null,
+      };
+
+      const validationResult = orderFormSchema.safeParse(validationData);
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(err => err.message).join(", ");
+        toast.error("Erro de validação", { description: errors });
+        setSubmitting(false);
+        return;
+      }
+
       // Upload signature if present
       let signatureUrl = null;
       if (signature) {
@@ -67,16 +91,16 @@ const NewOrder = () => {
       
       const orderData = {
         user_id: user.id,
-        clinic_name: formData.get('clinic_name') as string,
-        dentist_name: formData.get('dentist_name') as string,
-        patient_name: formData.get('patient_name') as string,
-        work_name: formData.get('work_name') as string,
-        work_type: formData.get('work_type') as string,
-        custom_color: formData.get('custom_color') as string,
-        teeth_numbers: formData.get('teeth_numbers') as string,
-        observations: formData.get('observations') as string,
-        amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : null,
-        delivery_date: formData.get('delivery_date') as string || null,
+        clinic_name: validationData.clinic_name.trim(),
+        dentist_name: validationData.dentist_name.trim(),
+        patient_name: validationData.patient_name.trim(),
+        work_name: validationData.work_name?.trim() || null,
+        work_type: validationData.work_type.trim(),
+        custom_color: validationData.custom_color?.trim() || null,
+        teeth_numbers: validationData.teeth_numbers.trim(),
+        observations: validationData.observations?.trim() || null,
+        amount: validationData.amount,
+        delivery_date: validationData.delivery_date,
         signature_url: signatureUrl,
         status: 'pending'
       };

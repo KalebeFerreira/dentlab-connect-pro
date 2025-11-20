@@ -23,9 +23,28 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     console.log('Checking for appointments in the next 24 hours...');
 
@@ -35,6 +54,7 @@ serve(async (req) => {
     const dayAfterTomorrow = new Date(now.getTime() + 25 * 60 * 60 * 1000);
 
     // Fetch appointments in the next 24 hours that haven't been sent reminders
+    // Only fetch appointments for the authenticated user
     const { data: appointments, error } = await supabase
       .from('appointments')
       .select(`
@@ -48,6 +68,7 @@ serve(async (req) => {
           phone
         )
       `)
+      .eq('user_id', user.id)
       .gte('appointment_date', tomorrow.toISOString())
       .lt('appointment_date', dayAfterTomorrow.toISOString())
       .eq('status', 'scheduled')
