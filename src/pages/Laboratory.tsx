@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare, Search, Grid3x3 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -75,6 +75,8 @@ const Laboratory = () => {
   const [selectedSTL, setSelectedSTL] = useState<Document | null>(null);
   const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
   const [documentToShare, setDocumentToShare] = useState<Document | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showQuickActions, setShowQuickActions] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -147,10 +149,21 @@ const Laboratory = () => {
 
   const handleFilterChange = (category: string) => {
     setFilterCategory(category);
+    let filtered = documents;
+    
+    // Apply search filter if there's a search query
+    if (searchQuery) {
+      filtered = documents.filter(doc => 
+        doc.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCategoryLabel(doc.category).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply category filter
     if (category === "todos") {
-      setFilteredDocuments(documents);
+      setFilteredDocuments(filtered);
     } else {
-      setFilteredDocuments(documents.filter(doc => doc.category === category));
+      setFilteredDocuments(filtered.filter(doc => doc.category === category));
     }
   };
 
@@ -282,6 +295,31 @@ const Laboratory = () => {
     }
   };
 
+  const handleSearchDocuments = (query: string) => {
+    setSearchQuery(query);
+    const filtered = documents.filter(doc => 
+      doc.file_name.toLowerCase().includes(query.toLowerCase()) ||
+      getCategoryLabel(doc.category).toLowerCase().includes(query.toLowerCase())
+    );
+    
+    if (filterCategory !== "todos") {
+      setFilteredDocuments(filtered.filter(doc => doc.category === filterCategory));
+    } else {
+      setFilteredDocuments(filtered);
+    }
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const getSTLFilesCount = () => {
+    return documents.filter(doc => isSTLFile(doc.file_name)).length;
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -388,55 +426,156 @@ const Laboratory = () => {
 
       <div className="grid gap-6 max-w-6xl">
         {/* Ações Rápidas */}
-        <Card>
+        <Card id="quick-actions">
           <CardHeader>
-            <CardTitle>Ações Rápidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between">
+              <CardTitle>Ações Rápidas</CardTitle>
               <Button 
-                variant="outline" 
-                className="h-auto flex-col gap-2 p-6"
-                onClick={() => document.getElementById('logo')?.click()}
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowQuickActions(!showQuickActions)}
+                className="md:hidden"
               >
-                <Upload className="h-8 w-8" />
-                <div className="text-center">
-                  <div className="font-semibold">Enviar Logo</div>
-                  <div className="text-xs text-muted-foreground">Atualize a identidade visual</div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="h-auto flex-col gap-2 p-6"
-                onClick={() => document.getElementById('file-upload')?.click()}
-              >
-                <FileUp className="h-8 w-8" />
-                <div className="text-center">
-                  <div className="font-semibold">Enviar Documento</div>
-                  <div className="text-xs text-muted-foreground">Adicione arquivos e STL</div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="h-auto flex-col gap-2 p-6"
-                onClick={() => {
-                  const docsSection = document.querySelector('[class*="Card"]:last-of-type');
-                  docsSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <FolderOpen className="h-8 w-8" />
-                <div className="text-center">
-                  <div className="font-semibold">Ver Documentos</div>
-                  <div className="text-xs text-muted-foreground">Acesse arquivos salvos</div>
-                </div>
+                {showQuickActions ? "Ocultar" : "Mostrar"}
               </Button>
             </div>
-          </CardContent>
+          </CardHeader>
+          {showQuickActions && (
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => document.getElementById('logo')?.click()}
+                >
+                  <Upload className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Logo</div>
+                    <div className="text-xs text-muted-foreground">Enviar</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <FileUp className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Documento</div>
+                    <div className="text-xs text-muted-foreground">Upload</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => scrollToSection('documents-section')}
+                >
+                  <FolderOpen className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Documentos</div>
+                    <div className="text-xs text-muted-foreground">{documents.length}</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => {
+                    setFilterCategory("stl");
+                    handleFilterChange("stl");
+                    scrollToSection('documents-section');
+                  }}
+                >
+                  <Grid3x3 className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">STL</div>
+                    <div className="text-xs text-muted-foreground">{getSTLFilesCount()}</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => scrollToSection('templates-section')}
+                >
+                  <MessageSquare className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Templates</div>
+                    <div className="text-xs text-muted-foreground">WhatsApp</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => scrollToSection('lab-info')}
+                >
+                  <Building2 className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Info</div>
+                    <div className="text-xs text-muted-foreground">Laboratório</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => {
+                    const searchInput = document.getElementById('search-docs') as HTMLInputElement;
+                    if (searchInput) {
+                      searchInput.focus();
+                      scrollToSection('documents-section');
+                    }
+                  }}
+                >
+                  <Search className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Buscar</div>
+                    <div className="text-xs text-muted-foreground">Arquivos</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-auto flex-col gap-2 p-4"
+                  onClick={() => {
+                    setFilterCategory("todos");
+                    handleFilterChange("todos");
+                    scrollToSection('documents-section');
+                  }}
+                >
+                  <FileText className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Todos</div>
+                    <div className="text-xs text-muted-foreground">Ver</div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Busca Rápida */}
+              <div className="mt-4 pt-4 border-t">
+                <Label htmlFor="search-docs" className="text-sm mb-2 block">
+                  Busca Rápida de Documentos
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search-docs"
+                    type="text"
+                    placeholder="Digite o nome do arquivo..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchDocuments(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          )}
         </Card>
         {/* Card de Logo */}
-        <Card>
+        <Card id="lab-info">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
@@ -603,7 +742,7 @@ const Laboratory = () => {
         </Card>
 
         {/* Card de Documentos */}
-        <Card>
+        <Card id="documents-section">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -749,7 +888,9 @@ const Laboratory = () => {
         </Card>
 
         {/* Templates de Mensagens WhatsApp */}
-        <WhatsAppTemplateManager />
+        <div id="templates-section">
+          <WhatsAppTemplateManager />
+        </div>
       </div>
 
       <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
