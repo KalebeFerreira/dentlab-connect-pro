@@ -293,15 +293,16 @@ function generatePDFHTML(tableName: string, items: PriceItem[], notes: string): 
         
         .notes strong {
           color: #1f2937;
-          font-size: 14px;
+          font-size: 16px;
+          font-weight: 700;
           display: block;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         }
         
         .notes p {
-          color: #4b5563;
-          font-size: 13px;
-          line-height: 1.6;
+          color: #1f2937;
+          font-size: 15px;
+          line-height: 1.7;
           margin: 0;
           word-wrap: break-word;
         }
