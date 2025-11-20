@@ -78,14 +78,14 @@ export const WhatsAppTemplateManager = () => {
       } else {
         const { error } = await supabase
           .from("message_templates")
-          .insert({
-            user_id: user.id,
-            template_name: formData.template_name,
-            template_type: "whatsapp_stl_share",
-            message_content: formData.message_content,
-            is_active: true,
-            variables: ["fileName", "category", "fileSize", "labName"],
-          });
+        .insert({
+          user_id: user.id,
+          template_name: formData.template_name,
+          template_type: "whatsapp_stl_share",
+          message_content: formData.message_content,
+          is_active: true,
+          variables: ["fileName", "category", "fileSize", "fileType", "labName"],
+        });
 
         if (error) throw error;
         toast.success("Template criado com sucesso!");
@@ -156,13 +156,14 @@ export const WhatsAppTemplateManager = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="rounded-lg border p-4 bg-muted/50">
+              <div className="rounded-lg border p-4 bg-muted/50">
               <h4 className="text-sm font-semibold mb-2">Variáveis Disponíveis:</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><Badge variant="outline">{"{labName}"}</Badge> - Nome do laboratório</div>
                 <div><Badge variant="outline">{"{fileName}"}</Badge> - Nome do arquivo</div>
                 <div><Badge variant="outline">{"{category}"}</Badge> - Categoria do arquivo</div>
                 <div><Badge variant="outline">{"{fileSize}"}</Badge> - Tamanho do arquivo</div>
+                <div><Badge variant="outline">{"{fileType}"}</Badge> - Tipo do arquivo</div>
               </div>
             </div>
 
@@ -240,7 +241,7 @@ export const WhatsAppTemplateManager = () => {
                 id="message_content"
                 value={formData.message_content}
                 onChange={(e) => setFormData({ ...formData, message_content: e.target.value })}
-                placeholder="Ex: 🦷 *{labName}*&#10;&#10;📄 Arquivo: {fileName}&#10;📁 Categoria: {category}&#10;📊 Tamanho: {fileSize}"
+                placeholder="Ex: 🦷 *{labName}*&#10;&#10;📄 Arquivo: {fileName}&#10;📁 Categoria: {category}&#10;📊 Tamanho: {fileSize}&#10;📋 Tipo: {fileType}"
                 rows={8}
                 className="font-mono text-sm"
               />
@@ -253,7 +254,8 @@ export const WhatsAppTemplateManager = () => {
                   .replace("{labName}", "Nome do Lab")
                   .replace("{fileName}", "arquivo.stl")
                   .replace("{category}", "STL")
-                  .replace("{fileSize}", "2.5 MB")}
+                  .replace("{fileSize}", "2.5 MB")
+                  .replace("{fileType}", "application/stl")}
               </pre>
             </div>
 
