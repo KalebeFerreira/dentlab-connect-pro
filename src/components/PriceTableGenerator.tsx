@@ -5,12 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, Share2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import html2pdf from "html2pdf.js";
 import DOMPurify from "dompurify";
 import { priceTableSchema } from "@/lib/validationSchemas";
+import { PriceTableShareDialog } from "./PriceTableShareDialog";
 
 interface PriceItem {
   id: string;
@@ -39,6 +40,7 @@ export const PriceTableGenerator = () => {
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const addItem = () => {
     const newItem: PriceItem = {
@@ -635,6 +637,15 @@ export const PriceTableGenerator = () => {
             )}
             Gerar Todas Imagens
           </Button>
+          <Button 
+            onClick={() => setShareDialogOpen(true)} 
+            disabled={!items.some(i => i.workType && i.price)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Share2 className="h-4 w-4" />
+            Compartilhar
+          </Button>
           <Button
             onClick={saveTable} 
             disabled={!items.some(i => i.workType && i.price)}
@@ -653,6 +664,14 @@ export const PriceTableGenerator = () => {
           </Button>
         </div>
       </CardContent>
+
+      <PriceTableShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        tableName={tableName}
+        items={items}
+        notes={notes}
+      />
     </Card>
   );
 };
