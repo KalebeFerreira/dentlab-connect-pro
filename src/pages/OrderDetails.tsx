@@ -3,11 +3,27 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, User, Calendar, FileText, Download } from "lucide-react";
+import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FileUpload } from "@/components/FileUpload";
-import { FileList } from "@/components/FileList";
 import { toast } from "sonner";
+import { EmailSendDialog } from "@/components/EmailSendDialog";
+import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
+import { STLViewer } from "@/components/STLViewer";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Order {
   id: string;
@@ -25,18 +41,34 @@ interface Order {
   delivery_date: string | null;
 }
 
+interface OrderFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+}
+
 const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
+  const [files, setFiles] = useState<OrderFile[]>([]);
   const [refreshFiles, setRefreshFiles] = useState(0);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
+  const [stlViewerOpen, setStlViewerOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<OrderFile | null>(null);
+  const [labInfo, setLabInfo] = useState<any>(null);
 
   useEffect(() => {
     checkAuthAndLoadOrder();
-  }, [id]);
+    loadFiles();
+  }, [id, refreshFiles]);
 
   const checkAuthAndLoadOrder = async () => {
     try {
@@ -70,12 +102,149 @@ const OrderDetails = () => {
           setSignatureUrl(publicUrlData.publicUrl);
         }
       }
+
+      // Load laboratory info
+      const { data: labData } = await supabase
+        .from("laboratory_info")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      setLabInfo(labData);
     } catch (error) {
       console.error("Error loading order:", error);
       navigate("/orders");
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadFiles = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("order_files")
+        .select("*")
+        .eq("order_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setFiles(data || []);
+    } catch (error) {
+      console.error("Error loading files:", error);
+    }
+  };
+
+  const handleDownloadFile = async (file: OrderFile) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("order-files")
+        .download(file.file_path);
+
+      if (error) throw error;
+
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.file_name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Arquivo baixado com sucesso!");
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Erro ao baixar arquivo");
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string, filePath: string) => {
+    if (!confirm("Tem certeza que deseja excluir este arquivo?")) return;
+
+    try {
+      const { error: storageError } = await supabase.storage
+        .from("order-files")
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from("order_files")
+        .delete()
+        .eq("id", fileId);
+
+      if (dbError) throw dbError;
+
+      toast.success("Arquivo excluído com sucesso!");
+      loadFiles();
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Erro ao excluir arquivo");
+    }
+  };
+
+  const handleSendEmail = (file: OrderFile) => {
+    setSelectedFile(file);
+    setEmailDialogOpen(true);
+  };
+
+  const handleSendWhatsApp = (file: OrderFile) => {
+    setSelectedFile(file);
+    setWhatsappDialogOpen(true);
+  };
+
+  const handleWhatsAppTemplateSelect = (message: string) => {
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
+  const handleViewSTL = (file: OrderFile) => {
+    setSelectedFile(file);
+    setStlViewerOpen(true);
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return "🖼️";
+    if (fileType === "application/pdf") return "📄";
+    if (fileType.includes("stl")) return "🔷";
+    return "📁";
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      geral: "Geral",
+      raio_x: "Raio-X",
+      stl: "Arquivo STL",
+      dicom: "DICOM",
+      fotos: "Fotos",
+      documentos: "Documentos",
+    };
+    return labels[category] || category;
+  };
+
+  const convertToDocument = (file: OrderFile) => {
+    const { data: urlData } = supabase.storage
+      .from("order-files")
+      .getPublicUrl(file.file_path);
+
+    return {
+      file_name: file.file_name,
+      file_path: urlData.publicUrl,
+      file_size: file.file_size,
+      category: "geral",
+      file_type: file.file_type,
+    };
   };
 
   const handleGeneratePdf = async () => {
@@ -260,16 +429,148 @@ const OrderDetails = () => {
             </CardContent>
           </Card>
 
-          {/* File Upload */}
-          <FileUpload 
-            orderId={order.id} 
-            onUploadComplete={() => setRefreshFiles(prev => prev + 1)}
-          />
+          {/* Files Section */}
+          <div className="space-y-4">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Enviar Arquivos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FileUpload 
+                  orderId={id!} 
+                  onUploadComplete={() => setRefreshFiles(prev => prev + 1)}
+                />
+              </CardContent>
+            </Card>
 
-          {/* File List */}
-          <FileList orderId={order.id} refreshTrigger={refreshFiles} />
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Arquivos da Ordem</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {files.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhum arquivo anexado ainda</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Arquivo</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Tamanho</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {files.map((file) => (
+                        <TableRow key={file.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <span>{getFileIcon(file.file_type)}</span>
+                              <span className="truncate max-w-[200px]">
+                                {file.file_name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{file.file_type.split("/")[1]?.toUpperCase() || "N/A"}</TableCell>
+                          <TableCell>{formatFileSize(file.file_size)}</TableCell>
+                          <TableCell>
+                            {new Date(file.created_at).toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDownloadFile(file)}
+                                title="Baixar"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              {file.file_name.toLowerCase().endsWith(".stl") && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleViewSTL(file)}
+                                  title="Visualizar 3D"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleSendEmail(file)}
+                                title="Enviar por Email"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleSendWhatsApp(file)}
+                                title="Enviar por WhatsApp"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteFile(file.id, file.file_path)}
+                                title="Excluir"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
+
+      {/* Dialogs */}
+      {selectedFile && (
+        <>
+          <EmailSendDialog
+            open={emailDialogOpen}
+            onOpenChange={setEmailDialogOpen}
+            document={convertToDocument(selectedFile)}
+            labName={labInfo?.lab_name || order?.clinic_name || "Laboratório"}
+            getCategoryLabel={getCategoryLabel}
+            formatFileSize={formatFileSize}
+          />
+
+          <WhatsAppTemplateSelector
+            open={whatsappDialogOpen}
+            onOpenChange={setWhatsappDialogOpen}
+            document={convertToDocument(selectedFile)}
+            labName={labInfo?.lab_name || order?.clinic_name || "Laboratório"}
+            onTemplateSelect={handleWhatsAppTemplateSelect}
+            getCategoryLabel={getCategoryLabel}
+            formatFileSize={formatFileSize}
+          />
+
+          <Dialog open={stlViewerOpen} onOpenChange={setStlViewerOpen}>
+            <DialogContent className="max-w-4xl h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>Visualizar Arquivo 3D - {selectedFile.file_name}</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 h-full">
+                <STLViewer fileUrl={selectedFile.file_path} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 };
