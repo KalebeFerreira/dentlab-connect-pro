@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -36,11 +36,34 @@ export const PriceTableGenerator = () => {
     { id: "1", workType: "", description: "", price: "", imageUrl: null, generating: false },
   ]);
   const [tableName, setTableName] = useState("Tabela de Preços - Laboratório");
-  const [notes, setNotes] = useState("");
+  const [laboratoryName, setLaboratoryName] = useState("");
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchLaboratoryInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from("laboratory_info")
+          .select("lab_name")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!error && data) {
+          setLaboratoryName(data.lab_name);
+        }
+      } catch (error) {
+        console.error("Error fetching laboratory info:", error);
+      }
+    };
+
+    fetchLaboratoryInfo();
+  }, []);
 
   const addItem = () => {
     const newItem: PriceItem = {
@@ -295,7 +318,7 @@ export const PriceTableGenerator = () => {
         body: {
           tableName,
           items: validItems,
-          notes,
+          laboratoryName,
         },
       });
 
@@ -416,7 +439,6 @@ export const PriceTableGenerator = () => {
     // Validate inputs
     const validationResult = priceTableSchema.safeParse({
       tableName,
-      notes: notes || "",
       items: items.filter(item => item.workType && item.price).map(item => ({
         workType: item.workType,
         description: item.description,
@@ -451,7 +473,6 @@ export const PriceTableGenerator = () => {
     // Validate inputs
     const validationResult = priceTableSchema.safeParse({
       tableName,
-      notes: notes || "",
       items: items.filter(item => item.workType && item.price).map(item => ({
         workType: item.workType,
         description: item.description,
@@ -482,7 +503,7 @@ export const PriceTableGenerator = () => {
       const { error } = await supabase.from("price_tables").insert([{
         user_id: user.id,
         table_name: tableName,
-        notes: notes || null,
+        notes: laboratoryName || null,
         items: itemsToSave as any,
       }]);
 
@@ -510,15 +531,6 @@ export const PriceTableGenerator = () => {
               value={tableName}
               onChange={(e) => setTableName(e.target.value)}
               placeholder="Ex: Tabela de Preços - Laboratório DentTech"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Observações (aparece no rodapé do PDF)</Label>
-            <Input
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Preços válidos até 31/12/2025 - Consulte condições especiais"
             />
           </div>
         </div>
@@ -670,7 +682,7 @@ export const PriceTableGenerator = () => {
         onOpenChange={setShareDialogOpen}
         tableName={tableName}
         items={items}
-        notes={notes}
+        laboratoryName={laboratoryName}
       />
     </Card>
   );

@@ -11,18 +11,18 @@ serve(async (req) => {
   }
 
   try {
-    const { tableName, items, notes } = await req.json();
+    const { tableName, items, laboratoryName } = await req.json();
 
     console.log('Generating PDF for:', tableName);
     console.log('Number of items:', items?.length);
-    console.log('Notes:', notes);
+    console.log('Laboratory Name:', laboratoryName);
 
     if (!items || items.length === 0) {
       throw new Error('Nenhum item para gerar PDF');
     }
 
     // Generate HTML for PDF
-    const html = generatePDFHTML(tableName, items, notes || "");
+    const html = generatePDFHTML(tableName, items, laboratoryName || "");
     
     // For now, we'll return the HTML that can be used with a client-side PDF library
     // In a production environment, you could use a service like Puppeteer
@@ -47,7 +47,7 @@ serve(async (req) => {
   }
 });
 
-function generatePDFHTML(tableName: string, items: any[], notes: string): string {
+function generatePDFHTML(tableName: string, items: any[], laboratoryName: string): string {
   const date = new Date().toLocaleDateString('pt-BR');
   
   const itemsHTML = items
@@ -259,17 +259,14 @@ function generatePDFHTML(tableName: string, items: any[], notes: string): string
           <tbody>
             ${itemsHTML}
           </tbody>
-        </table>
+      </table>
       </div>
       
-      <div class="footer">
-        ${notes ? `
-        <div class="notes">
-          <strong>Observações:</strong>
-          <p>${notes}</p>
-        </div>
-        ` : ''}
+      ${laboratoryName ? `
+      <div class="notes">
+        <p>${laboratoryName}</p>
       </div>
+      ` : ''}
     </body>
     </html>
   `;
