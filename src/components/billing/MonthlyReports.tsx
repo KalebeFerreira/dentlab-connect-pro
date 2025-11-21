@@ -329,31 +329,27 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
     setSendingEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
+      const { data, error } = await supabase.functions.invoke('send-monthly-report-email', {
         body: {
+          clientEmail,
+          clientName: selectedClient,
+          month: selectedClientMonth,
           services: clientMonthlyServices,
           companyInfo,
-          totalValue: totalClientMonth,
-          month: selectedClientMonth,
-          clientName: selectedClient
+          totalValue: totalClientMonth
         }
       });
 
       if (error) throw error;
 
       await saveReportHistory('email', clientEmail);
-
-      // Aqui você poderia implementar o envio real do email
-      // Por enquanto, vamos apenas abrir o cliente de email
-      const subject = `Relatório Mensal - ${selectedClientMonth}`;
-      const body = `Segue em anexo o relatório mensal de serviços.\n\nTotal: ${formatCurrency(totalClientMonth)}`;
-      window.open(`mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
       
-      toast.success("Cliente de email aberto e salvo no histórico!");
+      toast.success("Email enviado com sucesso!");
       setEmailDialogOpen(false);
+      setClientEmail("");
     } catch (error) {
-      console.error('Erro ao preparar email:', error);
-      toast.error('Erro ao preparar email');
+      console.error('Erro ao enviar email:', error);
+      toast.error('Erro ao enviar email. Verifique o endereço de email.');
     } finally {
       setSendingEmail(false);
     }
