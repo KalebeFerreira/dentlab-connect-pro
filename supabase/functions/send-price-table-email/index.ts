@@ -19,7 +19,6 @@ interface EmailRequest {
   tableName: string;
   items: PriceItem[];
   laboratoryName?: string;
-  laboratoryEmail?: string;
   message?: string;
 }
 
@@ -29,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, tableName, items, laboratoryName, laboratoryEmail, message }: EmailRequest = await req.json();
+    const { to, tableName, items, laboratoryName, message }: EmailRequest = await req.json();
 
     console.log('Sending price table email to:', to);
     console.log('Table name:', tableName);
@@ -104,11 +103,10 @@ serve(async (req) => {
             </table>
           </div>
 
-          ${laboratoryName || laboratoryEmail ? `
+          ${laboratoryName ? `
           <div style="padding: 20px; background: #f8f9fa; border-top: 1px solid #e5e7eb;">
             <div style="border-left: 4px solid #3b82f6; padding: 12px 16px; background: white; border-radius: 4px;">
-              ${laboratoryName ? `<p style="color: #1f2937; font-size: 14px; line-height: 1.5; margin: 0 0 4px 0; font-weight: 600;">${laboratoryName}</p>` : ''}
-              ${laboratoryEmail ? `<p style="color: #3b82f6; font-size: 13px; margin: 0;">📧 ${laboratoryEmail}</p>` : ''}
+              <p style="color: #1f2937; font-size: 14px; line-height: 1.5; margin: 0; font-weight: 600;">${laboratoryName}</p>
             </div>
           </div>
           ` : ''}
@@ -117,7 +115,7 @@ serve(async (req) => {
       </html>
     `;
 
-    const pdfHtml = generatePDFHTML(tableName, items, laboratoryName || "", laboratoryEmail || "");
+    const pdfHtml = generatePDFHTML(tableName, items, laboratoryName || "");
     const pdfBase64 = btoa(unescape(encodeURIComponent(pdfHtml)));
 
     const emailPayload = {
@@ -169,7 +167,7 @@ serve(async (req) => {
   }
 });
 
-function generatePDFHTML(tableName: string, items: PriceItem[], laboratoryName: string, laboratoryEmail: string): string {
+function generatePDFHTML(tableName: string, items: PriceItem[], laboratoryName: string): string {
   const date = new Date().toLocaleDateString('pt-BR');
   
   const itemsHTML = items
@@ -350,10 +348,9 @@ function generatePDFHTML(tableName: string, items: PriceItem[], laboratoryName: 
       </table>
       </div>
       
-      ${laboratoryName || laboratoryEmail ? `
+      ${laboratoryName ? `
       <div class="notes">
-        ${laboratoryName ? `<p style="font-weight: 600; margin-bottom: 4px;">${laboratoryName}</p>` : ''}
-        ${laboratoryEmail ? `<p style="color: #3b82f6;">📧 ${laboratoryEmail}</p>` : ''}
+        <p>${laboratoryName}</p>
       </div>
       ` : ''}
     </body>
