@@ -37,6 +37,7 @@ export const PriceTableGenerator = () => {
   ]);
   const [tableName, setTableName] = useState("Tabela de Preços - Laboratório");
   const [laboratoryName, setLaboratoryName] = useState("");
+  const [laboratoryEmail, setLaboratoryEmail] = useState("");
   const [exporting, setExporting] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
@@ -50,12 +51,13 @@ export const PriceTableGenerator = () => {
 
         const { data, error } = await supabase
           .from("laboratory_info")
-          .select("lab_name")
+          .select("lab_name, email")
           .eq("user_id", user.id)
           .single();
 
         if (!error && data) {
           setLaboratoryName(data.lab_name);
+          setLaboratoryEmail(data.email);
         }
       } catch (error) {
         console.error("Error fetching laboratory info:", error);
@@ -319,6 +321,7 @@ export const PriceTableGenerator = () => {
           tableName,
           items: validItems,
           laboratoryName,
+          laboratoryEmail,
         },
       });
 
@@ -683,6 +686,7 @@ export const PriceTableGenerator = () => {
         tableName={tableName}
         items={items}
         laboratoryName={laboratoryName}
+        laboratoryEmail={laboratoryEmail}
       />
     </Card>
   );
