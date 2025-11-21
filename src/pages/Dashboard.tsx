@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import essenciaLogo from "@/assets/essencia-logo.jpg";
 import { 
   FileText, 
   DollarSign, 
@@ -181,19 +182,13 @@ const Dashboard = () => {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="w-6 h-6 text-primary-foreground"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-lg overflow-hidden">
+              <img 
+                src={essenciaLogo} 
+                alt="Essência dental-lab" 
+                className="h-full w-full object-cover"
+              />
             </div>
             <div>
               <h1 className="text-xl font-bold">Essência dental-lab</h1>
