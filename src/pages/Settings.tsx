@@ -229,15 +229,14 @@ const Settings = () => {
               </div>
             </div>
 
-            <a 
-              href="mailto:essenciadentallab@gmail.com"
-              className="block w-full"
+            <Button 
+              className="w-full gap-2" 
+              size="lg"
+              onClick={() => window.open('https://mail.google.com/mail/?view=cm&to=essenciadentallab@gmail.com', '_blank')}
             >
-              <Button className="w-full gap-2" size="lg">
-                <Send className="h-5 w-5" />
-                Enviar Email
-              </Button>
-            </a>
+              <Send className="h-5 w-5" />
+              Enviar Email
+            </Button>
 
             <Alert>
               <AlertDescription className="text-sm">
