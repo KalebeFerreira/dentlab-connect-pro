@@ -21,7 +21,9 @@ import {
   Sun,
   Table2,
   Calendar,
-  Search
+  Search,
+  Upload,
+  FileUp
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -54,6 +56,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [stats, setStats] = useState<OrderStats>({
     total: 0,
     pending: 0,
@@ -163,6 +166,60 @@ const Dashboard = () => {
       toast.error("Erro ao fazer logout", {
         description: error.message,
       });
+    }
+  };
+
+  const handleSTLUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.stl')) {
+      toast.error("Por favor, selecione um arquivo STL");
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 20MB");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/documents/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('laboratory-files')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('laboratory-files')
+        .getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase
+        .from("laboratory_documents")
+        .insert({
+          user_id: user.id,
+          file_name: file.name,
+          file_path: publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+          category: 'stl',
+        });
+
+      if (dbError) throw dbError;
+
+      toast.success("Arquivo STL enviado com sucesso!");
+      e.target.value = '';
+    } catch (error: any) {
+      toast.error("Erro ao enviar arquivo", { description: error.message });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -374,6 +431,58 @@ const Dashboard = () => {
             </Card>
           </div>
         </div>
+
+        {/* Upload Rápido STL */}
+        <Card className="mb-6 shadow-card hover:shadow-elevated transition-smooth">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <FileUp className="h-5 w-5 text-primary" />
+              Upload Rápido - Arquivo STL
+            </CardTitle>
+            <CardDescription className="text-xs md:text-sm">
+              Envie arquivos digitais STL diretamente para o laboratório
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex-1 text-xs md:text-sm text-muted-foreground">
+                Formatos aceitos: STL (máx. 20MB)
+              </div>
+              <label htmlFor="stl-upload" className="cursor-pointer">
+                <Button 
+                  type="button" 
+                  variant="default" 
+                  disabled={uploading}
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  asChild
+                >
+                  <span>
+                    {uploading ? (
+                      <>
+                        <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-5 w-5 mr-2" />
+                        Selecionar Arquivo
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </label>
+              <input
+                id="stl-upload"
+                type="file"
+                accept=".stl"
+                onChange={handleSTLUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
