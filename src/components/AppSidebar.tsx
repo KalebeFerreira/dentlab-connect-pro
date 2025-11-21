@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import essenciaLogo from "@/assets/essencia-logo.jpg";
 
 import {
   Sidebar,
@@ -63,8 +64,17 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r">
       <SidebarContent>
         <div className="p-3 md:p-4 border-b border-sidebar-border">
-          <h2 className="text-base md:text-lg font-bold text-sidebar-foreground">Essência dental-lab</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Gestão Odontológica</p>
+          <div className="flex items-center gap-3">
+            <img 
+              src={essenciaLogo} 
+              alt="Essência dental-lab" 
+              className="h-10 w-10 rounded-lg object-cover"
+            />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">Essência dental-lab</h2>
+              <p className="text-xs text-muted-foreground truncate">Gestão Odontológica</p>
+            </div>
+          </div>
         </div>
 
         <SidebarGroup>
