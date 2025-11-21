@@ -343,7 +343,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
           </Button>
         </div>
 
-        {!consolidatedMode ? (
+        {!consolidatedMode && !clientReportMode ? (
           <div className="flex flex-col md:flex-row gap-4">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-full md:w-[200px]">
@@ -360,7 +360,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
             {selectedMonth && (
               <div className="flex gap-2">
-                  <Button onClick={handleExportClientPDF} variant="outline">
+                  <Button onClick={handleExportPDF} variant="outline">
                     <FileDown className="h-4 w-4 mr-2" />
                     Exportar PDF
                   </Button>
@@ -397,7 +397,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
           </div>
         )}
 
-        {!consolidatedMode && selectedMonth && monthlyServices.length > 0 && (
+        {!consolidatedMode && !clientReportMode && selectedMonth && monthlyServices.length > 0 && (
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">Total do Mês</p>
@@ -668,7 +668,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                     </DialogContent>
                   </Dialog>
 
-                  <Button onClick={handleExportPDF} variant="outline">
+                  <Button onClick={handleExportClientPDF} variant="outline">
                     <FileDown className="h-4 w-4 mr-2" />
                     Exportar PDF
                   </Button>
