@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, User, Mail, CreditCard, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NotificationManager } from "@/components/NotificationManager";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -193,6 +194,9 @@ const Settings = () => {
             </Alert>
           </CardContent>
         </Card>
+
+        {/* Notificações Push */}
+        <NotificationManager />
 
         {/* Plano e Assinatura */}
         <Card>
