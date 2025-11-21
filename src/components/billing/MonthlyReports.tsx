@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileDown, FileSpreadsheet, MessageCircle, Mail } from "lucide-react";
+import { FileDown, FileSpreadsheet, MessageCircle, Mail, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,10 +25,22 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
+import { Badge } from "@/components/ui/badge";
 
 interface MonthlyReportsProps {
   services: Service[];
   companyInfo: CompanyInfo | null;
+}
+
+interface ReportHistoryItem {
+  id: string;
+  client_name: string;
+  month: string;
+  channel: 'whatsapp' | 'email';
+  recipient: string;
+  total_value: number;
+  services_count: number;
+  sent_at: string;
 }
 
 export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) => {
@@ -42,6 +54,8 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   const [clientPhone, setClientPhone] = useState<string>("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [reportHistory, setReportHistory] = useState<ReportHistoryItem[]>([]);
 
   const getAvailableMonths = () => {
     const months = new Set<string>();
@@ -243,7 +257,47 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
     0
   );
 
-  const handleSendWhatsApp = () => {
+  const saveReportHistory = async (channel: 'whatsapp' | 'email', recipient: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase.from('report_history').insert({
+        user_id: user.id,
+        client_name: selectedClient,
+        month: selectedClientMonth,
+        channel,
+        recipient,
+        total_value: totalClientMonth,
+        services_count: clientMonthlyServices.length
+      });
+    } catch (error) {
+      console.error('Erro ao salvar histórico:', error);
+    }
+  };
+
+  const loadReportHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('report_history')
+        .select('*')
+        .order('sent_at', { ascending: false });
+
+      if (error) throw error;
+      setReportHistory((data || []) as ReportHistoryItem[]);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      toast.error('Erro ao carregar histórico');
+    }
+  };
+
+  useEffect(() => {
+    if (showHistory) {
+      loadReportHistory();
+    }
+  }, [showHistory]);
+
+  const handleSendWhatsApp = async () => {
     if (!clientPhone) {
       toast.error("Por favor, insira o telefone do cliente");
       return;
@@ -261,8 +315,10 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
     const encodedMessage = encodeURIComponent(message);
     const cleanPhone = clientPhone.replace(/\D/g, '');
+    
+    await saveReportHistory('whatsapp', clientPhone);
     window.open(`https://wa.me/${cleanPhone}?text=${encodedMessage}`, '_blank');
-    toast.success("Abrindo WhatsApp...");
+    toast.success("Abrindo WhatsApp e salvando no histórico...");
   };
 
   const handleSendEmail = async () => {
@@ -285,13 +341,15 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
       if (error) throw error;
 
+      await saveReportHistory('email', clientEmail);
+
       // Aqui você poderia implementar o envio real do email
       // Por enquanto, vamos apenas abrir o cliente de email
       const subject = `Relatório Mensal - ${selectedClientMonth}`;
       const body = `Segue em anexo o relatório mensal de serviços.\n\nTotal: ${formatCurrency(totalClientMonth)}`;
       window.open(`mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
       
-      toast.success("Cliente de email aberto!");
+      toast.success("Cliente de email aberto e salvo no histórico!");
       setEmailDialogOpen(false);
     } catch (error) {
       console.error('Erro ao preparar email:', error);
@@ -307,41 +365,104 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Relatórios Mensais</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle>Relatórios Mensais</CardTitle>
           <Button
-            variant={!consolidatedMode && !clientReportMode ? "default" : "outline"}
-            onClick={() => {
-              setConsolidatedMode(false);
-              setClientReportMode(false);
-            }}
+            variant="outline"
             size="sm"
+            onClick={() => setShowHistory(!showHistory)}
           >
-            Mensal
-          </Button>
-          <Button
-            variant={consolidatedMode ? "default" : "outline"}
-            onClick={() => {
-              setConsolidatedMode(true);
-              setClientReportMode(false);
-            }}
-            size="sm"
-          >
-            Consolidado
-          </Button>
-          <Button
-            variant={clientReportMode ? "default" : "outline"}
-            onClick={() => {
-              setConsolidatedMode(false);
-              setClientReportMode(true);
-            }}
-            size="sm"
-          >
-            Por Cliente
+            <History className="h-4 w-4 mr-2" />
+            {showHistory ? "Ocultar Histórico" : "Ver Histórico"}
           </Button>
         </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {showHistory ? (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Histórico de Envios</h3>
+            {reportHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum envio registrado ainda.
+              </p>
+            ) : (
+              <ScrollArea className="w-full rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data/Hora</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Período</TableHead>
+                      <TableHead>Canal</TableHead>
+                      <TableHead>Destinatário</TableHead>
+                      <TableHead>Serviços</TableHead>
+                      <TableHead>Valor Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reportHistory.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {new Date(item.sent_at).toLocaleString("pt-BR")}
+                        </TableCell>
+                        <TableCell>{item.client_name}</TableCell>
+                        <TableCell>{item.month}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.channel === 'whatsapp' ? 'default' : 'secondary'}>
+                            {item.channel === 'whatsapp' ? (
+                              <><MessageCircle className="h-3 w-3 mr-1" /> WhatsApp</>
+                            ) : (
+                              <><Mail className="h-3 w-3 mr-1" /> Email</>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{item.recipient}</TableCell>
+                        <TableCell>{item.services_count}</TableCell>
+                        <TableCell className="font-semibold">
+                          {formatCurrency(Number(item.total_value))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Button
+                variant={!consolidatedMode && !clientReportMode ? "default" : "outline"}
+                onClick={() => {
+                  setConsolidatedMode(false);
+                  setClientReportMode(false);
+                }}
+                size="sm"
+              >
+                Mensal
+              </Button>
+              <Button
+                variant={consolidatedMode ? "default" : "outline"}
+                onClick={() => {
+                  setConsolidatedMode(true);
+                  setClientReportMode(false);
+                }}
+                size="sm"
+              >
+                Consolidado
+              </Button>
+              <Button
+                variant={clientReportMode ? "default" : "outline"}
+                onClick={() => {
+                  setConsolidatedMode(false);
+                  setClientReportMode(true);
+                }}
+                size="sm"
+              >
+                Por Cliente
+              </Button>
+            </div>
 
         {!consolidatedMode && !clientReportMode ? (
           <div className="flex flex-col md:flex-row gap-4">
@@ -742,6 +863,8 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
           <p className="text-center text-muted-foreground py-8">
             Nenhum serviço encontrado para os meses selecionados.
           </p>
+        )}
+          </>
         )}
       </CardContent>
     </Card>

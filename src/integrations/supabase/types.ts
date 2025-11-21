@@ -611,6 +611,45 @@ export type Database = {
         }
         Relationships: []
       }
+      report_history: {
+        Row: {
+          channel: string
+          client_name: string
+          created_at: string
+          id: string
+          month: string
+          recipient: string
+          sent_at: string
+          services_count: number
+          total_value: number
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          client_name: string
+          created_at?: string
+          id?: string
+          month: string
+          recipient: string
+          sent_at?: string
+          services_count: number
+          total_value: number
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          client_name?: string
+          created_at?: string
+          id?: string
+          month?: string
+          recipient?: string
+          sent_at?: string
+          services_count?: number
+          total_value?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           client_name: string | null
