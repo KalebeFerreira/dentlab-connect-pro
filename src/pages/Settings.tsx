@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon } from "lucide-react";
+import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NotificationManager } from "@/components/NotificationManager";
 import {
@@ -229,6 +229,16 @@ const Settings = () => {
               </div>
             </div>
 
+            <a 
+              href="mailto:essenciadentallab@gmail.com"
+              className="block w-full"
+            >
+              <Button className="w-full gap-2" size="lg">
+                <Send className="h-5 w-5" />
+                Enviar Email
+              </Button>
+            </a>
+
             <Alert>
               <AlertDescription className="text-sm">
                 Tempo médio de resposta: 24-48 horas úteis
@@ -252,7 +262,11 @@ const Settings = () => {
                 <p className="font-medium text-foreground">{currentPlan}</p>
                 <p className="text-sm text-muted-foreground">Status: Ativo</p>
               </div>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/planos")}
+              >
                 Fazer Upgrade
               </Button>
             </div>
