@@ -8,7 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { FileDown, FileSpreadsheet, MessageCircle, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import {
   Table,
@@ -31,6 +35,13 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [consolidatedMode, setConsolidatedMode] = useState(false);
+  const [clientReportMode, setClientReportMode] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedClientMonth, setSelectedClientMonth] = useState<string>("");
+  const [clientEmail, setClientEmail] = useState<string>("");
+  const [clientPhone, setClientPhone] = useState<string>("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   const getAvailableMonths = () => {
     const months = new Set<string>();
@@ -180,7 +191,92 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
     XLSX.writeFile(workbook, `relatorio_mensal_${selectedMonth}.xlsx`);
   };
 
+  const getAvailableClients = () => {
+    const clients = new Set<string>();
+    services.forEach((service) => {
+      if (service.client_name) {
+        clients.add(service.client_name);
+      }
+    });
+    return Array.from(clients).sort();
+  };
+
+  const getClientMonthlyServices = () => {
+    if (!selectedClient || !selectedClientMonth) return [];
+    
+    return services.filter((service) => {
+      const date = new Date(service.service_date);
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      return service.client_name === selectedClient && monthYear === selectedClientMonth;
+    });
+  };
+
+  const clientMonthlyServices = getClientMonthlyServices();
+  const totalClientMonth = clientMonthlyServices.reduce(
+    (sum, service) => sum + Number(service.service_value),
+    0
+  );
+
+  const handleSendWhatsApp = () => {
+    if (!clientPhone) {
+      toast.error("Por favor, insira o telefone do cliente");
+      return;
+    }
+
+    const message = `Olá! Segue o relatório mensal de serviços:\n\n` +
+      `*Cliente:* ${selectedClient}\n` +
+      `*Período:* ${selectedClientMonth}\n` +
+      `*Total de Serviços:* ${clientMonthlyServices.length}\n` +
+      `*Valor Total:* ${formatCurrency(totalClientMonth)}\n\n` +
+      `*Detalhamento:*\n` +
+      clientMonthlyServices.map((service, idx) => 
+        `${idx + 1}. ${service.service_name} - ${formatCurrency(Number(service.service_value))} - ${new Date(service.service_date).toLocaleDateString("pt-BR")}`
+      ).join('\n');
+
+    const encodedMessage = encodeURIComponent(message);
+    const cleanPhone = clientPhone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedMessage}`, '_blank');
+    toast.success("Abrindo WhatsApp...");
+  };
+
+  const handleSendEmail = async () => {
+    if (!clientEmail) {
+      toast.error("Por favor, insira o email do cliente");
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
+        body: {
+          services: clientMonthlyServices,
+          companyInfo,
+          totalValue: totalClientMonth,
+          month: selectedClientMonth,
+          clientName: selectedClient
+        }
+      });
+
+      if (error) throw error;
+
+      // Aqui você poderia implementar o envio real do email
+      // Por enquanto, vamos apenas abrir o cliente de email
+      const subject = `Relatório Mensal - ${selectedClientMonth}`;
+      const body = `Segue em anexo o relatório mensal de serviços.\n\nTotal: ${formatCurrency(totalClientMonth)}`;
+      window.open(`mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+      
+      toast.success("Cliente de email aberto!");
+      setEmailDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao preparar email:', error);
+      toast.error('Erro ao preparar email');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const availableMonths = getAvailableMonths();
+  const availableClients = getAvailableClients();
 
   return (
     <Card>
@@ -188,20 +284,36 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
         <CardTitle>Relatórios Mensais</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           <Button
-            variant={!consolidatedMode ? "default" : "outline"}
-            onClick={() => setConsolidatedMode(false)}
+            variant={!consolidatedMode && !clientReportMode ? "default" : "outline"}
+            onClick={() => {
+              setConsolidatedMode(false);
+              setClientReportMode(false);
+            }}
             size="sm"
           >
             Mensal
           </Button>
           <Button
             variant={consolidatedMode ? "default" : "outline"}
-            onClick={() => setConsolidatedMode(true)}
+            onClick={() => {
+              setConsolidatedMode(true);
+              setClientReportMode(false);
+            }}
             size="sm"
           >
             Consolidado
+          </Button>
+          <Button
+            variant={clientReportMode ? "default" : "outline"}
+            onClick={() => {
+              setConsolidatedMode(false);
+              setClientReportMode(true);
+            }}
+            size="sm"
+          >
+            Por Cliente
           </Button>
         </div>
 
@@ -408,7 +520,193 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
           </div>
         )}
 
-        {!consolidatedMode && selectedMonth && monthlyServices.length === 0 && (
+        {clientReportMode && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Cliente</Label>
+                <Select value={selectedClient} onValueChange={setSelectedClient}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableClients.map((client) => (
+                      <SelectItem key={client} value={client}>
+                        {client}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Mês</Label>
+                <Select value={selectedClientMonth} onValueChange={setSelectedClientMonth}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map((month) => (
+                      <SelectItem key={month} value={month}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {selectedClient && selectedClientMonth && clientMonthlyServices.length > 0 && (
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cliente</p>
+                      <p className="text-lg font-semibold">{selectedClient}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Período</p>
+                      <p className="text-lg font-semibold">{selectedClientMonth}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-sm text-muted-foreground">Total do Período</p>
+                    <p className="text-2xl font-bold">{formatCurrency(totalClientMonth)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{clientMonthlyServices.length} serviços</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Mail className="h-4 w-4 mr-2" />
+                        Enviar por Email
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Enviar Relatório por Email</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label htmlFor="client-email">Email do Cliente</Label>
+                          <Input
+                            id="client-email"
+                            type="email"
+                            placeholder="cliente@email.com"
+                            value={clientEmail}
+                            onChange={(e) => setClientEmail(e.target.value)}
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleSendEmail} 
+                          disabled={sendingEmail}
+                          className="w-full"
+                        >
+                          {sendingEmail ? "Enviando..." : "Enviar Email"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Enviar por WhatsApp
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Enviar Relatório por WhatsApp</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label htmlFor="client-phone">Telefone do Cliente</Label>
+                          <Input
+                            id="client-phone"
+                            type="tel"
+                            placeholder="(00) 00000-0000"
+                            value={clientPhone}
+                            onChange={(e) => setClientPhone(e.target.value)}
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleSendWhatsApp}
+                          className="w-full"
+                        >
+                          Abrir WhatsApp
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button onClick={handleExportPDF} variant="outline">
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportar PDF
+                  </Button>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                  {clientMonthlyServices.map((service) => (
+                    <Card key={service.id} className="p-4">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-sm">{service.service_name}</h3>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Valor:</span>
+                            <span className="font-semibold text-primary">
+                              {formatCurrency(Number(service.service_value))}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Data:</span>
+                            <span>{new Date(service.service_date).toLocaleDateString("pt-BR")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <ScrollArea className="hidden md:block w-full rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Serviço</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Data</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clientMonthlyServices.map((service) => (
+                        <TableRow key={service.id}>
+                          <TableCell>{service.service_name}</TableCell>
+                          <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
+                          <TableCell>
+                            {new Date(service.service_date).toLocaleDateString("pt-BR")}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+              </div>
+            )}
+
+            {selectedClient && selectedClientMonth && clientMonthlyServices.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum serviço encontrado para este cliente neste período.
+              </p>
+            )}
+          </div>
+        )}
+
+        {!consolidatedMode && !clientReportMode && selectedMonth && monthlyServices.length === 0 && (
           <p className="text-center text-muted-foreground py-8">
             Nenhum serviço encontrado para este mês.
           </p>
