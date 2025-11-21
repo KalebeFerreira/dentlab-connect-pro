@@ -93,10 +93,6 @@ export const priceTableSchema = z.object({
     .trim()
     .min(1, { message: "Nome da tabela é obrigatório" })
     .max(200, { message: "Nome da tabela deve ter no máximo 200 caracteres" }),
-  notes: z.string()
-    .trim()
-    .max(1000, { message: "Notas devem ter no máximo 1000 caracteres" })
-    .optional(),
   items: z.array(priceTableItemSchema)
     .min(1, { message: "Adicione pelo menos um item" })
     .max(100, { message: "Máximo de 100 itens por tabela" }),

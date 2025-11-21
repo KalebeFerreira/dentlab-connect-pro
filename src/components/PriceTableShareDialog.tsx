@@ -21,7 +21,7 @@ interface PriceTableShareDialogProps {
   onOpenChange: (open: boolean) => void;
   tableName: string;
   items: PriceItem[];
-  notes: string;
+  laboratoryName: string;
 }
 
 export const PriceTableShareDialog = ({
@@ -29,7 +29,7 @@ export const PriceTableShareDialog = ({
   onOpenChange,
   tableName,
   items,
-  notes,
+  laboratoryName,
 }: PriceTableShareDialogProps) => {
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -58,7 +58,7 @@ export const PriceTableShareDialog = ({
           to: email,
           tableName,
           items: validItems,
-          notes: notes || undefined,
+          laboratoryName: laboratoryName || undefined,
           message: message || undefined,
         },
       });
@@ -115,8 +115,8 @@ export const PriceTableShareDialog = ({
       whatsappMessage += `   💰 R$ ${formattedPrice}\n\n`;
     });
 
-    if (notes) {
-      whatsappMessage += `\n📌 *Observações:*\n${notes}\n`;
+    if (laboratoryName) {
+      whatsappMessage += `\n📌 *${laboratoryName}*\n`;
     }
 
     whatsappMessage += `\n_Tabela gerada em ${new Date().toLocaleDateString('pt-BR')}_`;

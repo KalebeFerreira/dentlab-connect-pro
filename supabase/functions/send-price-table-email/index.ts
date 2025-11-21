@@ -18,7 +18,7 @@ interface EmailRequest {
   to: string;
   tableName: string;
   items: PriceItem[];
-  notes?: string;
+  laboratoryName?: string;
   message?: string;
 }
 
@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, tableName, items, notes, message }: EmailRequest = await req.json();
+    const { to, tableName, items, laboratoryName, message }: EmailRequest = await req.json();
 
     console.log('Sending price table email to:', to);
     console.log('Table name:', tableName);
@@ -103,11 +103,10 @@ serve(async (req) => {
             </table>
           </div>
 
-          ${notes ? `
+          ${laboratoryName ? `
           <div style="padding: 20px; background: #f8f9fa; border-top: 1px solid #e5e7eb;">
             <div style="border-left: 4px solid #3b82f6; padding: 12px 16px; background: white; border-radius: 4px;">
-              <strong style="color: #1f2937; font-size: 13px; display: block; margin-bottom: 6px;">Observações:</strong>
-              <p style="color: #4b5563; font-size: 12px; line-height: 1.5; margin: 0;">${notes}</p>
+              <p style="color: #1f2937; font-size: 14px; line-height: 1.5; margin: 0; font-weight: 600;">${laboratoryName}</p>
             </div>
           </div>
           ` : ''}
@@ -116,7 +115,7 @@ serve(async (req) => {
       </html>
     `;
 
-    const pdfHtml = generatePDFHTML(tableName, items, notes || "");
+    const pdfHtml = generatePDFHTML(tableName, items, laboratoryName || "");
     const pdfBase64 = btoa(unescape(encodeURIComponent(pdfHtml)));
 
     const emailPayload = {
@@ -168,7 +167,7 @@ serve(async (req) => {
   }
 });
 
-function generatePDFHTML(tableName: string, items: PriceItem[], notes: string): string {
+function generatePDFHTML(tableName: string, items: PriceItem[], laboratoryName: string): string {
   const date = new Date().toLocaleDateString('pt-BR');
   
   const itemsHTML = items
@@ -346,17 +345,14 @@ function generatePDFHTML(tableName: string, items: PriceItem[], notes: string): 
           <tbody>
             ${itemsHTML}
           </tbody>
-        </table>
+      </table>
       </div>
       
-      <div class="footer">
-        ${notes ? `
-        <div class="notes">
-          <strong>Observações:</strong>
-          <p>${notes}</p>
-        </div>
-        ` : ''}
+      ${laboratoryName ? `
+      <div class="notes">
+        <p>${laboratoryName}</p>
       </div>
+      ` : ''}
     </body>
     </html>
   `;
