@@ -127,7 +127,33 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
       }
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
-      alert('Erro ao gerar relatório. Tente novamente.');
+      toast.error('Erro ao gerar relatório');
+    }
+  };
+
+  const handleExportClientPDF = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
+        body: {
+          services: clientMonthlyServices,
+          companyInfo,
+          totalValue: totalClientMonth,
+          month: selectedClientMonth,
+          clientName: selectedClient
+        }
+      });
+
+      if (error) throw error;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar relatório do cliente:', error);
+      toast.error('Erro ao gerar relatório do cliente');
     }
   };
 
@@ -154,7 +180,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
       }
     } catch (error) {
       console.error('Erro ao gerar relatório consolidado:', error);
-      alert('Erro ao gerar relatório consolidado. Tente novamente.');
+      toast.error('Erro ao gerar relatório consolidado');
     }
   };
 
@@ -334,10 +360,10 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
             {selectedMonth && (
               <div className="flex gap-2">
-                <Button onClick={handleExportPDF} variant="outline">
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Exportar PDF
-                </Button>
+                  <Button onClick={handleExportClientPDF} variant="outline">
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportar PDF
+                  </Button>
                 <Button onClick={handleExportExcel} variant="outline">
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Exportar Excel
