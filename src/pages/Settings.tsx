@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, User, Mail, CreditCard, AlertTriangle } from "lucide-react";
+import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NotificationManager } from "@/components/NotificationManager";
 import {
@@ -197,6 +197,45 @@ const Settings = () => {
 
         {/* Notificações Push */}
         <NotificationManager />
+
+        {/* Suporte e Atendimento */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HeadphonesIcon className="h-5 w-5" />
+              Suporte e Atendimento
+            </CardTitle>
+            <CardDescription>Entre em contato conosco para qualquer dúvida ou suporte</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground mb-1">Email de Atendimento</p>
+                  <a 
+                    href="mailto:essenciadentallab@gmail.com"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    essenciadentallab@gmail.com
+                  </a>
+                </div>
+              </div>
+              
+              <div className="pt-3 border-t">
+                <p className="text-xs text-muted-foreground">
+                  Nossa equipe está pronta para ajudar você. Envie suas dúvidas, sugestões ou problemas técnicos para nosso email de atendimento.
+                </p>
+              </div>
+            </div>
+
+            <Alert>
+              <AlertDescription className="text-sm">
+                Tempo médio de resposta: 24-48 horas úteis
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
 
         {/* Plano e Assinatura */}
         <Card>
