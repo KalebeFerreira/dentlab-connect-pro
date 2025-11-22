@@ -181,14 +181,24 @@ serve(async (req) => {
 
     console.log('Enviando email para:', clientEmail);
 
+    // Usar o email da empresa como remetente
+    const fromEmail = companyInfo?.email || "onboarding@resend.dev";
+    const fromName = companyInfo?.company_name || "Relatórios";
+
     const emailResponse = await resend.emails.send({
-      from: "Relatórios <onboarding@resend.dev>",
+      from: `${fromName} <${fromEmail}>`,
       to: [clientEmail],
       subject: `Relatório Mensal - ${clientName} - ${month}`,
       html: html,
     });
 
-    console.log('Email enviado com sucesso:', emailResponse);
+    console.log('Resposta do Resend:', emailResponse);
+
+    // Verificar se houve erro do Resend
+    if (emailResponse.error) {
+      console.error('Erro do Resend:', emailResponse.error);
+      throw new Error(emailResponse.error.message || 'Erro ao enviar email pelo Resend');
+    }
 
     return new Response(
       JSON.stringify({ 
