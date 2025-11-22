@@ -11,12 +11,17 @@ import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/SignaturePad";
 import { orderFormSchema } from "@/lib/validationSchemas";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { FreemiumBanner } from "@/components/FreemiumBanner";
 
 const NewOrder = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const limits = useFreemiumLimits();
 
   useEffect(() => {
     checkAuth();
@@ -38,6 +43,13 @@ const NewOrder = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Check freemium limits
+    if (!limits.canCreateOrder && !limits.isSubscribed) {
+      setUpgradeDialogOpen(true);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -153,6 +165,15 @@ const NewOrder = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-3xl">
+        {!limits.loading && !limits.isSubscribed && (
+          <FreemiumBanner
+            feature="pedidos por mês"
+            currentUsage={limits.orders?.current || 0}
+            limit={limits.orders?.limit || 10}
+            percentage={limits.orders?.percentage || 0}
+          />
+        )}
+
         <form onSubmit={handleSubmit}>
           <Card className="shadow-card">
             <CardHeader>
@@ -307,6 +328,15 @@ const NewOrder = () => {
             </CardContent>
           </Card>
         </form>
+
+        <UpgradeDialog
+          open={upgradeDialogOpen}
+          onOpenChange={setUpgradeDialogOpen}
+          feature="pedidos por mês"
+          currentUsage={limits.orders?.current || 0}
+          limit={limits.orders?.limit || 10}
+          percentage={limits.orders?.percentage || 0}
+        />
       </main>
     </div>
   );

@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { Loader2, Sparkles, Download, Crown } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { FreemiumBanner } from "@/components/FreemiumBanner";
 
 const DENTAL_TEMPLATES = [
   {
@@ -59,10 +62,18 @@ export const DentalImageGenerator = () => {
   const [color, setColor] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState<number | null>(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const limits = useFreemiumLimits();
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error("Por favor, descreva o trabalho dental");
+      return;
+    }
+
+    // Check freemium limits
+    if (!limits.canGenerateImage && !limits.isSubscribed) {
+      setUpgradeDialogOpen(true);
       return;
     }
 
@@ -134,6 +145,15 @@ export const DentalImageGenerator = () => {
 
   return (
     <div className="space-y-6">
+      {!limits.loading && !limits.isSubscribed && (
+        <FreemiumBanner
+          feature="gerações de imagem IA por mês"
+          currentUsage={limits.imageGenerations?.current || 0}
+          limit={limits.imageGenerations?.limit || 5}
+          percentage={limits.imageGenerations?.percentage || 0}
+        />
+      )}
+
       {!subLoading && (
         <Card className={subscribed ? "bg-primary/5 border-primary/20" : "bg-muted/50"}>
           <CardHeader>
@@ -304,6 +324,15 @@ export const DentalImageGenerator = () => {
           </CardContent>
         </Card>
       )}
+
+      <UpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+        feature="gerações de imagem IA por mês"
+        currentUsage={limits.imageGenerations?.current || 0}
+        limit={limits.imageGenerations?.limit || 5}
+        percentage={limits.imageGenerations?.percentage || 0}
+      />
     </div>
   );
 };
