@@ -342,6 +342,12 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
       if (error) throw error;
 
+      // Verificar se o Resend retornou erro
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
       await saveReportHistory('email', clientEmail);
       
       toast.success("Email enviado com sucesso!");
@@ -349,7 +355,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
       setClientEmail("");
     } catch (error) {
       console.error('Erro ao enviar email:', error);
-      toast.error('Erro ao enviar email. Verifique o endereço de email.');
+      toast.error('Erro ao enviar email. Verifique se seu domínio está verificado no Resend.');
     } finally {
       setSendingEmail(false);
     }
