@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send } from "lucide-react";
+import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send, BarChart3 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NotificationManager } from "@/components/NotificationManager";
+import { FreemiumUsageDashboard } from "@/components/FreemiumUsageDashboard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,7 +120,19 @@ const Settings = () => {
         <p className="text-muted-foreground">Gerencie suas preferências e informações pessoais</p>
       </div>
 
-      <div className="space-y-6">
+      <Tabs defaultValue="account" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="account" className="gap-2">
+            <User className="h-4 w-4" />
+            Conta
+          </TabsTrigger>
+          <TabsTrigger value="usage" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Uso e Limites
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="account" className="space-y-6">
         {/* Informações do Perfil */}
         <Card>
           <CardHeader>
@@ -340,7 +354,12 @@ const Settings = () => {
             </AlertDialog>
           </CardContent>
         </Card>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="usage">
+          <FreemiumUsageDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
