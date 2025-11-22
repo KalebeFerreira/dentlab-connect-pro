@@ -11,6 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { MessageHistory } from "@/components/MessageHistory";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { FreemiumBanner } from "@/components/FreemiumBanner";
 
 interface Patient {
   id: string;
@@ -32,6 +35,8 @@ const Patients = () => {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const limits = useFreemiumLimits();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -72,6 +77,14 @@ const Patients = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check freemium limits only for new patients
+    if (!editingPatient && !limits.canCreatePatient && !limits.isSubscribed) {
+      setDialogOpen(false);
+      setUpgradeDialogOpen(true);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -168,6 +181,15 @@ const Patients = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {!limits.loading && !limits.isSubscribed && (
+        <FreemiumBanner
+          feature="clientes cadastrados"
+          currentUsage={limits.patients?.current || 0}
+          limit={limits.patients?.limit || 10}
+          percentage={limits.patients?.percentage || 0}
+        />
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Pacientes</h1>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -341,6 +363,15 @@ const Patients = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <UpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+        feature="clientes cadastrados"
+        currentUsage={limits.patients?.current || 0}
+        limit={limits.patients?.limit || 10}
+        percentage={limits.patients?.percentage || 0}
+      />
     </div>
   );
 };
