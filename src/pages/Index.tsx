@@ -144,7 +144,7 @@ const Index = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-4xl">
             <div className="mb-12 text-center animate-fade-in">
@@ -207,7 +207,7 @@ const Index = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="mb-16 text-center animate-fade-in">
             <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
@@ -223,9 +223,9 @@ const Index = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <CardContent className="p-6">
-                  <p className="mb-4 text-lg italic text-foreground">"{testimonial.text}"</p>
+                  <p className="mb-4 text-lg italic text-card-foreground">"{testimonial.text}"</p>
                   <div>
-                    <p className="font-semibold text-foreground">{testimonial.name}</p>
+                    <p className="font-semibold text-card-foreground">{testimonial.name}</p>
                     <p className="text-sm text-primary">{testimonial.role}</p>
                   </div>
                 </CardContent>
