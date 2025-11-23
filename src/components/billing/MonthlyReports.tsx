@@ -121,6 +121,16 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   };
 
   const handleExportPDF = async () => {
+    if (!companyInfo) {
+      toast.error("Informações da empresa não encontradas. Configure em 'Informações da Empresa'");
+      return;
+    }
+
+    if (monthlyServices.length === 0) {
+      toast.error("Nenhum serviço encontrado para este mês");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
         body: {
@@ -133,19 +143,35 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
       if (error) throw error;
 
+      if (!data || !data.html) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(data.html);
         printWindow.document.close();
         printWindow.print();
       }
-    } catch (error) {
+      toast.success('PDF gerado com sucesso!');
+    } catch (error: any) {
       console.error('Erro ao gerar relatório:', error);
-      toast.error('Erro ao gerar relatório');
+      const errorMessage = error?.message || 'Erro desconhecido ao gerar relatório';
+      toast.error(errorMessage);
     }
   };
 
   const handleExportClientPDF = async () => {
+    if (!companyInfo) {
+      toast.error("Informações da empresa não encontradas. Configure em 'Informações da Empresa'");
+      return;
+    }
+
+    if (clientMonthlyServices.length === 0) {
+      toast.error("Nenhum serviço encontrado para este cliente no mês selecionado");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
         body: {
@@ -159,19 +185,40 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
       if (error) throw error;
 
+      if (!data || !data.html) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(data.html);
         printWindow.document.close();
         printWindow.print();
       }
-    } catch (error) {
+      toast.success('PDF do cliente gerado com sucesso!');
+    } catch (error: any) {
       console.error('Erro ao gerar relatório do cliente:', error);
-      toast.error('Erro ao gerar relatório do cliente');
+      const errorMessage = error?.message || 'Erro desconhecido ao gerar relatório do cliente';
+      toast.error(errorMessage);
     }
   };
 
   const handleExportConsolidatedPDF = async () => {
+    if (!companyInfo) {
+      toast.error("Informações da empresa não encontradas. Configure em 'Informações da Empresa'");
+      return;
+    }
+
+    if (selectedMonths.length === 0) {
+      toast.error("Selecione pelo menos um mês para o relatório consolidado");
+      return;
+    }
+
+    if (consolidatedServices.length === 0) {
+      toast.error("Nenhum serviço encontrado para os meses selecionados");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-monthly-report-pdf', {
         body: {
@@ -186,49 +233,66 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
       if (error) throw error;
 
+      if (!data || !data.html) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(data.html);
         printWindow.document.close();
         printWindow.print();
       }
-    } catch (error) {
+      toast.success('PDF consolidado gerado com sucesso!');
+    } catch (error: any) {
       console.error('Erro ao gerar relatório consolidado:', error);
-      toast.error('Erro ao gerar relatório consolidado');
+      const errorMessage = error?.message || 'Erro desconhecido ao gerar relatório consolidado';
+      toast.error(errorMessage);
     }
   };
 
   const handleExportExcel = () => {
-    const worksheetData = [
-      ['Relatório Mensal de Serviços'],
-      [`Mês: ${selectedMonth}`],
-      [`Total: ${formatCurrency(totalMonth)}`],
-      [],
-      ['Serviço', 'Cliente', 'Valor', 'Data'],
-      ...monthlyServices.map(service => [
-        service.service_name,
-        service.client_name || '-',
-        Number(service.service_value),
-        new Date(service.service_date).toLocaleDateString('pt-BR')
-      ]),
-      [],
-      ['TOTAL', '', totalMonth, '']
-    ];
+    if (monthlyServices.length === 0) {
+      toast.error("Nenhum serviço encontrado para este mês");
+      return;
+    }
 
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    
-    // Define largura das colunas
-    worksheet['!cols'] = [
-      { wch: 30 }, // Serviço
-      { wch: 20 }, // Cliente
-      { wch: 15 }, // Valor
-      { wch: 12 }  // Data
-    ];
+    try {
+      const worksheetData = [
+        ['Relatório Mensal de Serviços'],
+        [`Mês: ${selectedMonth}`],
+        [`Total: ${formatCurrency(totalMonth)}`],
+        [],
+        ['Serviço', 'Cliente', 'Valor', 'Data'],
+        ...monthlyServices.map(service => [
+          service.service_name,
+          service.client_name || '-',
+          Number(service.service_value),
+          new Date(service.service_date).toLocaleDateString('pt-BR')
+        ]),
+        [],
+        ['TOTAL', '', totalMonth, '']
+      ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Mensal');
-    
-    XLSX.writeFile(workbook, `relatorio_mensal_${selectedMonth}.xlsx`);
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      
+      // Define largura das colunas
+      worksheet['!cols'] = [
+        { wch: 30 }, // Serviço
+        { wch: 20 }, // Cliente
+        { wch: 15 }, // Valor
+        { wch: 12 }  // Data
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Mensal');
+      
+      XLSX.writeFile(workbook, `relatorio_mensal_${selectedMonth.replace(/\//g, '-')}.xlsx`);
+      toast.success('Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      toast.error('Erro ao exportar Excel');
+    }
   };
 
   const getAvailableClients = () => {

@@ -68,6 +68,16 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
       return;
     }
 
+    if (!companyInfo) {
+      toast.error("Informações da empresa não encontradas. Configure em 'Informações da Empresa'");
+      return;
+    }
+
+    if (clientServices.length === 0) {
+      toast.error("Nenhum serviço encontrado para este cliente");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
         body: {
@@ -104,9 +114,10 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
       }
       
       toast.success('PDF gerado com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar PDF. Verifique se há serviços para o cliente.');
+      const errorMessage = error?.message || 'Erro desconhecido ao gerar PDF';
+      toast.error(errorMessage);
     }
   };
 
@@ -120,34 +131,45 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
   };
 
   const handleExportExcel = () => {
-    const worksheetData = [
-      ['Relatório de Cliente'],
-      [`Cliente: ${selectedClient}`],
-      [`Total: ${formatCurrency(totalClient)}`],
-      [],
-      ['Serviço', 'Valor', 'Data'],
-      ...clientServices.map(service => [
-        service.service_name,
-        Number(service.service_value),
-        new Date(service.service_date).toLocaleDateString('pt-BR')
-      ]),
-      [],
-      ['TOTAL', totalClient, '']
-    ];
+    if (clientServices.length === 0) {
+      toast.error("Nenhum serviço encontrado para este cliente");
+      return;
+    }
 
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    
-    // Define largura das colunas
-    worksheet['!cols'] = [
-      { wch: 30 }, // Serviço
-      { wch: 15 }, // Valor
-      { wch: 12 }  // Data
-    ];
+    try {
+      const worksheetData = [
+        ['Relatório de Cliente'],
+        [`Cliente: ${selectedClient}`],
+        [`Total: ${formatCurrency(totalClient)}`],
+        [],
+        ['Serviço', 'Valor', 'Data'],
+        ...clientServices.map(service => [
+          service.service_name,
+          Number(service.service_value),
+          new Date(service.service_date).toLocaleDateString('pt-BR')
+        ]),
+        [],
+        ['TOTAL', totalClient, '']
+      ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Cliente');
-    
-    XLSX.writeFile(workbook, `relatorio_cliente_${selectedClient.replace(/\s+/g, '_')}.xlsx`);
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      
+      // Define largura das colunas
+      worksheet['!cols'] = [
+        { wch: 30 }, // Serviço
+        { wch: 15 }, // Valor
+        { wch: 12 }  // Data
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Cliente');
+      
+      XLSX.writeFile(workbook, `relatorio_cliente_${selectedClient.replace(/\s+/g, '_')}.xlsx`);
+      toast.success('Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      toast.error('Erro ao exportar Excel');
+    }
   };
 
   const availableClients = getAvailableClients();
