@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, FileText, LogOut, Bell, BellOff } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { LogOut, Bell, BellOff } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DentistAppointmentsList } from "@/components/clinic/DentistAppointmentsList";
+import { DentistMonthlyReport } from "@/components/clinic/DentistMonthlyReport";
 import { useAppointmentNotifications } from "@/hooks/useAppointmentNotifications";
 
 export default function DentistDashboard() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [dentistInfo, setDentistInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalAppointments: 0,
-    upcomingAppointments: 0,
-    totalEarnings: 0,
-  });
 
   const { permission, requestPermission } = useAppointmentNotifications(dentistInfo?.id || null);
 
@@ -64,25 +58,6 @@ export default function DentistDashboard() {
       const dentist = dentists[0];
 
       setDentistInfo(dentist);
-
-      // Get statistics
-      const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('dentist_id', dentist.id);
-
-      if (appointments) {
-        const now = new Date();
-        const upcoming = appointments.filter(apt => new Date(apt.appointment_date) > now);
-        const totalPayment = appointments.reduce((sum, apt) => sum + (apt.dentist_payment || 0), 0);
-
-        setStats({
-          totalAppointments: appointments.length,
-          upcomingAppointments: upcoming.length,
-          totalEarnings: totalPayment,
-        });
-      }
-
       setLoading(false);
     } catch (error) {
       console.error('Error checking dentist auth:', error);
@@ -133,59 +108,20 @@ export default function DentistDashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total de Agendamentos
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAppointments}</div>
-            <p className="text-xs text-muted-foreground">
-              Todos os agendamentos
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Próximos Agendamentos
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.upcomingAppointments}</div>
-            <p className="text-xs text-muted-foreground">
-              Agendamentos futuros
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total a Receber
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.totalEarnings.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Valor total dos procedimentos
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Appointments List */}
+      {/* Tabs for Appointments and Monthly Report */}
       {dentistInfo && (
-        <DentistAppointmentsList dentistId={dentistInfo.id} />
+        <Tabs defaultValue="appointments" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="appointments">Meus Agendamentos</TabsTrigger>
+            <TabsTrigger value="report">Relatório Mensal</TabsTrigger>
+          </TabsList>
+          <TabsContent value="appointments" className="space-y-4">
+            <DentistAppointmentsList dentistId={dentistInfo.id} />
+          </TabsContent>
+          <TabsContent value="report" className="space-y-4">
+            <DentistMonthlyReport dentistId={dentistInfo.id} />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
