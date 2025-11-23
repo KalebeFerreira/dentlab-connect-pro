@@ -262,18 +262,6 @@ serve(async (req) => {
   </div>
   ` : ''}
 
-  ${signatureDataUrl ? `
-  <div class="section">
-    <h2 class="section-title">Assinatura Digital</h2>
-    <div class="signature-container">
-      <img src="${signatureDataUrl}" alt="Assinatura" class="signature-image" />
-      <p style="margin-top: 10px; font-size: 13px; color: #666;">
-        Assinado por: ${order.dentist_name}
-      </p>
-    </div>
-  </div>
-  ` : ''}
-
   <div class="section">
     <h2 class="section-title">Informações Adicionais</h2>
     <div class="info-grid">
@@ -294,6 +282,20 @@ serve(async (req) => {
     <p>DentLab Connect - Sistema de Gestão de Ordens de Trabalho</p>
     <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
   </div>
+
+  ${signatureDataUrl ? `
+  <div style="margin-top: 60px; page-break-inside: avoid;">
+    <div class="section">
+      <h2 class="section-title">Assinatura Digital</h2>
+      <div class="signature-container">
+        <img src="${signatureDataUrl}" alt="Assinatura" class="signature-image" />
+        <p style="margin-top: 10px; font-size: 13px; color: #000;">
+          Assinado por: ${order.dentist_name}
+        </p>
+      </div>
+    </div>
+  </div>
+  ` : ''}
 </body>
 </html>
     `;

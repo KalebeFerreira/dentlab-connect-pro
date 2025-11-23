@@ -108,15 +108,17 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
         <p>${data.issueDate}</p>
       </div>
       
-      <div class="signature">
-        ${data.signatureUrl ? `
-          <div style="text-align: center; margin-bottom: 10px;">
-            <img src="${data.signatureUrl}" alt="Assinatura" style="max-width: 200px; max-height: 80px; border: 1px solid #ccc; padding: 5px; background: white;" />
+      <div style="margin-top: 100px; page-break-inside: avoid;">
+        <div class="signature">
+          ${data.signatureUrl ? `
+            <div style="text-align: center; margin-bottom: 10px;">
+              <img src="${data.signatureUrl}" alt="Assinatura" style="max-width: 200px; max-height: 80px; border: 1px solid #ccc; padding: 5px; background: white;" />
+            </div>
+          ` : ''}
+          <div class="signature-line">
+            <strong>${data.dentistName}</strong><br>
+            CRO: ${data.dentistCro}
           </div>
-        ` : ''}
-        <div class="signature-line">
-          <strong>${data.dentistName}</strong><br>
-          CRO: ${data.dentistCro}
         </div>
       </div>
     </body>
