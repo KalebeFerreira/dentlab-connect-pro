@@ -22,7 +22,7 @@ interface CertificateRequest {
   logoUrl?: string;
 }
 
-const generateCertificateHTML = (data: CertificateRequest): string => {
+const generateCertificateHTML = (data: CertificateRequest, signaturePosition: string = 'bottom'): string => {
   // Replace variables in custom text
   let contentText = data.customText || `
     Atesto para os devidos fins que o(a) paciente <strong>${data.patientName}</strong>${data.patientCpf ? `, CPF ${data.patientCpf},` : ""} 
@@ -40,6 +40,22 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
     .replace(/{days}/g, data.days)
     .replace(/{startDate}/g, new Date(data.startDate).toLocaleDateString('pt-BR'))
     .replace(/{endDate}/g, new Date(data.endDate).toLocaleDateString('pt-BR'));
+
+  const signatureBlock = `
+    <div style="margin-top: ${signaturePosition === 'top' ? '20px' : signaturePosition === 'middle' ? '60px' : '100px'}; page-break-inside: avoid;">
+      <div class="signature">
+        ${data.signatureUrl ? `
+          <div style="text-align: center; margin-bottom: 10px;">
+            <img src="${data.signatureUrl}" alt="Assinatura" style="max-width: 200px; max-height: 80px; border: 1px solid #ccc; padding: 5px; background: white;" />
+          </div>
+        ` : ''}
+        <div class="signature-line">
+          <strong>${data.dentistName}</strong><br>
+          CRO: ${data.dentistCro}
+        </div>
+      </div>
+    </div>
+  `;
 
   return `
     <!DOCTYPE html>
@@ -99,28 +115,20 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
         <div class="title">Atestado Odontológico</div>
       </div>
       
+      ${signaturePosition === 'top' ? signatureBlock : ''}
+      
       <div class="content">
         <p>${contentText}</p>
         ${data.observations ? `<p style="margin-top: 20px;"><strong>Observações:</strong> ${data.observations}</p>` : ''}
       </div>
       
+      ${signaturePosition === 'middle' ? signatureBlock : ''}
+      
       <div class="footer">
         <p>${data.issueDate}</p>
       </div>
       
-      <div style="margin-top: 100px; page-break-inside: avoid;">
-        <div class="signature">
-          ${data.signatureUrl ? `
-            <div style="text-align: center; margin-bottom: 10px;">
-              <img src="${data.signatureUrl}" alt="Assinatura" style="max-width: 200px; max-height: 80px; border: 1px solid #ccc; padding: 5px; background: white;" />
-            </div>
-          ` : ''}
-          <div class="signature-line">
-            <strong>${data.dentistName}</strong><br>
-            CRO: ${data.dentistCro}
-          </div>
-        </div>
-      </div>
+      ${signaturePosition === 'bottom' ? signatureBlock : ''}
     </body>
     </html>
   `;
@@ -149,7 +157,19 @@ serve(async (req) => {
     const certificateData: CertificateRequest = await req.json();
     console.log("Generating certificate for:", certificateData.patientName);
 
-    const html = generateCertificateHTML(certificateData);
+    // Get signature position preference from company_info
+    let signaturePosition = 'bottom';
+    const { data: companyInfo } = await supabase
+      .from('company_info')
+      .select('signature_position')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (companyInfo?.signature_position) {
+      signaturePosition = companyInfo.signature_position;
+    }
+
+    const html = generateCertificateHTML(certificateData, signaturePosition);
 
     console.log("Certificate HTML generated successfully");
 

@@ -115,6 +115,7 @@ export type Database = {
           id: string
           logo_url: string | null
           phone: string
+          signature_position: string | null
           updated_at: string
           user_id: string
         }
@@ -126,6 +127,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           phone: string
+          signature_position?: string | null
           updated_at?: string
           user_id: string
         }
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           phone?: string
+          signature_position?: string | null
           updated_at?: string
           user_id?: string
         }
