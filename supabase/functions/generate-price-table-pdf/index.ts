@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,69 @@ serve(async (req) => {
   }
 
   try {
+    // Get auth header from request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase clients
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = await createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const supabaseAdmin = await createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check subscription status
+    const { data: subscription } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('status, plan_name')
+      .eq('user_id', user.id)
+      .single();
+
+    const isSubscribed = subscription?.status === 'active' && subscription?.plan_name !== 'free';
+
+    // If not subscribed, check PDF generation limit
+    if (!isSubscribed) {
+      const { data: pdfUsage } = await supabaseAdmin.rpc(
+        'get_monthly_pdf_usage',
+        { p_user_id: user.id }
+      );
+
+      const PDF_LIMIT = 2;
+      if (pdfUsage >= PDF_LIMIT) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Limite de PDFs atingido',
+            message: `Você atingiu o limite de ${PDF_LIMIT} PDFs por mês do plano gratuito. Faça upgrade para gerar PDFs ilimitados.`
+          }),
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Increment PDF usage
+      await supabaseAdmin.rpc('increment_pdf_usage', { p_user_id: user.id });
+    }
+
     const { tableName, items, laboratoryName } = await req.json();
 
     console.log('Generating PDF for:', tableName);

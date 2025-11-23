@@ -122,7 +122,8 @@ export const FreemiumUsageDashboard = () => {
   const isOverLimit = !limits.isSubscribed && (
     !limits.canCreateOrder || 
     !limits.canCreatePatient || 
-    !limits.canGenerateImage
+    !limits.canGenerateImage ||
+    !limits.canGeneratePdf
   );
 
   return (
@@ -174,7 +175,7 @@ export const FreemiumUsageDashboard = () => {
       )}
 
       {/* Usage Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <UsageCard
           title="Pedidos"
           icon={<ShoppingCart className="h-5 w-5" />}
@@ -201,10 +202,21 @@ export const FreemiumUsageDashboard = () => {
           title="Gerações IA"
           icon={<Sparkles className="h-5 w-5" />}
           current={limits.imageGenerations?.current || 0}
-          limit={limits.imageGenerations?.limit || 5}
+          limit={limits.imageGenerations?.limit || 10}
           percentage={limits.imageGenerations?.percentage || 0}
           unit="por mês"
           description="Imagens geradas com IA"
+          isUnlimited={limits.isSubscribed}
+        />
+
+        <UsageCard
+          title="Relatórios PDF"
+          icon={<FileText className="h-5 w-5" />}
+          current={limits.pdfGenerations?.current || 0}
+          limit={limits.pdfGenerations?.limit || 2}
+          percentage={limits.pdfGenerations?.percentage || 0}
+          unit="por mês"
+          description="PDFs gerados no mês"
           isUnlimited={limits.isSubscribed}
         />
       </div>

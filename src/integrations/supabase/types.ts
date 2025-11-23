@@ -638,6 +638,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pdf_generation_usage: {
+        Row: {
+          count: number
+          created_at: string | null
+          id: string
+          month: number
+          updated_at: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          count?: number
+          created_at?: string | null
+          id?: string
+          month: number
+          updated_at?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          count?: number
+          created_at?: string | null
+          id?: string
+          month?: number
+          updated_at?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       price_tables: {
         Row: {
           created_at: string
@@ -842,6 +872,7 @@ export type Database = {
     }
     Functions: {
       get_monthly_image_usage: { Args: { p_user_id: string }; Returns: number }
+      get_monthly_pdf_usage: { Args: { p_user_id: string }; Returns: number }
       get_next_document_number: {
         Args: { p_document_type: string; p_user_id: string }
         Returns: string
@@ -855,6 +886,7 @@ export type Database = {
         Returns: boolean
       }
       increment_image_usage: { Args: { p_user_id: string }; Returns: number }
+      increment_pdf_usage: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "clinic" | "laboratory"
