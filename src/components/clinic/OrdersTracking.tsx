@@ -17,6 +17,10 @@ interface Order {
   status: string;
   delivery_date: string | null;
   created_at: string;
+  laboratory_id: string | null;
+  laboratory_info?: {
+    lab_name: string;
+  } | null;
 }
 
 export const OrdersTracking = () => {
@@ -35,7 +39,12 @@ export const OrdersTracking = () => {
 
       const { data, error } = await supabase
         .from("orders")
-        .select("*")
+        .select(`
+          *,
+          laboratory_info:laboratory_id (
+            lab_name
+          )
+        `)
         .eq("user_id", user.id)
         .in("status", ["pending", "in_production"])
         .order("created_at", { ascending: false })
@@ -117,6 +126,11 @@ export const OrdersTracking = () => {
                     )}
                   </div>
                   <p className="text-sm font-medium">{order.work_type}</p>
+                  {order.laboratory_info && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Lab: {order.laboratory_info.lab_name}
+                    </p>
+                  )}
                 </div>
                 <Button
                   variant="ghost"

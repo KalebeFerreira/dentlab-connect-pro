@@ -4,8 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, FileText, Building2, User, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+
+interface Laboratory {
+  id: string;
+  lab_name: string;
+}
 
 interface Order {
   id: string;
@@ -18,16 +24,26 @@ interface Order {
   amount: number | null;
   status: string;
   created_at: string;
+  laboratory_id: string | null;
+  laboratory_info?: Laboratory | null;
 }
 
 const Orders = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
+  const [selectedLab, setSelectedLab] = useState<string>("all");
 
   useEffect(() => {
     checkAuthAndLoadOrders();
+    loadLaboratories();
   }, []);
+
+  useEffect(() => {
+    filterOrders();
+  }, [selectedLab, orders]);
 
   const checkAuthAndLoadOrders = async () => {
     try {
@@ -39,13 +55,20 @@ const Orders = () => {
 
       const { data, error } = await supabase
         .from("orders")
-        .select("*")
+        .select(`
+          *,
+          laboratory_info:laboratory_id (
+            id,
+            lab_name
+          )
+        `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setOrders(data || []);
+      setFilteredOrders(data || []);
     } catch (error) {
       console.error("Error loading orders:", error);
     } finally {
@@ -53,6 +76,30 @@ const Orders = () => {
     }
   };
 
+  const loadLaboratories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("laboratory_info")
+        .select("id, lab_name")
+        .eq("is_public", true)
+        .order("lab_name");
+
+      if (error) throw error;
+      setLaboratories(data || []);
+    } catch (error) {
+      console.error("Error loading laboratories:", error);
+    }
+  };
+
+  const filterOrders = () => {
+    if (selectedLab === "all") {
+      setFilteredOrders(orders);
+    } else if (selectedLab === "none") {
+      setFilteredOrders(orders.filter(order => !order.laboratory_id));
+    } else {
+      setFilteredOrders(orders.filter(order => order.laboratory_id === selectedLab));
+    }
+  };
 
   if (loading) {
     return (
@@ -81,17 +128,40 @@ const Orders = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-xl font-semibold">Minhas Ordens</h2>
-            <p className="text-sm text-muted-foreground">
-              {orders.length} {orders.length === 1 ? "ordem" : "ordens"} no total
-            </p>
+        <div className="space-y-4 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">Minhas Ordens</h2>
+              <p className="text-sm text-muted-foreground">
+                {filteredOrders.length} {filteredOrders.length === 1 ? "ordem" : "ordens"} 
+                {selectedLab !== "all" && " filtrada(s)"}
+              </p>
+            </div>
+            <Button onClick={() => navigate("/orders/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Ordem
+            </Button>
           </div>
-          <Button onClick={() => navigate("/orders/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Ordem
-          </Button>
+
+          {orders.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedLab} onValueChange={setSelectedLab}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Filtrar por laboratório" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os laboratórios</SelectItem>
+                  <SelectItem value="none">Sem laboratório</SelectItem>
+                  {laboratories.map((lab) => (
+                    <SelectItem key={lab.id} value={lab.id}>
+                      {lab.lab_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {orders.length === 0 ? (
@@ -112,7 +182,7 @@ const Orders = () => {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {orders.map((order) => (
+            {filteredOrders.map((order) => (
               <Card 
                 key={order.id} 
                 className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
@@ -146,6 +216,12 @@ const Orders = () => {
                       <FileText className="w-4 h-4 mr-2" />
                       <span className="capitalize">{order.work_type.replace("_", " ")}</span>
                     </div>
+                    {order.laboratory_info && (
+                      <div className="flex items-center text-muted-foreground">
+                        <Building2 className="w-4 h-4 mr-2" />
+                        <span>Lab: {order.laboratory_info.lab_name}</span>
+                      </div>
+                    )}
                     {order.custom_color && (
                       <div className="flex items-center text-muted-foreground">
                         <span className="w-4 h-4 mr-2 rounded-full border bg-white" />

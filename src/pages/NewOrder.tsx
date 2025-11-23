@@ -15,16 +15,25 @@ import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { FreemiumBanner } from "@/components/FreemiumBanner";
 
+interface Laboratory {
+  id: string;
+  lab_name: string;
+  city: string | null;
+  state: string | null;
+}
+
 const NewOrder = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const limits = useFreemiumLimits();
 
   useEffect(() => {
     checkAuth();
+    loadLaboratories();
   }, []);
 
   const checkAuth = async () => {
@@ -38,6 +47,21 @@ const NewOrder = () => {
       navigate("/auth");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLaboratories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("laboratory_info")
+        .select("id, lab_name, city, state")
+        .eq("is_public", true)
+        .order("lab_name");
+
+      if (error) throw error;
+      setLaboratories(data || []);
+    } catch (error) {
+      console.error("Error loading laboratories:", error);
     }
   };
 
@@ -76,6 +100,8 @@ const NewOrder = () => {
         delivery_date: (formData.get('delivery_date') as string) || null,
       };
 
+      const laboratoryId = formData.get('laboratory_id') as string || null;
+
       const validationResult = orderFormSchema.safeParse(validationData);
 
       if (!validationResult.success) {
@@ -113,6 +139,7 @@ const NewOrder = () => {
         observations: validationData.observations?.trim() || null,
         amount: validationData.amount,
         delivery_date: validationData.delivery_date,
+        laboratory_id: laboratoryId,
         signature_url: signatureUrl,
         status: 'pending'
       };
@@ -212,6 +239,30 @@ const NewOrder = () => {
                   placeholder="Nome completo do paciente"
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="laboratory_id">Laboratório</Label>
+                <Select name="laboratory_id">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um laboratório (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {laboratories.map((lab) => (
+                      <SelectItem key={lab.id} value={lab.id}>
+                        {lab.lab_name}
+                        {(lab.city || lab.state) && (
+                          <span className="text-muted-foreground text-xs ml-2">
+                            {lab.city && lab.state ? `${lab.city}, ${lab.state}` : lab.city || lab.state}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecione um laboratório parceiro para este pedido
+                </p>
               </div>
 
               <div className="space-y-2">
