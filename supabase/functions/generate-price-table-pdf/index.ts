@@ -91,7 +91,7 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
           padding: 20px;
           background: white;
-          color: #1f2937;
+          color: #000;
           font-size: 14px;
         }
         
@@ -104,12 +104,12 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
         
         .header h1 {
           font-size: 28px;
-          color: #1f2937;
+          color: #000;
           margin-bottom: 8px;
         }
         
         .header .date {
-          color: #6b7280;
+          color: #000;
           font-size: 14px;
         }
         
@@ -117,7 +117,7 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
           margin-bottom: 30px;
           border-radius: 8px;
           overflow: hidden;
-          border: 1px solid #e5e7eb;
+          border: 1px solid #000;
         }
         
         table {
@@ -151,14 +151,14 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
         
         tbody td {
           font-size: 13px;
-          color: #374151;
+          color: #000;
           padding: 12px 8px !important;
         }
         
         .footer {
           margin-top: 20px;
           padding-top: 15px;
-          border-top: 2px solid #e5e7eb;
+          border-top: 2px solid #000;
         }
         
         .notes {
@@ -171,7 +171,7 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
         }
         
         .notes strong {
-          color: #1f2937;
+          color: #000;
           font-size: 16px;
           font-weight: 700;
           display: block;
@@ -179,7 +179,7 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
         }
         
         .notes p {
-          color: #1f2937;
+          color: #000;
           font-size: 15px;
           line-height: 1.7;
           margin: 0;
@@ -190,9 +190,9 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
           margin-top: 30px;
           text-align: center;
           font-size: 12px;
-          color: #9ca3af;
+          color: #000;
           padding-top: 20px;
-          border-top: 1px solid #e5e7eb;
+          border-top: 1px solid #000;
         }
         
         @media screen and (max-width: 768px) {

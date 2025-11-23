@@ -65,24 +65,24 @@ serve(async (req) => {
           <meta charset="utf-8">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            .header { text-align: center; margin-bottom: 40px; border: 2px solid #333; padding: 20px; }
-            .header h1 { font-size: 32px; margin-bottom: 10px; color: #333; }
-            .header .invoice-number { font-size: 14px; color: #666; }
+            body { font-family: Arial, sans-serif; padding: 40px; color: #000; }
+            .header { text-align: center; margin-bottom: 40px; border: 2px solid #000; padding: 20px; }
+            .header h1 { font-size: 32px; margin-bottom: 10px; color: #000; }
+            .header .invoice-number { font-size: 14px; color: #000; }
             .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
             .info-box { width: 48%; }
-            .info-box h2 { font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-            .info-box p { margin-bottom: 5px; color: #444; font-size: 14px; }
-            .services-table { width: 100%; border-collapse: collapse; margin: 30px 0; border: 1px solid #333; }
-            .services-table th, .services-table td { padding: 12px; text-align: left; border: 1px solid #333; }
+            .info-box h2 { font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; color: #000; }
+            .info-box p { margin-bottom: 5px; color: #000; font-size: 14px; }
+            .services-table { width: 100%; border-collapse: collapse; margin: 30px 0; border: 1px solid #000; }
+            .services-table th, .services-table td { padding: 12px; text-align: left; border: 1px solid #000; color: #000; }
             .services-table th { background-color: #f0f0f0; font-weight: bold; }
-            .total-section { text-align: right; margin-top: 20px; padding: 15px; background-color: #f5f5f5; border: 2px solid #333; }
-            .total-section p { font-size: 18px; font-weight: bold; }
-            .observations { margin-top: 30px; padding: 15px; border: 1px solid #ddd; background-color: #f9f9f9; }
-            .observations h3 { font-size: 14px; margin-bottom: 10px; }
-            .observations p { font-size: 12px; color: #666; }
-            .footer { margin-top: 50px; text-align: center; padding-top: 20px; border-top: 1px solid #333; }
-            .footer p { color: #666; font-size: 11px; }
+            .total-section { text-align: right; margin-top: 20px; padding: 15px; background-color: #f5f5f5; border: 2px solid #000; }
+            .total-section p { font-size: 18px; font-weight: bold; color: #000; }
+            .observations { margin-top: 30px; padding: 15px; border: 1px solid #000; background-color: #f9f9f9; }
+            .observations h3 { font-size: 14px; margin-bottom: 10px; color: #000; }
+            .observations p { font-size: 12px; color: #000; }
+            .footer { margin-top: 50px; text-align: center; padding-top: 20px; border-top: 1px solid #000; }
+            .footer p { color: #000; font-size: 11px; }
           </style>
         </head>
         <body>

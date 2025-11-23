@@ -97,7 +97,7 @@ serve(async (req) => {
     body { 
       font-family: Arial, sans-serif; 
       padding: 40px;
-      color: #333;
+      color: #000;
     }
     .header {
       text-align: center;
@@ -112,7 +112,7 @@ serve(async (req) => {
     }
     .order-number {
       font-size: 16px;
-      color: #666;
+      color: #000;
     }
     .section {
       margin-bottom: 25px;
@@ -136,13 +136,13 @@ serve(async (req) => {
     }
     .info-label {
       font-weight: bold;
-      color: #555;
+      color: #000;
       font-size: 13px;
       margin-bottom: 3px;
     }
     .info-value {
       font-size: 15px;
-      color: #222;
+      color: #000;
     }
     .status-badge {
       display: inline-block;
@@ -162,6 +162,7 @@ serve(async (req) => {
       margin-bottom: 8px;
       border-radius: 5px;
       border-left: 3px solid #0066cc;
+      color: #000;
     }
     .signature-container {
       margin-top: 20px;
@@ -178,7 +179,7 @@ serve(async (req) => {
       margin-top: 40px;
       text-align: center;
       font-size: 12px;
-      color: #999;
+      color: #000;
       border-top: 1px solid #ddd;
       padding-top: 20px;
     }
