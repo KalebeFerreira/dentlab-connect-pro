@@ -50,7 +50,7 @@ const Index = () => {
 
   const testimonials = [
     {
-      name: "Dr. Carlos Silva",
+      name: "TPD Roberto Mendes",
       role: "Dono de Laboratório",
       text: "O Essência revolucionou a forma como gerencio meu laboratório. Economia de tempo e muito mais organização!"
     },
@@ -58,6 +58,16 @@ const Index = () => {
       name: "Dra. Ana Paula",
       role: "Clínica Odontológica",
       text: "A comunicação com o laboratório nunca foi tão fácil. Tudo em um só lugar!"
+    },
+    {
+      name: "Dr. Marcos Almeida",
+      role: "Dentista",
+      text: "Sistema intuitivo e completo. Facilita muito o acompanhamento dos trabalhos enviados ao laboratório!"
+    },
+    {
+      name: "TPD Fernanda Costa",
+      role: "Protética",
+      text: "Agora consigo organizar todas as ordens de forma eficiente. A geração de PDFs automática é sensacional!"
     }
   ];
 
@@ -205,7 +215,7 @@ const Index = () => {
             </h2>
           </div>
 
-          <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
+          <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2 lg:grid-cols-2">
             {testimonials.map((testimonial, index) => (
               <Card 
                 key={index} 
