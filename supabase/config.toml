@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.check-appointment-reminders]
 verify_jwt = true
+
+[functions.generate-monthly-report-pdf]
+verify_jwt = true
+
+[functions.generate-receipt-pdf]
+verify_jwt = true
