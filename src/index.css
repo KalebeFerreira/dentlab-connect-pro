@@ -8,8 +8,8 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Base colors - Light Blue Theme */
-    --background: 210 100% 95%; /* #e5f1ff - azul-claro */
+    /* Base colors - Professional Blue Theme */
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     
     --card: 0 0% 100%;
@@ -18,24 +18,24 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
-    --primary: 210 100% 35%; /* azul-escuro para botões */
+    --primary: 210 100% 45%; /* Azul vibrante */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 210 100% 92%;
-    --secondary-foreground: 210 100% 20%;
+    --secondary: 142 76% 36%; /* Verde destaque */
+    --secondary-foreground: 0 0% 100%;
     
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
     
-    --accent: 210 100% 92%;
-    --accent-foreground: 210 100% 25%;
+    --accent: 280 80% 55%; /* Roxo accent */
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 210 100% 35%;
+    --ring: 210 100% 45%;
     
     --radius: 0.5rem;
     
@@ -45,9 +45,11 @@ All colors MUST be HSL.
     --status-completed: 142 71% 45%; /* verde */
     --status-alert: 25 95% 53%; /* laranja */
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 100% 35%), hsl(210 100% 50%));
-    --gradient-soft: linear-gradient(180deg, hsl(210 100% 97%), hsl(210 100% 92%));
+    /* Gradients vibrantes */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 45%), hsl(195 100% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 50%));
+    --gradient-soft: linear-gradient(180deg, hsl(210 100% 98%), hsl(0 0% 100%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 100% 45%) 0%, hsl(195 100% 50%) 50%, hsl(210 90% 55%) 100%);
     
     /* Shadows */
     --shadow-card: 0 2px 8px -2px hsl(210 100% 35% / 0.08);
@@ -183,6 +185,14 @@ All colors MUST be HSL.
     background: var(--gradient-primary);
   }
   
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
   .gradient-soft {
     background: var(--gradient-soft);
   }
@@ -197,6 +207,10 @@ All colors MUST be HSL.
   
   .transition-smooth {
     transition: var(--transition-smooth);
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated;
   }
 
   /* Responsive text utilities */
