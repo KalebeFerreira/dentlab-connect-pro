@@ -195,17 +195,18 @@ const Auth = () => {
                 Voltar para Login
               </Button>
             </form>
+            
+            <div className="mt-6 pt-4 border-t text-center">
+              <Link 
+                to="/" 
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                Voltar para Home
+              </Link>
+            </div>
           </CardContent>
         </Card>
-        <div className="mt-6 text-center">
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Home className="w-4 h-4" />
-            Voltar para Home
-          </Link>
-        </div>
       </div>
     );
   }
@@ -455,17 +456,18 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-6 pt-4 border-t text-center">
+            <Link 
+              to="/" 
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              Voltar para Home
+            </Link>
+          </div>
         </CardContent>
       </Card>
-      <div className="mt-6 text-center">
-        <Link 
-          to="/" 
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <Home className="w-4 h-4" />
-          Voltar para Home
-        </Link>
-      </div>
     </div>
   );
 };
