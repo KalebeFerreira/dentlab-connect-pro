@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import SignatureCanvas from "react-signature-canvas";
 
 interface CertificateTemplate {
   id: string;
@@ -24,6 +25,8 @@ export const CertificateGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const signaturePadRef = useRef<SignatureCanvas>(null);
+  const [signatureUrl, setSignatureUrl] = useState<string>("");
   const [formData, setFormData] = useState({
     patientName: "",
     patientCpf: "",
@@ -73,8 +76,19 @@ export const CertificateGenerator = () => {
     }
   };
 
+  const clearSignature = () => {
+    signaturePadRef.current?.clear();
+    setSignatureUrl("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signaturePadRef.current?.isEmpty() && !signatureUrl) {
+      toast.error("Por favor, finalize a assinatura antes de gerar o atestado");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -82,6 +96,30 @@ export const CertificateGenerator = () => {
       if (!user) {
         toast.error("Usuário não autenticado");
         return;
+      }
+
+      // Save signature if drawn
+      let uploadedSignatureUrl = signatureUrl;
+      if (signaturePadRef.current && !signaturePadRef.current.isEmpty() && !signatureUrl) {
+        const signatureDataUrl = signaturePadRef.current.toDataURL();
+        const blob = await fetch(signatureDataUrl).then(r => r.blob());
+        const fileName = `signature-${Date.now()}.png`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("laboratory-files")
+          .upload(`signatures/${fileName}`, blob, {
+            contentType: "image/png",
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("laboratory-files")
+          .getPublicUrl(`signatures/${fileName}`);
+
+        uploadedSignatureUrl = urlData.publicUrl;
+        setSignatureUrl(uploadedSignatureUrl);
       }
 
       const { data, error } = await supabase.functions.invoke("generate-certificate-pdf", {
@@ -96,6 +134,7 @@ export const CertificateGenerator = () => {
           reason: formData.reason,
           observations: formData.observations,
           customText: formData.customText,
+          signatureUrl: uploadedSignatureUrl,
           issueDate: format(new Date(), "dd/MM/yyyy", { locale: ptBR }),
         },
       });
@@ -117,6 +156,8 @@ export const CertificateGenerator = () => {
       
       // Reset form
       setSelectedTemplate("");
+      setSignatureUrl("");
+      signaturePadRef.current?.clear();
       setFormData({
         patientName: "",
         patientCpf: "",
@@ -283,6 +324,48 @@ export const CertificateGenerator = () => {
               placeholder="Informações adicionais (opcional)"
               rows={3}
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Assinatura Digital *</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearSignature}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Limpar
+              </Button>
+            </div>
+            <div className="border-2 border-dashed rounded-lg p-4 bg-muted/50">
+              {signatureUrl ? (
+                <div className="text-center">
+                  <img 
+                    src={signatureUrl} 
+                    alt="Assinatura" 
+                    className="max-h-32 mx-auto border rounded"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Assinatura salva
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <SignatureCanvas
+                    ref={signaturePadRef}
+                    canvasProps={{
+                      className: "signature-canvas w-full h-32 bg-background rounded border",
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Assine acima com o mouse ou dedo
+                  </p>
+                </>
+              )}
+            </div>
           </div>
 
           <Button type="submit" disabled={loading} className="w-full gap-2">
