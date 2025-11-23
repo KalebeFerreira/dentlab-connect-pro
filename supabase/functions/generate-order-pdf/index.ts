@@ -187,6 +187,7 @@ serve(async (req) => {
 </head>
 <body>
   <div class="header">
+    <!-- Logo will be added here when laboratory info is fetched -->
     <h1>ORDEM DE TRABALHO</h1>
     <p class="order-number">Nº ${order.os_number || order.id.substring(0, 8).toUpperCase()}</p>
   </div>

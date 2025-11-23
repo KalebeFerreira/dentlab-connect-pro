@@ -105,6 +105,11 @@ serve(async (req) => {
       </head>
       <body>
         <div class="header">
+          ${companyInfo?.logo_url ? `
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="${companyInfo.logo_url}" alt="Logo" style="max-width: 150px; max-height: 80px;" />
+            </div>
+          ` : ''}
           <h1>${isConsolidated ? 'Relatório Consolidado de Serviços' : 'Relatório Mensal de Serviços'}</h1>
           <p>Data de emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
         </div>

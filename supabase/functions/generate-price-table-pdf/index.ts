@@ -242,6 +242,11 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
     </head>
     <body>
       <div class="header">
+        ${laboratoryName ? `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="${laboratoryName}" alt="Logo" style="max-width: 150px; max-height: 80px;" />
+          </div>
+        ` : ''}
         <h1>${tableName}</h1>
         <p class="date">Gerado em ${date}</p>
       </div>
