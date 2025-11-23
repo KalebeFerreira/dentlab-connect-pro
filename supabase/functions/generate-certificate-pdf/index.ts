@@ -138,37 +138,12 @@ serve(async (req) => {
 
     const html = generateCertificateHTML(certificateData);
 
-    // Convert HTML to PDF using html2pdf API (you can use any HTML to PDF service)
-    // For now, we'll create a simple HTML response that can be printed as PDF
-    // In production, you might want to use a service like PDFShift or similar
-
-    const blob = new Blob([html], { type: "text/html" });
-    const fileName = `atestado-${certificateData.patientName.replace(/\s+/g, "-")}-${Date.now()}.html`;
-
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("laboratory-files")
-      .upload(`certificates/${fileName}`, blob, {
-        contentType: "text/html",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      throw uploadError;
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("laboratory-files")
-      .getPublicUrl(`certificates/${fileName}`);
-
-    console.log("Certificate generated successfully:", urlData.publicUrl);
+    console.log("Certificate HTML generated successfully");
 
     return new Response(
       JSON.stringify({
         success: true,
-        pdfUrl: urlData.publicUrl,
+        html: html,
         message: "Atestado gerado com sucesso",
       }),
       {
