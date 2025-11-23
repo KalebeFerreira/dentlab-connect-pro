@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Building2, FlaskConical, Eye, EyeOff } from "lucide-react";
+import { Loader2, Building2, FlaskConical, Eye, EyeOff, Home } from "lucide-react";
 
 type UserType = "clinic" | "laboratory";
 
@@ -186,6 +186,15 @@ const Auth = () => {
             </form>
           </CardContent>
         </Card>
+        <div className="mt-6 text-center">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            Voltar para Home
+          </Link>
+        </div>
       </div>
     );
   }
@@ -437,6 +446,15 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+      <div className="mt-6 text-center">
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Home className="w-4 h-4" />
+          Voltar para Home
+        </Link>
+      </div>
     </div>
   );
 };
