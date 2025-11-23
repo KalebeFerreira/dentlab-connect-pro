@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OrdersSummary } from "@/components/clinic/OrdersSummary";
 import { OrdersTracking } from "@/components/clinic/OrdersTracking";
 import { DentistManagement } from "@/components/clinic/DentistManagement";
+import { CertificateGenerator } from "@/components/clinic/CertificateGenerator";
 import { MessageTemplates } from "@/components/MessageTemplates";
 
 const ClinicDashboard = () => {
@@ -46,6 +47,8 @@ const ClinicDashboard = () => {
         <OrdersTracking />
         <DentistManagement />
       </div>
+
+      <CertificateGenerator />
 
       <MessageTemplates />
     </div>
