@@ -7,6 +7,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeProvider } from "next-themes";
 import { FreemiumNotifications } from "@/components/FreemiumNotifications";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -36,48 +38,52 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <FreemiumNotifications />
-        <Routes>
+          <AuthProvider>
+            <FreemiumNotifications />
+            <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route
             path="/*"
             element={
-              <SidebarProvider>
-                <div className="flex min-h-screen w-full bg-background">
-                  <AppSidebar />
-                  <main className="flex-1 w-full min-w-0">
-                    <header className="sticky top-0 z-50 h-14 flex items-center gap-2 border-b bg-card shadow-sm px-3 md:px-4">
-                      <SidebarTrigger className="-ml-1" />
-                      <h1 className="text-sm md:text-base font-semibold text-foreground truncate">DentLab Connect</h1>
-                    </header>
-                    <Routes>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/dentist" element={<DentistDashboard />} />
-                      <Route path="/orders" element={<Orders />} />
-                      <Route path="/orders/new" element={<NewOrder />} />
-                      <Route path="/orders/:id" element={<OrderDetails />} />
-                      <Route path="/financial" element={<Financial />} />
-                      <Route path="/image-generator" element={<ImageGenerator />} />
-                      <Route path="/price-table" element={<PriceTable />} />
-                      <Route path="/planos" element={<Planos />} />
-                      <Route path="/patients" element={<Patients />} />
-                      <Route path="/appointments" element={<Appointments />} />
-                      <Route path="/clinic" element={<ClinicDashboard />} />
-                      <Route path="/laboratory" element={<Laboratory />} />
-                      <Route path="/laboratories" element={<Laboratories />} />
-                      <Route path="/billing" element={<Billing />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                </div>
-              </SidebarProvider>
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <div className="flex min-h-screen w-full bg-background">
+                    <AppSidebar />
+                    <main className="flex-1 w-full min-w-0">
+                      <header className="sticky top-0 z-50 h-14 flex items-center gap-2 border-b bg-card shadow-sm px-3 md:px-4">
+                        <SidebarTrigger className="-ml-1" />
+                        <h1 className="text-sm md:text-base font-semibold text-foreground truncate">DentLab Connect</h1>
+                      </header>
+                      <Routes>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dentist" element={<DentistDashboard />} />
+                        <Route path="/orders" element={<Orders />} />
+                        <Route path="/orders/new" element={<NewOrder />} />
+                        <Route path="/orders/:id" element={<OrderDetails />} />
+                        <Route path="/financial" element={<Financial />} />
+                        <Route path="/image-generator" element={<ImageGenerator />} />
+                        <Route path="/price-table" element={<PriceTable />} />
+                        <Route path="/planos" element={<Planos />} />
+                        <Route path="/patients" element={<Patients />} />
+                        <Route path="/appointments" element={<Appointments />} />
+                        <Route path="/clinic" element={<ClinicDashboard />} />
+                        <Route path="/laboratory" element={<Laboratory />} />
+                        <Route path="/laboratories" element={<Laboratories />} />
+                        <Route path="/billing" element={<Billing />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                  </div>
+                </SidebarProvider>
+              </ProtectedRoute>
             }
           />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

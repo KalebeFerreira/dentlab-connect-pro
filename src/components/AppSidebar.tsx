@@ -1,10 +1,10 @@
 import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
 import essenciaLogo from "@/assets/essencia-logo.jpg";
 
 import {
@@ -50,6 +50,7 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const { setOpen } = useSidebar();
   const { role, isDentist } = useUserRole();
+  const { signOut } = useAuth();
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -59,7 +60,7 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       toast.success("Logout realizado com sucesso");
       navigate("/auth");
     } catch (error) {
