@@ -18,7 +18,6 @@ import PriceTable from "./pages/PriceTable";
 import Planos from "./pages/Planos";
 import Patients from "./pages/Patients";
 import Appointments from "./pages/Appointments";
-import MessagesAnalytics from "./pages/MessagesAnalytics";
 import Laboratory from "./pages/Laboratory";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
@@ -58,7 +57,6 @@ const App = () => (
                       <Route path="/planos" element={<Planos />} />
                       <Route path="/patients" element={<Patients />} />
                       <Route path="/appointments" element={<Appointments />} />
-                      <Route path="/messages-analytics" element={<MessagesAnalytics />} />
                       <Route path="/laboratory" element={<Laboratory />} />
                       <Route path="/billing" element={<Billing />} />
                       <Route path="/settings" element={<Settings />} />
