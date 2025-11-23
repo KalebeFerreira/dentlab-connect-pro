@@ -93,7 +93,7 @@ const Dashboard = () => {
         return;
       }
 
-      // Check user role and redirect to appropriate dashboard
+      // Check user role - only redirect dentists automatically
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -105,17 +105,7 @@ const Dashboard = () => {
         return;
       }
 
-      if (roleData?.role === 'clinic') {
-        navigate("/clinic");
-        return;
-      }
-
-      if (roleData?.role === 'laboratory') {
-        navigate("/laboratory");
-        return;
-      }
-
-      // If no specific role or admin, continue to main dashboard
+      // For clinic and laboratory users, stay on main dashboard
       setUser(user);
       await loadStats(user.id);
     } catch (error) {

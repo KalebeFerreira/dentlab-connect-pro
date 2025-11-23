@@ -67,6 +67,8 @@ const Auth = () => {
 
         if (error) throw error;
 
+        toast.success("Login realizado com sucesso!");
+        
         // Check user role to redirect appropriately
         if (authData.user) {
           const { data: roleData } = await supabase
@@ -76,13 +78,12 @@ const Auth = () => {
             .single();
 
           if (roleData?.role === 'dentist') {
-            toast.success("Login realizado com sucesso!");
             navigate("/dentist");
             return;
           }
         }
 
-        toast.success("Login realizado com sucesso!");
+        // For all other users, go to main dashboard
         navigate("/dashboard");
       }
     } catch (error: any) {
