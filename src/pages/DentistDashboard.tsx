@@ -43,31 +43,25 @@ export default function DentistDashboard() {
         .single();
 
       if (!roles) {
-        toast({
-          title: "Acesso Negado",
-          description: "Você não tem permissão para acessar esta página.",
-          variant: "destructive",
-        });
+        console.error('User does not have dentist role');
         navigate('/dashboard');
         return;
       }
 
       // Get dentist info
-      const { data: dentist } = await supabase
+      const { data: dentists } = await supabase
         .from('dentists')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .limit(1);
 
-      if (!dentist) {
-        toast({
-          title: "Dentista não encontrado",
-          description: "Perfil de dentista não encontrado no sistema.",
-          variant: "destructive",
-        });
+      if (!dentists || dentists.length === 0) {
+        console.error('Dentist profile not found');
         navigate('/dashboard');
         return;
       }
+
+      const dentist = dentists[0];
 
       setDentistInfo(dentist);
 
@@ -92,12 +86,7 @@ export default function DentistDashboard() {
       setLoading(false);
     } catch (error) {
       console.error('Error checking dentist auth:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao verificar autenticação.",
-        variant: "destructive",
-      });
-      navigate('/auth');
+      setLoading(false);
     }
   };
 
