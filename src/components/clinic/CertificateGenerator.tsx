@@ -94,11 +94,11 @@ export const CertificateGenerator = () => {
 
       const signatureDataUrl = signaturePadRef.current.toDataURL();
       const blob = await fetch(signatureDataUrl).then(r => r.blob());
-      const fileName = `signature-${user.id}-${Date.now()}.png`;
+      const fileName = `signature-${Date.now()}.png`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("laboratory-files")
-        .upload(`signatures/${fileName}`, blob, {
+        .upload(`signatures/${user.id}/${fileName}`, blob, {
           contentType: "image/png",
           upsert: true,
         });
@@ -107,7 +107,7 @@ export const CertificateGenerator = () => {
 
       const { data: urlData } = supabase.storage
         .from("laboratory-files")
-        .getPublicUrl(`signatures/${fileName}`);
+        .getPublicUrl(`signatures/${user.id}/${fileName}`);
 
       setSignatureUrl(urlData.publicUrl);
       toast.success("Assinatura salva com sucesso!");
