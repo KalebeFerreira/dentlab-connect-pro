@@ -23,6 +23,7 @@ import Laboratory from "./pages/Laboratory";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import ClinicDashboard from "./pages/ClinicDashboard";
+import DentistDashboard from "./pages/DentistDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
                     </header>
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/dentist" element={<DentistDashboard />} />
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/orders/new" element={<NewOrder />} />
                       <Route path="/orders/:id" element={<OrderDetails />} />

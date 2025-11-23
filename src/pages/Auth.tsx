@@ -48,12 +48,27 @@ const Auth = () => {
         });
         setIsSignUp(false);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
+
+        // Check user role to redirect appropriately
+        if (authData.user) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', authData.user.id)
+            .single();
+
+          if (roleData?.role === 'dentist') {
+            toast.success("Login realizado com sucesso!");
+            navigate("/dentist");
+            return;
+          }
+        }
 
         toast.success("Login realizado com sucesso!");
         navigate("/dashboard");

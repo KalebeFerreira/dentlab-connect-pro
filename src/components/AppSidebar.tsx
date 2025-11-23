@@ -1,9 +1,10 @@
-import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope } from "lucide-react";
+import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserRole } from "@/hooks/useUserRole";
 import essenciaLogo from "@/assets/essencia-logo.jpg";
 
 import {
@@ -37,11 +38,17 @@ const toolsItems = [
   { title: "Tabela de Preços", url: "/price-table", icon: Table2 },
 ];
 
+const dentistMenuItems = [
+  { title: "Meus Agendamentos", url: "/dentist", icon: Calendar },
+  { title: "Configurações", url: "/settings", icon: Settings },
+];
+
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { setOpen } = useSidebar();
+  const { role, isDentist } = useUserRole();
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -79,11 +86,11 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wider font-medium px-2">
-            Menu Principal
+            {isDentist ? "Menu Dentista" : "Menu Principal"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-0.5">
-              {menuItems.map((item) => (
+              {(isDentist ? dentistMenuItems : menuItems).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
@@ -102,30 +109,32 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider font-medium px-2">
-            Ferramentas IA
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {toolsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url}
-                      onClick={handleNavClick}
-                      className="hover:bg-sidebar-accent/50 transition-colors group py-2.5" 
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    >
-                      <item.icon className="h-5 w-5 md:h-4 md:w-4" />
-                      <span className="text-sm">{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {!isDentist && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-wider font-medium px-2">
+              Ferramentas IA
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                {toolsItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url}
+                        onClick={handleNavClick}
+                        className="hover:bg-sidebar-accent/50 transition-colors group py-2.5" 
+                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      >
+                        <item.icon className="h-5 w-5 md:h-4 md:w-4" />
+                        <span className="text-sm">{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t">

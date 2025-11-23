@@ -18,10 +18,13 @@ export type Database = {
         Row: {
           appointment_date: string
           created_at: string
+          dentist_id: string | null
+          dentist_payment: number | null
           duration_minutes: number
           id: string
           notes: string | null
           patient_id: string
+          procedure_type: string | null
           status: string
           type: string
           updated_at: string
@@ -32,10 +35,13 @@ export type Database = {
         Insert: {
           appointment_date: string
           created_at?: string
+          dentist_id?: string | null
+          dentist_payment?: number | null
           duration_minutes?: number
           id?: string
           notes?: string | null
           patient_id: string
+          procedure_type?: string | null
           status?: string
           type: string
           updated_at?: string
@@ -46,10 +52,13 @@ export type Database = {
         Update: {
           appointment_date?: string
           created_at?: string
+          dentist_id?: string | null
+          dentist_payment?: number | null
           duration_minutes?: number
           id?: string
           notes?: string | null
           patient_id?: string
+          procedure_type?: string | null
           status?: string
           type?: string
           updated_at?: string
@@ -58,6 +67,13 @@ export type Database = {
           whatsapp_sent?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_dentist_id_fkey"
+            columns: ["dentist_id"]
+            isOneToOne: false
+            referencedRelation: "dentists"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_patient_id_fkey"
             columns: ["patient_id"]
@@ -147,6 +163,7 @@ export type Database = {
       }
       dentists: {
         Row: {
+          auth_enabled: boolean | null
           created_at: string
           cro: string | null
           email: string | null
@@ -159,6 +176,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auth_enabled?: boolean | null
           created_at?: string
           cro?: string | null
           email?: string | null
@@ -171,6 +189,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auth_enabled?: boolean | null
           created_at?: string
           cro?: string | null
           email?: string | null

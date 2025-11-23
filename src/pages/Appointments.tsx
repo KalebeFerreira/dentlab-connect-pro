@@ -30,6 +30,9 @@ interface Appointment {
   notes: string | null;
   whatsapp_sent: boolean;
   whatsapp_confirmed: boolean;
+  dentist_id: string | null;
+  dentist_payment: number;
+  procedure_type: string | null;
   patients: Patient;
 }
 
@@ -38,6 +41,7 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [dentists, setDentists] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [formData, setFormData] = useState({
@@ -48,11 +52,15 @@ const Appointments = () => {
     type: "consulta",
     status: "scheduled",
     notes: "",
+    dentist_id: "",
+    dentist_payment: "",
+    procedure_type: "",
   });
 
   useEffect(() => {
     checkAuth();
     loadPatients();
+    loadDentists();
     loadAppointments();
   }, []);
 
@@ -74,6 +82,21 @@ const Appointments = () => {
       setPatients(data || []);
     } catch (error: any) {
       toast.error("Erro ao carregar pacientes", { description: error.message });
+    }
+  };
+
+  const loadDentists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("dentists")
+        .select("id, name, cro")
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) throw error;
+      setDentists(data || []);
+    } catch (error: any) {
+      toast.error("Erro ao carregar dentistas", { description: error.message });
     }
   };
 
@@ -116,6 +139,9 @@ const Appointments = () => {
             type: formData.type,
             status: formData.status,
             notes: formData.notes || null,
+            dentist_id: formData.dentist_id || null,
+            dentist_payment: formData.dentist_payment ? parseFloat(formData.dentist_payment) : 0,
+            procedure_type: formData.procedure_type || null,
           })
           .eq("id", editingAppointment.id);
 
@@ -130,6 +156,9 @@ const Appointments = () => {
           type: formData.type,
           status: formData.status,
           notes: formData.notes || null,
+          dentist_id: formData.dentist_id || null,
+          dentist_payment: formData.dentist_payment ? parseFloat(formData.dentist_payment) : 0,
+          procedure_type: formData.procedure_type || null,
         });
 
         if (error) throw error;
@@ -157,6 +186,9 @@ const Appointments = () => {
       type: appointment.type,
       status: appointment.status,
       notes: appointment.notes || "",
+      dentist_id: appointment.dentist_id || "",
+      dentist_payment: appointment.dentist_payment ? appointment.dentist_payment.toString() : "",
+      procedure_type: appointment.procedure_type || "",
     });
     setDialogOpen(true);
   };
@@ -184,6 +216,9 @@ const Appointments = () => {
       type: "consulta",
       status: "scheduled",
       notes: "",
+      dentist_id: "",
+      dentist_payment: "",
+      procedure_type: "",
     });
   };
 
@@ -381,6 +416,48 @@ const Appointments = () => {
                     <SelectItem value="completed">Concluído</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="dentist_id">Dentista</Label>
+                  <Select
+                    value={formData.dentist_id}
+                    onValueChange={(value) => setFormData({ ...formData, dentist_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um dentista" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum</SelectItem>
+                      {dentists.map((dentist) => (
+                        <SelectItem key={dentist.id} value={dentist.id}>
+                          {dentist.name} {dentist.cro && `(CRO: ${dentist.cro})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="dentist_payment">Valor Dentista (R$)</Label>
+                  <Input
+                    id="dentist_payment"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.dentist_payment}
+                    onChange={(e) => setFormData({ ...formData, dentist_payment: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="procedure_type">Tipo de Procedimento</Label>
+                <Input
+                  id="procedure_type"
+                  value={formData.procedure_type}
+                  onChange={(e) => setFormData({ ...formData, procedure_type: e.target.value })}
+                  placeholder="Ex: Limpeza, Canal, Extração..."
+                />
               </div>
               <div>
                 <Label htmlFor="notes">Observações</Label>

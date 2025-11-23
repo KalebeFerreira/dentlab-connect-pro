@@ -16,6 +16,8 @@ interface Dentist {
   phone: string | null;
   email: string | null;
   is_active: boolean;
+  user_id: string | null;
+  auth_enabled: boolean;
 }
 
 export const DentistManagement = () => {
@@ -106,6 +108,41 @@ export const DentistManagement = () => {
     } catch (error) {
       console.error("Error deleting dentist:", error);
       toast.error("Erro ao remover dentista");
+    }
+  };
+
+  const handleCreateAccess = async (dentist: Dentist) => {
+    if (!dentist.email) {
+      toast.error("Dentista precisa ter um email cadastrado");
+      return;
+    }
+
+    const defaultPassword = prompt(
+      `Criar acesso para ${dentist.name}?\nDigite a senha inicial (mínimo 6 caracteres):`
+    );
+
+    if (!defaultPassword || defaultPassword.length < 6) {
+      toast.error("Senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-dentist-access', {
+        body: {
+          dentistId: dentist.id,
+          email: dentist.email,
+          password: defaultPassword,
+          name: dentist.name
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Acesso criado com sucesso!\nLogin: ${dentist.email}\nO dentista deve fazer login em: ${window.location.origin}/auth`);
+      loadDentists();
+    } catch (error: any) {
+      console.error("Error creating access:", error);
+      toast.error(`Erro ao criar acesso: ${error.message}`);
     }
   };
 
@@ -241,15 +278,27 @@ export const DentistManagement = () => {
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex-1">
-                  <h4 className="font-semibold">{dentist.name}</h4>
+                   <h4 className="font-semibold">{dentist.name}</h4>
                   <div className="text-sm text-muted-foreground space-y-1 mt-1">
                     {dentist.specialty && <p>Especialidade: {dentist.specialty}</p>}
                     {dentist.cro && <p>CRO: {dentist.cro}</p>}
                     {dentist.phone && <p>Telefone: {dentist.phone}</p>}
                     {dentist.email && <p>Email: {dentist.email}</p>}
+                    {dentist.auth_enabled && (
+                      <p className="text-green-600 font-medium">✓ Acesso ao sistema ativado</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  {!dentist.auth_enabled && dentist.email && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleCreateAccess(dentist)}
+                    >
+                      Criar Acesso
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
