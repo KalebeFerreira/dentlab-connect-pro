@@ -15,12 +15,28 @@ export interface FreemiumLimits {
   loading: boolean;
 }
 
-const FREE_PLAN_LIMITS = {
-  ORDERS_PER_MONTH: 10,
-  PATIENTS: 10,
-  IMAGE_GENERATIONS: 10,
-  PDF_GENERATIONS: 2,
+const PLAN_LIMITS = {
+  free: {
+    ORDERS_PER_MONTH: 10,
+    PATIENTS: 10,
+    IMAGE_GENERATIONS: 10,
+    PDF_GENERATIONS: 2,
+  },
+  basic: {
+    ORDERS_PER_MONTH: 50,
+    PATIENTS: 50,
+    IMAGE_GENERATIONS: 50,
+    PDF_GENERATIONS: 20,
+  },
+  professional: {
+    ORDERS_PER_MONTH: -1, // unlimited
+    PATIENTS: -1, // unlimited
+    IMAGE_GENERATIONS: 200,
+    PDF_GENERATIONS: 100,
+  },
 };
+
+type PlanType = keyof typeof PLAN_LIMITS;
 
 export const useFreemiumLimits = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -46,22 +62,19 @@ export const useFreemiumLimits = () => {
         .single();
 
       const isSubscribed = subscription?.status === 'active' && subscription?.plan_name !== 'free';
-
-      // If subscribed, return unlimited
-      if (isSubscribed) {
-        return {
-          orders: { current: 0, limit: -1, percentage: 0 },
-          patients: { current: 0, limit: -1, percentage: 0 },
-          imageGenerations: { current: 0, limit: -1, percentage: 0 },
-          pdfGenerations: { current: 0, limit: -1, percentage: 0 },
-          canCreateOrder: true,
-          canCreatePatient: true,
-          canGenerateImage: true,
-          canGeneratePdf: true,
-          isSubscribed: true,
-          loading: false,
-        };
+      
+      // Determine current plan
+      let currentPlan: PlanType = 'free';
+      if (isSubscribed && subscription?.plan_name) {
+        const planName = subscription.plan_name.toLowerCase();
+        if (planName.includes('basic') || planName.includes('basico')) {
+          currentPlan = 'basic';
+        } else if (planName.includes('professional') || planName.includes('profissional') || planName.includes('pro')) {
+          currentPlan = 'professional';
+        }
       }
+
+      const limits = PLAN_LIMITS[currentPlan];
 
       // Count orders for current month
       const startOfMonth = new Date();
@@ -105,37 +118,38 @@ export const useFreemiumLimits = () => {
 
       const pdfCount = pdfUsage?.count || 0;
 
-      const ordersPercentage = ((ordersCount || 0) / FREE_PLAN_LIMITS.ORDERS_PER_MONTH) * 100;
-      const patientsPercentage = ((patientsCount || 0) / FREE_PLAN_LIMITS.PATIENTS) * 100;
-      const imagesPercentage = (imageCount / FREE_PLAN_LIMITS.IMAGE_GENERATIONS) * 100;
-      const pdfsPercentage = (pdfCount / FREE_PLAN_LIMITS.PDF_GENERATIONS) * 100;
+      // Calculate percentages (handle unlimited plans)
+      const ordersPercentage = limits.ORDERS_PER_MONTH === -1 ? 0 : ((ordersCount || 0) / limits.ORDERS_PER_MONTH) * 100;
+      const patientsPercentage = limits.PATIENTS === -1 ? 0 : ((patientsCount || 0) / limits.PATIENTS) * 100;
+      const imagesPercentage = limits.IMAGE_GENERATIONS === -1 ? 0 : (imageCount / limits.IMAGE_GENERATIONS) * 100;
+      const pdfsPercentage = limits.PDF_GENERATIONS === -1 ? 0 : (pdfCount / limits.PDF_GENERATIONS) * 100;
 
       return {
         orders: {
           current: ordersCount || 0,
-          limit: FREE_PLAN_LIMITS.ORDERS_PER_MONTH,
+          limit: limits.ORDERS_PER_MONTH,
           percentage: Math.min(ordersPercentage, 100),
         },
         patients: {
           current: patientsCount || 0,
-          limit: FREE_PLAN_LIMITS.PATIENTS,
+          limit: limits.PATIENTS,
           percentage: Math.min(patientsPercentage, 100),
         },
         imageGenerations: {
           current: imageCount,
-          limit: FREE_PLAN_LIMITS.IMAGE_GENERATIONS,
+          limit: limits.IMAGE_GENERATIONS,
           percentage: Math.min(imagesPercentage, 100),
         },
         pdfGenerations: {
           current: pdfCount,
-          limit: FREE_PLAN_LIMITS.PDF_GENERATIONS,
+          limit: limits.PDF_GENERATIONS,
           percentage: Math.min(pdfsPercentage, 100),
         },
-        canCreateOrder: (ordersCount || 0) < FREE_PLAN_LIMITS.ORDERS_PER_MONTH,
-        canCreatePatient: (patientsCount || 0) < FREE_PLAN_LIMITS.PATIENTS,
-        canGenerateImage: imageCount < FREE_PLAN_LIMITS.IMAGE_GENERATIONS,
-        canGeneratePdf: pdfCount < FREE_PLAN_LIMITS.PDF_GENERATIONS,
-        isSubscribed: false,
+        canCreateOrder: limits.ORDERS_PER_MONTH === -1 || (ordersCount || 0) < limits.ORDERS_PER_MONTH,
+        canCreatePatient: limits.PATIENTS === -1 || (patientsCount || 0) < limits.PATIENTS,
+        canGenerateImage: limits.IMAGE_GENERATIONS === -1 || imageCount < limits.IMAGE_GENERATIONS,
+        canGeneratePdf: limits.PDF_GENERATIONS === -1 || pdfCount < limits.PDF_GENERATIONS,
+        isSubscribed,
         loading: false,
       };
     },
