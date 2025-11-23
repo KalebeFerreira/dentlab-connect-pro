@@ -34,7 +34,7 @@ const Index = () => {
     },
     {
       icon: Smartphone,
-      title: "Acesso Mobile",
+      title: "Acesso pelo Smartphone",
       description: "Gerencie seu laboratório de qualquer lugar, a qualquer momento"
     }
   ];
