@@ -466,7 +466,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               </Button>
             </div>
 
-        {!consolidatedMode && !clientReportMode ? (
+        {!consolidatedMode && !clientReportMode && (
           <div className="flex flex-col md:flex-row gap-4">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-full md:w-[200px]">
@@ -494,8 +494,10 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               </div>
             )}
           </div>
-        ) : (
-          <div className="space-y-4">
+        )}
+
+        {consolidatedMode && (
+          <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               {availableMonths.map((month) => (
                 <Button
@@ -517,7 +519,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                 </Button>
               </div>
             )}
-          </div>
+          </>
         )}
 
         {!consolidatedMode && !clientReportMode && selectedMonth && monthlyServices.length > 0 && (
