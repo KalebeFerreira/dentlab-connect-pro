@@ -6,9 +6,11 @@ export interface FreemiumLimits {
   orders: { current: number; limit: number; percentage: number };
   patients: { current: number; limit: number; percentage: number };
   imageGenerations: { current: number; limit: number; percentage: number };
+  pdfGenerations: { current: number; limit: number; percentage: number };
   canCreateOrder: boolean;
   canCreatePatient: boolean;
   canGenerateImage: boolean;
+  canGeneratePdf: boolean;
   isSubscribed: boolean;
   loading: boolean;
 }
@@ -16,7 +18,8 @@ export interface FreemiumLimits {
 const FREE_PLAN_LIMITS = {
   ORDERS_PER_MONTH: 10,
   PATIENTS: 10,
-  IMAGE_GENERATIONS: 5,
+  IMAGE_GENERATIONS: 10,
+  PDF_GENERATIONS: 2,
 };
 
 export const useFreemiumLimits = () => {
@@ -50,9 +53,11 @@ export const useFreemiumLimits = () => {
           orders: { current: 0, limit: -1, percentage: 0 },
           patients: { current: 0, limit: -1, percentage: 0 },
           imageGenerations: { current: 0, limit: -1, percentage: 0 },
+          pdfGenerations: { current: 0, limit: -1, percentage: 0 },
           canCreateOrder: true,
           canCreatePatient: true,
           canGenerateImage: true,
+          canGeneratePdf: true,
           isSubscribed: true,
           loading: false,
         };
@@ -89,9 +94,21 @@ export const useFreemiumLimits = () => {
 
       const imageCount = imageUsage?.count || 0;
 
+      // Get PDF generation usage for current month
+      const { data: pdfUsage } = await supabase
+        .from('pdf_generation_usage')
+        .select('count')
+        .eq('user_id', userId)
+        .eq('month', currentMonth)
+        .eq('year', currentYear)
+        .single();
+
+      const pdfCount = pdfUsage?.count || 0;
+
       const ordersPercentage = ((ordersCount || 0) / FREE_PLAN_LIMITS.ORDERS_PER_MONTH) * 100;
       const patientsPercentage = ((patientsCount || 0) / FREE_PLAN_LIMITS.PATIENTS) * 100;
       const imagesPercentage = (imageCount / FREE_PLAN_LIMITS.IMAGE_GENERATIONS) * 100;
+      const pdfsPercentage = (pdfCount / FREE_PLAN_LIMITS.PDF_GENERATIONS) * 100;
 
       return {
         orders: {
@@ -109,9 +126,15 @@ export const useFreemiumLimits = () => {
           limit: FREE_PLAN_LIMITS.IMAGE_GENERATIONS,
           percentage: Math.min(imagesPercentage, 100),
         },
+        pdfGenerations: {
+          current: pdfCount,
+          limit: FREE_PLAN_LIMITS.PDF_GENERATIONS,
+          percentage: Math.min(pdfsPercentage, 100),
+        },
         canCreateOrder: (ordersCount || 0) < FREE_PLAN_LIMITS.ORDERS_PER_MONTH,
         canCreatePatient: (patientsCount || 0) < FREE_PLAN_LIMITS.PATIENTS,
         canGenerateImage: imageCount < FREE_PLAN_LIMITS.IMAGE_GENERATIONS,
+        canGeneratePdf: pdfCount < FREE_PLAN_LIMITS.PDF_GENERATIONS,
         isSubscribed: false,
         loading: false,
       };

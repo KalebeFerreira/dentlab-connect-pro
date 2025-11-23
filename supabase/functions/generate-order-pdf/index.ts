@@ -44,6 +44,46 @@ serve(async (req) => {
       });
     }
 
+    // Create service role client for checking subscription
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Check subscription status
+    const { data: subscription } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('status, plan_name')
+      .eq('user_id', user.id)
+      .single();
+
+    const isSubscribed = subscription?.status === 'active' && subscription?.plan_name !== 'free';
+
+    // If not subscribed, check PDF generation limit
+    if (!isSubscribed) {
+      const { data: pdfUsage } = await supabaseAdmin.rpc(
+        'get_monthly_pdf_usage',
+        { p_user_id: user.id }
+      );
+
+      const PDF_LIMIT = 2;
+      if (pdfUsage >= PDF_LIMIT) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Limite de PDFs atingido',
+            message: `Você atingiu o limite de ${PDF_LIMIT} PDFs por mês do plano gratuito. Faça upgrade para gerar PDFs ilimitados.`
+          }),
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Increment PDF usage
+      await supabaseAdmin.rpc('increment_pdf_usage', { p_user_id: user.id });
+    }
+
     // Get order data
     const { data: order, error: orderError } = await supabase
       .from('orders')

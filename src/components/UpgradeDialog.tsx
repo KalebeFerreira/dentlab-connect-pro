@@ -73,7 +73,11 @@ export const UpgradeDialog = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Relatórios completos com PDF e envio automático</span>
+                  <span><strong>PDFs ilimitados</strong> por mês</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span>Relatórios completos com envio automático</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
