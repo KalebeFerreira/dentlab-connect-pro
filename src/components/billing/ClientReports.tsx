@@ -69,15 +69,23 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
+      const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
         body: {
           services: clientServices,
           companyInfo,
-          totalValue: totalClient
+          totalValue: totalClient,
+          observations: `Relatório completo de serviços para o cliente: ${selectedClient}`
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro do edge function:', error);
+        throw error;
+      }
+
+      if (!data || !data.html) {
+        throw new Error('Resposta inválida do servidor');
+      }
 
       // Add signature to the HTML
       const htmlWithSignature = data.html.replace(
@@ -94,9 +102,11 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
         printWindow.document.close();
         printWindow.print();
       }
+      
+      toast.success('PDF gerado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar PDF. Tente novamente.');
+      toast.error('Erro ao gerar PDF. Verifique se há serviços para o cliente.');
     }
   };
 
