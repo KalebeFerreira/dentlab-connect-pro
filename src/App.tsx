@@ -20,6 +20,7 @@ import Planos from "./pages/Planos";
 import Patients from "./pages/Patients";
 import Appointments from "./pages/Appointments";
 import Laboratory from "./pages/Laboratory";
+import Laboratories from "./pages/Laboratories";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import ClinicDashboard from "./pages/ClinicDashboard";
@@ -64,6 +65,7 @@ const App = () => (
                       <Route path="/appointments" element={<Appointments />} />
                       <Route path="/clinic" element={<ClinicDashboard />} />
                       <Route path="/laboratory" element={<Laboratory />} />
+                      <Route path="/laboratories" element={<Laboratories />} />
                       <Route path="/billing" element={<Billing />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="*" element={<NotFound />} />

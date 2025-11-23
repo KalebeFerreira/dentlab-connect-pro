@@ -379,8 +379,10 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          description: string | null
           email: string
           id: string
+          is_public: boolean | null
           lab_name: string
           logo_url: string | null
           state: string | null
@@ -394,8 +396,10 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          description?: string | null
           email: string
           id?: string
+          is_public?: boolean | null
           lab_name: string
           logo_url?: string | null
           state?: string | null
@@ -409,8 +413,10 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          description?: string | null
           email?: string
           id?: string
+          is_public?: boolean | null
           lab_name?: string
           logo_url?: string | null
           state?: string | null
@@ -560,6 +566,7 @@ export type Database = {
           dentist_name: string
           entry_date: string | null
           id: string
+          laboratory_id: string | null
           observations: string | null
           os_number: string | null
           patient_name: string
@@ -581,6 +588,7 @@ export type Database = {
           dentist_name: string
           entry_date?: string | null
           id?: string
+          laboratory_id?: string | null
           observations?: string | null
           os_number?: string | null
           patient_name: string
@@ -602,6 +610,7 @@ export type Database = {
           dentist_name?: string
           entry_date?: string | null
           id?: string
+          laboratory_id?: string | null
           observations?: string | null
           os_number?: string | null
           patient_name?: string
@@ -613,7 +622,15 @@ export type Database = {
           work_name?: string | null
           work_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_laboratory_id_fkey"
+            columns: ["laboratory_id"]
+            isOneToOne: false
+            referencedRelation: "laboratory_info"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patients: {
         Row: {

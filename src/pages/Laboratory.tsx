@@ -27,6 +27,8 @@ interface LaboratoryData {
   state?: string | null;
   zip_code?: string | null;
   country?: string | null;
+  description?: string | null;
+  is_public?: boolean;
 }
 
 interface Document {
@@ -66,6 +68,8 @@ const Laboratory = () => {
     state: "",
     zip_code: "",
     country: "Brasil",
+    description: "",
+    is_public: true,
   });
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -120,6 +124,8 @@ const Laboratory = () => {
           state: data.state,
           zip_code: data.zip_code,
           country: data.country || "Brasil",
+          description: data.description || "",
+          is_public: data.is_public ?? true,
         });
       }
     } catch (error: any) {
@@ -311,6 +317,8 @@ const Laboratory = () => {
             state: labData.state,
             zip_code: labData.zip_code,
             country: labData.country,
+            description: labData.description,
+            is_public: labData.is_public,
           })
           .eq("id", labData.id);
 
@@ -330,6 +338,8 @@ const Laboratory = () => {
             state: labData.state,
             zip_code: labData.zip_code,
             country: labData.country,
+            description: labData.description,
+            is_public: labData.is_public,
           })
           .select()
           .single();
@@ -483,6 +493,34 @@ const Laboratory = () => {
                     placeholder="contato@dentlab.com.br"
                     required
                   />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="description">Descrição do Laboratório</Label>
+                  <Input
+                    id="description"
+                    value={labData.description || ""}
+                    onChange={(e) => setLabData({ ...labData, description: e.target.value })}
+                    placeholder="Especializado em próteses sobre implante e restaurações estéticas"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="is_public"
+                      checked={labData.is_public ?? true}
+                      onChange={(e) => setLabData({ ...labData, is_public: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="is_public" className="cursor-pointer">
+                      Tornar laboratório visível para dentistas e clínicas
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Quando ativado, seu laboratório aparecerá na lista de laboratórios disponíveis
+                  </p>
                 </div>
               </div>
 
