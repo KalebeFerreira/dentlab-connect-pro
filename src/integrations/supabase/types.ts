@@ -889,7 +889,7 @@ export type Database = {
       increment_pdf_usage: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "clinic" | "laboratory"
+      app_role: "admin" | "clinic" | "laboratory" | "dentist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1017,7 +1017,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "clinic", "laboratory"],
+      app_role: ["admin", "clinic", "laboratory", "dentist"],
     },
   },
 } as const
