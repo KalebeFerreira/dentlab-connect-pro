@@ -10,6 +10,7 @@ import { ServicesList } from "@/components/billing/ServicesList";
 import { BillingStats } from "@/components/billing/BillingStats";
 import { MonthlyReports } from "@/components/billing/MonthlyReports";
 import { ClientReports } from "@/components/billing/ClientReports";
+import { AutomaticReportSettings } from "@/components/billing/AutomaticReportSettings";
 import { Loader2 } from "lucide-react";
 
 export interface CompanyInfo {
@@ -181,10 +182,11 @@ const Billing = () => {
       <BillingStats services={services} />
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="services">Serviços</TabsTrigger>
           <TabsTrigger value="monthly">Relatórios Mensais</TabsTrigger>
           <TabsTrigger value="clients">Relatórios de Clientes</TabsTrigger>
+          <TabsTrigger value="automatic">Envios Automáticos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="services" className="space-y-6">
@@ -202,6 +204,10 @@ const Billing = () => {
 
         <TabsContent value="clients">
           <ClientReports services={services} companyInfo={companyInfo} />
+        </TabsContent>
+
+        <TabsContent value="automatic">
+          <AutomaticReportSettings services={services} />
         </TabsContent>
       </Tabs>
     </div>
