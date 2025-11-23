@@ -92,6 +92,30 @@ const Dashboard = () => {
         navigate("/auth");
         return;
       }
+
+      // Check user role and redirect to appropriate dashboard
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleData?.role === 'dentist') {
+        navigate("/dentist");
+        return;
+      }
+
+      if (roleData?.role === 'clinic') {
+        navigate("/clinic");
+        return;
+      }
+
+      if (roleData?.role === 'laboratory') {
+        navigate("/laboratory");
+        return;
+      }
+
+      // If no specific role or admin, continue to main dashboard
       setUser(user);
       await loadStats(user.id);
     } catch (error) {
