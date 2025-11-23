@@ -27,7 +27,14 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     // Create service role client to verify JWT and perform operations
     const supabase = createClient(
@@ -41,7 +48,10 @@ serve(async (req) => {
     
     if (userError || !user) {
       console.error('Authentication failed:', userError);
-      throw new Error('Unauthorized');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Check subscription status
@@ -187,6 +197,7 @@ serve(async (req) => {
       },
     );
   } catch (error) {
+    console.error('Error generating receipt PDF:', error);
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       {
