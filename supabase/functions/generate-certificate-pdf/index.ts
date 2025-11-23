@@ -50,6 +50,7 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
           font-family: Arial, sans-serif;
           margin: 40px;
           line-height: 1.6;
+          color: #000;
         }
         .header {
           text-align: center;
@@ -60,11 +61,13 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
           font-weight: bold;
           text-transform: uppercase;
           margin-bottom: 10px;
+          color: #000;
         }
         .content {
           text-align: justify;
           margin: 30px 0;
           font-size: 14px;
+          color: #000;
         }
         .signature {
           margin-top: 80px;
@@ -75,11 +78,13 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
           width: 300px;
           margin: 0 auto;
           padding-top: 10px;
+          color: #000;
         }
         .footer {
           margin-top: 60px;
           text-align: right;
           font-size: 12px;
+          color: #000;
         }
       </style>
     </head>

@@ -64,22 +64,22 @@ serve(async (req) => {
           <meta charset="utf-8">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-            .header h1 { font-size: 32px; margin-bottom: 10px; }
-            .header .doc-number { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px; }
-            .header p { color: #666; }
+            body { font-family: Arial, sans-serif; padding: 40px; color: #000; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+            .header h1 { font-size: 32px; margin-bottom: 10px; color: #000; }
+            .header .doc-number { font-size: 16px; font-weight: bold; color: #000; margin-bottom: 5px; }
+            .header p { color: #000; }
             .company-info { margin-bottom: 30px; }
-            .company-info h2 { font-size: 18px; margin-bottom: 15px; }
-            .company-info p { margin-bottom: 5px; color: #444; }
+            .company-info h2 { font-size: 18px; margin-bottom: 15px; color: #000; }
+            .company-info p { margin-bottom: 5px; color: #000; }
             .services-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-            .services-table th, .services-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            .services-table th, .services-table td { padding: 12px; text-align: left; border-bottom: 1px solid #000; color: #000; }
             .services-table th { background-color: #f5f5f5; font-weight: bold; }
             .services-table tr:hover { background-color: #f9f9f9; }
-            .total { text-align: right; margin-top: 20px; font-size: 20px; font-weight: bold; }
+            .total { text-align: right; margin-top: 20px; font-size: 20px; font-weight: bold; color: #000; }
             .signature { margin-top: 80px; }
-            .signature-line { border-top: 1px solid #333; width: 300px; margin: 0 auto; padding-top: 10px; text-align: center; }
-            .footer { margin-top: 50px; text-align: center; color: #666; font-size: 12px; }
+            .signature-line { border-top: 1px solid #000; width: 300px; margin: 0 auto; padding-top: 10px; text-align: center; color: #000; }
+            .footer { margin-top: 50px; text-align: center; color: #000; font-size: 12px; }
           </style>
         </head>
         <body>

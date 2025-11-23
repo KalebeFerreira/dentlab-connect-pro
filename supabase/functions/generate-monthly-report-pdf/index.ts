@@ -36,33 +36,36 @@ serve(async (req) => {
             padding: 40px;
             max-width: 800px;
             margin: 0 auto;
+            color: #000;
           }
           .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid #000;
             padding-bottom: 20px;
           }
           .header h1 {
             margin: 0;
-            color: #333;
+            color: #000;
             font-size: 28px;
           }
           .header p {
             margin: 5px 0;
-            color: #666;
+            color: #000;
           }
           .company-info {
             margin-bottom: 30px;
           }
           .company-info p {
             margin: 5px 0;
+            color: #000;
           }
           .report-info {
             background: #f5f5f5;
             padding: 15px;
             margin-bottom: 30px;
             border-radius: 5px;
+            color: #000;
           }
           table {
             width: 100%;
@@ -72,10 +75,11 @@ serve(async (req) => {
           th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #000;
+            color: #000;
           }
           th {
-            background-color: #333;
+            background-color: #000;
             color: white;
             font-weight: bold;
           }
@@ -88,12 +92,13 @@ serve(async (req) => {
             font-weight: bold;
             margin-top: 20px;
             padding-top: 20px;
-            border-top: 2px solid #333;
+            border-top: 2px solid #000;
+            color: #000;
           }
           .footer {
             margin-top: 50px;
             text-align: center;
-            color: #666;
+            color: #000;
             font-size: 12px;
           }
         </style>
