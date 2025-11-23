@@ -5,7 +5,9 @@ import { OrdersSummary } from "@/components/clinic/OrdersSummary";
 import { OrdersTracking } from "@/components/clinic/OrdersTracking";
 import { DentistManagement } from "@/components/clinic/DentistManagement";
 import { CertificateGenerator } from "@/components/clinic/CertificateGenerator";
+import { CertificateTemplateManager } from "@/components/clinic/CertificateTemplateManager";
 import { MessageTemplates } from "@/components/MessageTemplates";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ClinicDashboard = () => {
   const navigate = useNavigate();
@@ -48,7 +50,18 @@ const ClinicDashboard = () => {
         <DentistManagement />
       </div>
 
-      <CertificateGenerator />
+      <Tabs defaultValue="generator" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="generator">Gerar Atestado</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+        </TabsList>
+        <TabsContent value="generator" className="space-y-4">
+          <CertificateGenerator />
+        </TabsContent>
+        <TabsContent value="templates" className="space-y-4">
+          <CertificateTemplateManager />
+        </TabsContent>
+      </Tabs>
 
       <MessageTemplates />
     </div>

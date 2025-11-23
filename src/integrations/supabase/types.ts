@@ -67,6 +67,45 @@ export type Database = {
           },
         ]
       }
+      certificate_templates: {
+        Row: {
+          category: string
+          created_at: string
+          default_days: number
+          default_reason: string
+          default_text: string
+          id: string
+          is_active: boolean
+          template_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          default_days?: number
+          default_reason: string
+          default_text: string
+          id?: string
+          is_active?: boolean
+          template_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          default_days?: number
+          default_reason?: string
+          default_text?: string
+          id?: string
+          is_active?: boolean
+          template_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       company_info: {
         Row: {
           company_name: string

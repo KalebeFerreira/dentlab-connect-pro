@@ -16,10 +16,29 @@ interface CertificateRequest {
   days: string;
   reason: string;
   observations?: string;
+  customText?: string;
   issueDate: string;
 }
 
 const generateCertificateHTML = (data: CertificateRequest): string => {
+  // Replace variables in custom text
+  let contentText = data.customText || `
+    Atesto para os devidos fins que o(a) paciente <strong>${data.patientName}</strong>${data.patientCpf ? `, CPF ${data.patientCpf},` : ""} 
+    esteve sob meus cuidados profissionais no dia ${data.issueDate}, necessitando de afastamento de suas atividades 
+    por motivo de <strong>${data.reason}</strong>.
+    <br><br>
+    Período de afastamento: de <strong>${new Date(data.startDate).toLocaleDateString('pt-BR')}</strong> 
+    até <strong>${new Date(data.endDate).toLocaleDateString('pt-BR')}</strong>, 
+    totalizando <strong>${data.days} dia(s)</strong>.
+  `;
+
+  // Replace variables
+  contentText = contentText
+    .replace(/{patientName}/g, data.patientName)
+    .replace(/{days}/g, data.days)
+    .replace(/{startDate}/g, new Date(data.startDate).toLocaleDateString('pt-BR'))
+    .replace(/{endDate}/g, new Date(data.endDate).toLocaleDateString('pt-BR'));
+
   return `
     <!DOCTYPE html>
     <html>
@@ -69,19 +88,8 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
       </div>
       
       <div class="content">
-        <p>
-          Atesto para os devidos fins que o(a) paciente <strong>${data.patientName}</strong>${data.patientCpf ? `, CPF ${data.patientCpf},` : ""} 
-          esteve sob meus cuidados profissionais no dia ${data.issueDate}, necessitando de afastamento de suas atividades 
-          por motivo de <strong>${data.reason}</strong>.
-        </p>
-        
-        <p>
-          Período de afastamento: de <strong>${new Date(data.startDate).toLocaleDateString('pt-BR')}</strong> 
-          até <strong>${new Date(data.endDate).toLocaleDateString('pt-BR')}</strong>, 
-          totalizando <strong>${data.days} dia(s)</strong>.
-        </p>
-        
-        ${data.observations ? `<p>Observações: ${data.observations}</p>` : ''}
+        <p>${contentText}</p>
+        ${data.observations ? `<p style="margin-top: 20px;"><strong>Observações:</strong> ${data.observations}</p>` : ''}
       </div>
       
       <div class="footer">
