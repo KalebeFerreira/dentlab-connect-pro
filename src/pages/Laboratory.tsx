@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare, ListChecks } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ import { STLViewer, STLViewerLoading } from "@/components/STLViewer";
 import { WhatsAppTemplateManager } from "@/components/WhatsAppTemplateManager";
 import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
 import { EmailSendDialog } from "@/components/EmailSendDialog";
+import { LaboratoryList } from "@/components/LaboratoryList";
 
 interface LaboratoryData {
   id?: string;
@@ -398,11 +400,25 @@ const Laboratory = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Informações do Laboratório</h1>
+        <h1 className="text-3xl font-bold mb-2">Dashboard Laboratório</h1>
         <p className="text-muted-foreground">
-          Gerencie os dados e documentos do seu laboratório
+          Gerencie seu laboratório e visualize todos os laboratórios disponíveis
         </p>
       </div>
+
+      <Tabs defaultValue="my-lab" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="my-lab" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Meu Laboratório
+          </TabsTrigger>
+          <TabsTrigger value="available-labs" className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4" />
+            Laboratórios Disponíveis
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="my-lab" className="mt-6">
 
       <div className="grid gap-6 max-w-6xl">
         {/* Card de Logo */}
@@ -759,6 +775,12 @@ const Laboratory = () => {
           <WhatsAppTemplateManager />
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="available-labs" className="mt-6">
+          <LaboratoryList />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
         <DialogContent className="max-w-4xl">

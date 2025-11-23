@@ -29,7 +29,6 @@ const menuItems = [
   { title: "Agendamentos", url: "/appointments", icon: Calendar },
   { title: "Clínica", url: "/clinic", icon: Stethoscope },
   { title: "Laboratório", url: "/laboratory", icon: Building },
-  { title: "Laboratórios", url: "/laboratories", icon: Building },
   { title: "Planos", url: "/planos", icon: Crown },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
@@ -41,7 +40,7 @@ const toolsItems = [
 
 const dentistMenuItems = [
   { title: "Meus Agendamentos", url: "/dentist", icon: Calendar },
-  { title: "Laboratórios", url: "/laboratories", icon: Building },
+  { title: "Laboratório", url: "/laboratory", icon: Building },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
