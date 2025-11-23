@@ -77,9 +77,10 @@ export const useSubscription = () => {
 
   const checkSubscription = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session?.access_token) {
+      // Se não houver sessão ou o token for inválido, retorna não inscrito
+      if (sessionError || !session?.access_token || session.access_token === "undefined") {
         setSubscriptionInfo({
           subscribed: false,
           product_id: null,
@@ -90,10 +91,15 @@ export const useSubscription = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("check-subscription");
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
-      // Se houver erro de autenticação (401), apenas define como não inscrito
-      if (error?.message?.includes("Authentication") || error?.status === 401) {
+      // Qualquer erro, trata como não inscrito silenciosamente
+      if (error) {
+        console.log("Subscription check returned error, treating as not subscribed");
         setSubscriptionInfo({
           subscribed: false,
           product_id: null,
@@ -103,15 +109,13 @@ export const useSubscription = () => {
         });
         return;
       }
-      
-      if (error) throw error;
 
       setSubscriptionInfo({
         ...data,
         loading: false,
       });
     } catch (error) {
-      console.error("Error checking subscription:", error);
+      console.log("Error checking subscription:", error);
       setSubscriptionInfo({
         subscribed: false,
         product_id: null,

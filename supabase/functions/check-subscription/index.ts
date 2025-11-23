@@ -31,10 +31,33 @@ serve(async (req) => {
     logStep("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      logStep("No authorization header");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        product_id: null 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    
     logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
+    
+    // Validate token format
+    if (!token || token === "undefined" || token === "null" || token.length < 20) {
+      logStep("Invalid token format");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        product_id: null 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    
     logStep("Authenticating user with token");
     
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
@@ -42,12 +65,11 @@ serve(async (req) => {
     if (userError || !userData.user) {
       logStep("Authentication failed", { error: userError?.message });
       return new Response(JSON.stringify({ 
-        error: "Authentication required",
         subscribed: false,
         product_id: null 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
+        status: 200,
       });
     }
     
@@ -55,12 +77,11 @@ serve(async (req) => {
     if (!user?.email) {
       logStep("User email not available");
       return new Response(JSON.stringify({ 
-        error: "User email not available",
         subscribed: false,
         product_id: null 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
+        status: 200,
       });
     }
     
