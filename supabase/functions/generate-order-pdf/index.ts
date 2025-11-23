@@ -86,6 +86,33 @@ serve(async (req) => {
       }
     }
 
+    // Get signature position preference from company_info
+    let signaturePosition = 'bottom';
+    const { data: companyInfo } = await supabase
+      .from('company_info')
+      .select('signature_position')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (companyInfo?.signature_position) {
+      signaturePosition = companyInfo.signature_position;
+    }
+
+    // Signature block to be reused
+    const signatureBlock = signatureDataUrl ? `
+      <div style="margin-top: ${signaturePosition === 'top' ? '20px' : signaturePosition === 'middle' ? '40px' : '60px'}; page-break-inside: avoid;">
+        <div class="section">
+          <h2 class="section-title">Assinatura Digital</h2>
+          <div class="signature-container">
+            <img src="${signatureDataUrl}" alt="Assinatura" class="signature-image" />
+            <p style="margin-top: 10px; font-size: 13px; color: #000;">
+              Assinado por: ${order.dentist_name}
+            </p>
+          </div>
+        </div>
+      </div>
+    ` : '';
+
     // Generate HTML for PDF
     const html = `
 <!DOCTYPE html>
@@ -192,6 +219,8 @@ serve(async (req) => {
     <p class="order-number">Nº ${order.os_number || order.id.substring(0, 8).toUpperCase()}</p>
   </div>
 
+  ${signaturePosition === 'top' ? signatureBlock : ''}
+
   <div class="section">
     <h2 class="section-title">Informações da Clínica</h2>
     <div class="info-grid">
@@ -253,6 +282,8 @@ serve(async (req) => {
   </div>
   ` : ''}
 
+  ${signaturePosition === 'middle' ? signatureBlock : ''}
+
   ${files && files.length > 0 ? `
   <div class="section">
     <h2 class="section-title">Arquivos Anexos (${files.length})</h2>
@@ -283,19 +314,7 @@ serve(async (req) => {
     <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
   </div>
 
-  ${signatureDataUrl ? `
-  <div style="margin-top: 60px; page-break-inside: avoid;">
-    <div class="section">
-      <h2 class="section-title">Assinatura Digital</h2>
-      <div class="signature-container">
-        <img src="${signatureDataUrl}" alt="Assinatura" class="signature-image" />
-        <p style="margin-top: 10px; font-size: 13px; color: #000;">
-          Assinado por: ${order.dentist_name}
-        </p>
-      </div>
-    </div>
-  </div>
-  ` : ''}
+  ${signaturePosition === 'bottom' ? signatureBlock : ''}
 </body>
 </html>
     `;

@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send, BarChart3 } from "lucide-react";
+import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send, BarChart3, FileSignature } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NotificationManager } from "@/components/NotificationManager";
 import { FreemiumUsageDashboard } from "@/components/FreemiumUsageDashboard";
+import { PDFSignatureSettings } from "@/components/billing/PDFSignatureSettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,10 +122,14 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="account" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="account" className="gap-2">
             <User className="h-4 w-4" />
             Conta
+          </TabsTrigger>
+          <TabsTrigger value="pdfs" className="gap-2">
+            <FileSignature className="h-4 w-4" />
+            PDFs
           </TabsTrigger>
           <TabsTrigger value="usage" className="gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -354,6 +359,10 @@ const Settings = () => {
             </AlertDialog>
           </CardContent>
         </Card>
+        </TabsContent>
+
+        <TabsContent value="pdfs" className="space-y-6">
+          <PDFSignatureSettings />
         </TabsContent>
 
         <TabsContent value="usage">
