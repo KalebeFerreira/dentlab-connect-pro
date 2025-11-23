@@ -136,13 +136,24 @@ export const DentistManagement = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-      toast.success(`Acesso criado com sucesso!\nLogin: ${dentist.email}\nO dentista deve fazer login em: ${window.location.origin}/auth`);
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.success) {
+        throw new Error('Falha ao criar acesso');
+      }
+
+      toast.success(data.message || `Acesso criado com sucesso!\nLogin: ${dentist.email}\nO dentista deve fazer login em: ${window.location.origin}/auth`);
       loadDentists();
     } catch (error: any) {
       console.error("Error creating access:", error);
-      toast.error(`Erro ao criar acesso: ${error.message}`);
+      const errorMessage = error.message || 'Erro desconhecido ao criar acesso';
+      toast.error(`Erro ao criar acesso: ${errorMessage}`);
     }
   };
 
