@@ -1,17 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FileText, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+interface CertificateTemplate {
+  id: string;
+  template_name: string;
+  category: string;
+  default_reason: string;
+  default_days: number;
+  default_text: string;
+}
+
 export const CertificateGenerator = () => {
   const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [formData, setFormData] = useState({
     patientName: "",
     patientCpf: "",
@@ -22,7 +34,44 @@ export const CertificateGenerator = () => {
     days: "1",
     reason: "",
     observations: "",
+    customText: "",
   });
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("certificate_templates")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("category, template_name");
+
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (error) {
+      console.error("Error loading templates:", error);
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setFormData({
+        ...formData,
+        reason: template.default_reason,
+        days: template.default_days.toString(),
+        customText: template.default_text,
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +95,7 @@ export const CertificateGenerator = () => {
           days: formData.days,
           reason: formData.reason,
           observations: formData.observations,
+          customText: formData.customText,
           issueDate: format(new Date(), "dd/MM/yyyy", { locale: ptBR }),
         },
       });
@@ -66,6 +116,7 @@ export const CertificateGenerator = () => {
       toast.success("Atestado gerado com sucesso!");
       
       // Reset form
+      setSelectedTemplate("");
       setFormData({
         patientName: "",
         patientCpf: "",
@@ -76,6 +127,7 @@ export const CertificateGenerator = () => {
         days: "1",
         reason: "",
         observations: "",
+        customText: "",
       });
     } catch (error) {
       console.error("Error generating certificate:", error);
@@ -100,6 +152,24 @@ export const CertificateGenerator = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {templates.length > 0 && (
+            <div>
+              <Label htmlFor="template">Selecionar Template</Label>
+              <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um template ou preencha manualmente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.template_name} - {template.category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="patientName">Nome do Paciente *</Label>
@@ -188,8 +258,24 @@ export const CertificateGenerator = () => {
             />
           </div>
 
+          {formData.customText && (
+            <div>
+              <Label htmlFor="customText">Texto Personalizado</Label>
+              <Textarea
+                id="customText"
+                value={formData.customText}
+                onChange={(e) => setFormData({ ...formData, customText: e.target.value })}
+                rows={4}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Variáveis disponíveis: {"{patientName}"}, {"{days}"}, {"{startDate}"}, {"{endDate}"}
+              </p>
+            </div>
+          )}
+
           <div>
-            <Label htmlFor="observations">Observações</Label>
+            <Label htmlFor="observations">Observações Adicionais</Label>
             <Textarea
               id="observations"
               value={formData.observations}
