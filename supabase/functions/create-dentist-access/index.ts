@@ -30,6 +30,8 @@ serve(async (req) => {
     }
 
     const { dentistId, email, password, name } = await req.json();
+    
+    console.log('Request data:', { dentistId, email: email ? 'provided' : 'missing', hasPassword: !!password });
 
     // Verify dentist belongs to requesting user
     const { data: dentist, error: dentistError } = await supabase
@@ -40,23 +42,32 @@ serve(async (req) => {
       .single();
 
     if (dentistError || !dentist) {
+      console.error('Dentist not found:', dentistError);
       return new Response(
         JSON.stringify({ error: 'Dentista não encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('Dentist found:', dentist.name);
+
     // Check if user already exists
+    console.log('Checking if user exists with email:', email);
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers.users.find(u => u.email === email);
     
+    console.log('Existing user found:', !!existingUser);
+    
     let userId: string;
+    let isExistingUser = false;
     
     if (existingUser) {
-      console.log('User already exists, updating password and linking to dentist');
+      console.log('User already exists with id:', existingUser.id);
+      isExistingUser = true;
       userId = existingUser.id;
       
       // Update password for existing user
+      console.log('Updating password for existing user');
       const { error: updatePasswordError } = await supabase.auth.admin.updateUserById(
         userId,
         { 
@@ -71,7 +82,10 @@ serve(async (req) => {
         console.error('Error updating user password:', updatePasswordError);
         throw updatePasswordError;
       }
+      
+      console.log('Password updated successfully');
     } else {
+      console.log('Creating new user with email:', email);
       // Create new auth user
       const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
         email,
@@ -91,9 +105,11 @@ serve(async (req) => {
         throw new Error('Failed to create user');
       }
       
+      console.log('New user created with id:', authData.user.id);
       userId = authData.user.id;
     }
 
+    console.log('Linking dentist to user_id:', userId);
     // Link dentist to auth user
     const { error: updateError } = await supabase
       .from("dentists")
@@ -107,8 +123,11 @@ serve(async (req) => {
       console.error('Error updating dentist:', updateError);
       throw updateError;
     }
+    
+    console.log('Dentist linked successfully');
 
     // Check if role already exists
+    console.log('Checking if dentist role exists for user');
     const { data: existingRole } = await supabase
       .from("user_roles")
       .select('id')
@@ -116,8 +135,11 @@ serve(async (req) => {
       .eq('role', 'dentist')
       .single();
 
+    console.log('Existing role found:', !!existingRole);
+
     // Only create role if it doesn't exist
     if (!existingRole) {
+      console.log('Creating dentist role');
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
@@ -129,12 +151,16 @@ serve(async (req) => {
         console.error('Error creating role:', roleError);
         throw roleError;
       }
+      console.log('Role created successfully');
+    } else {
+      console.log('Role already exists, skipping creation');
     }
 
+    console.log('Operation completed successfully');
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: existingUser 
+        message: isExistingUser 
           ? 'Dentista vinculado ao usuário existente com sucesso' 
           : 'Acesso criado com sucesso',
         user_id: userId
