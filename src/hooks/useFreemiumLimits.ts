@@ -32,7 +32,7 @@ const PLAN_LIMITS = {
     ORDERS_PER_MONTH: -1, // unlimited
     PATIENTS: -1, // unlimited
     IMAGE_GENERATIONS: 110,
-    PDF_GENERATIONS: 100,
+    PDF_GENERATIONS: 200,
   },
 };
 
