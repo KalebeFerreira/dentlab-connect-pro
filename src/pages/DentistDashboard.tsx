@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, FileText, LogOut } from "lucide-react";
+import { Calendar, DollarSign, FileText, LogOut, Bell, BellOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DentistAppointmentsList } from "@/components/clinic/DentistAppointmentsList";
+import { useAppointmentNotifications } from "@/hooks/useAppointmentNotifications";
 
 export default function DentistDashboard() {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ export default function DentistDashboard() {
     upcomingAppointments: 0,
     totalEarnings: 0,
   });
+
+  const { permission, requestPermission } = useAppointmentNotifications(dentistInfo?.id || null);
 
   useEffect(() => {
     checkDentistAuth();
@@ -121,10 +124,24 @@ export default function DentistDashboard() {
             Bem-vindo, Dr(a). {dentistInfo?.name}
           </p>
         </div>
-        <Button onClick={handleLogout} variant="outline" size="sm">
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
+        <div className="flex gap-2">
+          {permission !== 'granted' && (
+            <Button onClick={requestPermission} variant="outline" size="sm">
+              <Bell className="h-4 w-4 mr-2" />
+              Ativar Notificações
+            </Button>
+          )}
+          {permission === 'granted' && (
+            <Button variant="outline" size="sm" disabled>
+              <BellOff className="h-4 w-4 mr-2" />
+              Notificações Ativas
+            </Button>
+          )}
+          <Button onClick={handleLogout} variant="outline" size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
