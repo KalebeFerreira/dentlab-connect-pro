@@ -29,6 +29,9 @@ import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { MessageTemplates } from "@/components/MessageTemplates";
 import { QuickSearch } from "@/components/QuickSearch";
+import { AdBanner } from "@/components/ads/AdBanner";
+import { WelcomeVideoAd } from "@/components/ads/WelcomeVideoAd";
+import { SidebarAd } from "@/components/ads/SidebarAd";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -305,6 +308,8 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        <WelcomeVideoAd />
+        
         {/* Welcome Section */}
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -329,6 +334,8 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
+
+        <AdBanner />
 
         {/* Quick Actions - Mobile Optimized */}
         <div className="mb-6 lg:hidden">
@@ -576,6 +583,11 @@ const Dashboard = () => {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Ad Banner for free users */}
+        <div className="mb-6">
+          <SidebarAd />
         </div>
 
         {/* Financial Summary */}
