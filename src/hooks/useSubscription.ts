@@ -38,7 +38,7 @@ export const PLANS = {
       "Pedidos ilimitados",
       "Pacientes ilimitados",
       "110 gerações de imagem IA por mês",
-      "100 PDFs gerados por mês",
+      "200 PDFs gerados por mês",
       "Todos os recursos avançados",
       "Suporte prioritário",
       "Recursos profissionais",
