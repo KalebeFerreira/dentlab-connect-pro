@@ -21,6 +21,7 @@ import Appointments from "./pages/Appointments";
 import Laboratory from "./pages/Laboratory";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
+import ClinicDashboard from "./pages/ClinicDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
                       <Route path="/planos" element={<Planos />} />
                       <Route path="/patients" element={<Patients />} />
                       <Route path="/appointments" element={<Appointments />} />
+                      <Route path="/clinic" element={<ClinicDashboard />} />
                       <Route path="/laboratory" element={<Laboratory />} />
                       <Route path="/billing" element={<Billing />} />
                       <Route path="/settings" element={<Settings />} />
