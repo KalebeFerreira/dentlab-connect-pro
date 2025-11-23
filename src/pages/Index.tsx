@@ -64,27 +64,27 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-primary py-20 md:py-32">
-        <div className="container mx-auto px-4">
+      <section className="relative overflow-hidden gradient-hero py-20 md:py-32">
+        <div className="absolute inset-0 bg-grid-white/[0.05] pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-block rounded-full bg-background/10 px-4 py-2 backdrop-blur-sm">
-              <span className="text-sm font-medium text-primary-foreground">
+            <div className="mb-6 inline-block rounded-full bg-white/20 px-4 py-2 backdrop-blur-sm animate-fade-in">
+              <span className="text-sm font-medium text-white">
                 ✨ Sistema Profissional de Gestão Odontológica
               </span>
             </div>
-            <h1 className="mb-6 text-4xl font-bold leading-tight text-primary-foreground md:text-6xl">
+            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl animate-fade-in [animation-delay:100ms]">
               Conectando Clínicas e Laboratórios de Forma Inteligente
             </h1>
-            <p className="mb-8 text-lg text-primary-foreground/90 md:text-xl">
+            <p className="mb-8 text-lg text-white md:text-xl animate-fade-in [animation-delay:200ms]">
               Gerencie ordens de trabalho, controle financeiro e comunicação em uma única plataforma. 
               Mais eficiência, menos trabalho manual.
             </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center animate-fade-in [animation-delay:300ms]">
               <Button 
                 size="lg" 
-                variant="secondary"
+                className="text-base bg-secondary hover:bg-secondary/90 text-white shadow-lg hover-scale"
                 onClick={() => navigate("/auth")}
-                className="text-base"
               >
                 Começar Gratuitamente
               </Button>
@@ -92,7 +92,7 @@ const Index = () => {
                 size="lg" 
                 variant="outline"
                 onClick={() => navigate("/planos")}
-                className="border-primary-foreground/20 bg-transparent text-primary-foreground hover:bg-background/10"
+                className="border-2 border-white bg-white/10 text-white hover:bg-white hover:text-primary backdrop-blur-sm"
               >
                 Ver Planos
               </Button>
@@ -102,25 +102,29 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-20 bg-gradient-soft">
         <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+          <div className="mb-16 text-center animate-fade-in">
+            <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
               Tudo que seu laboratório precisa
             </h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+            <p className="mx-auto max-w-2xl text-lg text-foreground">
               Uma plataforma completa para transformar a gestão do seu laboratório odontológico
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
-              <Card key={index} className="border-border/50 shadow-card transition-all hover:shadow-elevated">
+              <Card 
+                key={index} 
+                className="border-2 border-primary/20 shadow-card hover-lift group animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <CardContent className="p-6">
-                  <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3">
-                    <feature.icon className="h-6 w-6 text-primary" />
+                  <div className="mb-4 inline-flex rounded-xl bg-gradient-primary p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
+                  <h3 className="mb-2 text-xl font-semibold text-foreground">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
@@ -130,23 +134,27 @@ const Index = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="bg-muted/30 py-20">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-4xl">
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+            <div className="mb-12 text-center animate-fade-in">
+              <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
                 Por que escolher o Essência?
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-lg text-foreground">
                 Resultados comprovados que fazem a diferença no seu dia a dia
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <CheckCircle className="mt-1 h-5 w-5 flex-shrink-0 text-primary" />
-                  <span className="text-foreground">{benefit}</span>
+                <div 
+                  key={index} 
+                  className="flex items-start gap-3 p-4 rounded-lg hover:bg-primary/5 transition-colors duration-300 animate-fade-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <CheckCircle className="mt-1 h-5 w-5 flex-shrink-0 text-secondary" />
+                  <span className="text-foreground font-medium">{benefit}</span>
                 </div>
               ))}
             </div>
@@ -155,13 +163,13 @@ const Index = () => {
       </section>
 
       {/* How it Works */}
-      <section className="py-20">
+      <section className="py-20 bg-gradient-soft">
         <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+          <div className="mb-16 text-center animate-fade-in">
+            <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
               Como funciona?
             </h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+            <p className="mx-auto max-w-2xl text-lg text-foreground">
               Em poucos passos você está pronto para otimizar sua gestão
             </p>
           </div>
@@ -172,11 +180,15 @@ const Index = () => {
               { step: "2", title: "Configure", desc: "Adicione seus dados e personalize conforme sua necessidade" },
               { step: "3", title: "Comece a usar", desc: "Gerencie tudo de forma intuitiva e eficiente" }
             ].map((item, index) => (
-              <div key={index} className="text-center">
-                <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
+              <div 
+                key={index} 
+                className="text-center group animate-fade-in"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full gradient-primary text-2xl font-bold text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
                   {item.step}
                 </div>
-                <h3 className="mb-2 text-xl font-semibold">{item.title}</h3>
+                <h3 className="mb-2 text-xl font-semibold text-foreground">{item.title}</h3>
                 <p className="text-muted-foreground">{item.desc}</p>
               </div>
             ))}
@@ -185,22 +197,26 @@ const Index = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-muted/30 py-20">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+          <div className="mb-16 text-center animate-fade-in">
+            <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
               O que nossos clientes dizem
             </h2>
           </div>
 
           <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="shadow-card">
+              <Card 
+                key={index} 
+                className="shadow-card hover-lift border-2 border-primary/10 animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <CardContent className="p-6">
                   <p className="mb-4 text-lg italic text-foreground">"{testimonial.text}"</p>
                   <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    <p className="font-semibold text-foreground">{testimonial.name}</p>
+                    <p className="text-sm text-primary">{testimonial.role}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -210,20 +226,20 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-primary py-20">
-        <div className="container mx-auto px-4 text-center">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="mb-6 text-3xl font-bold text-primary-foreground md:text-4xl">
+      <section className="gradient-secondary py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/[0.05] pointer-events-none" />
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <div className="mx-auto max-w-3xl animate-fade-in">
+            <h2 className="mb-6 text-3xl font-bold text-white md:text-4xl">
               Pronto para transformar seu laboratório?
             </h2>
-            <p className="mb-8 text-lg text-primary-foreground/90">
+            <p className="mb-8 text-lg text-white md:text-xl">
               Junte-se a centenas de laboratórios que já otimizaram sua gestão
             </p>
             <Button 
               size="lg" 
-              variant="secondary"
               onClick={() => navigate("/auth")}
-              className="text-base"
+              className="text-base bg-white text-secondary hover:bg-white/90 shadow-lg hover-scale"
             >
               Começar Agora - É Grátis
             </Button>
@@ -232,33 +248,33 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-card py-12">
+      <footer className="border-t bg-muted/30 py-12">
         <div className="container mx-auto px-4">
           <div className="grid gap-8 md:grid-cols-3">
             <div>
-              <h3 className="mb-4 text-lg font-semibold">Essência dental-lab</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="mb-4 text-lg font-semibold text-primary">Essência dental-lab</h3>
+              <p className="text-sm text-foreground">
                 Sistema profissional para gestão de ordens de trabalho odontológico
               </p>
             </div>
             <div>
-              <h4 className="mb-4 text-sm font-semibold">Links Rápidos</h4>
+              <h4 className="mb-4 text-sm font-semibold text-foreground">Links Rápidos</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button onClick={() => navigate("/planos")} className="text-muted-foreground hover:text-foreground">
+                  <button onClick={() => navigate("/planos")} className="text-muted-foreground hover:text-primary transition-colors">
                     Planos
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => navigate("/auth")} className="text-muted-foreground hover:text-foreground">
+                  <button onClick={() => navigate("/auth")} className="text-muted-foreground hover:text-primary transition-colors">
                     Login
                   </button>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="mb-4 text-sm font-semibold">Contato</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="mb-4 text-sm font-semibold text-foreground">Contato</h4>
+              <p className="text-sm text-foreground">
                 contato@essenciadental-lab.com.br
               </p>
             </div>
