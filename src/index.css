@@ -325,4 +325,10 @@ All colors MUST be HSL.
       z-index: 40;
     }
   }
+
+  /* Signature canvas styles */
+  .signature-canvas {
+    touch-action: none;
+    cursor: crosshair;
+  }
 }
