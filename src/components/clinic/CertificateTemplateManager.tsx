@@ -20,6 +20,37 @@ interface CertificateTemplate {
   is_active: boolean;
 }
 
+const DEFAULT_TEMPLATES = [
+  {
+    template_name: "Extração Dentária",
+    category: "Cirurgia",
+    default_reason: "Extração de elemento dentário",
+    default_days: 1,
+    default_text: "Atesto para os devidos fins que o(a) paciente {patientName} esteve sob meus cuidados profissionais, sendo submetido(a) a procedimento de extração dentária, necessitando de repouso de {days} dia(s).",
+  },
+  {
+    template_name: "Tratamento de Canal",
+    category: "Endodontia",
+    default_reason: "Tratamento endodôntico",
+    default_days: 1,
+    default_text: "Atesto para os devidos fins que o(a) paciente {patientName} esteve sob meus cuidados profissionais para tratamento endodôntico (canal), necessitando de afastamento de {days} dia(s) de suas atividades.",
+  },
+  {
+    template_name: "Implante Dentário",
+    category: "Implantodontia",
+    default_reason: "Colocação de implante dentário",
+    default_days: 2,
+    default_text: "Atesto que o(a) paciente {patientName} foi submetido(a) a procedimento cirúrgico de implante dentário, necessitando de repouso de {days} dias para adequada recuperação pós-operatória.",
+  },
+  {
+    template_name: "Urgência Odontológica",
+    category: "Emergência",
+    default_reason: "Urgência odontológica",
+    default_days: 1,
+    default_text: "Atesto para os devidos fins que o(a) paciente {patientName} necessitou de atendimento odontológico de urgência, sendo necessário o afastamento de {days} dia(s) de suas atividades habituais.",
+  },
+];
+
 export const CertificateTemplateManager = () => {
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,12 +82,46 @@ export const CertificateTemplateManager = () => {
         .order("category, template_name");
 
       if (error) throw error;
-      setTemplates(data || []);
+
+      // If no templates exist, insert default ones
+      if (!data || data.length === 0) {
+        await insertDefaultTemplates(user.id);
+        // Reload templates
+        const { data: newData, error: newError } = await supabase
+          .from("certificate_templates")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("category, template_name");
+
+        if (newError) throw newError;
+        setTemplates(newData || []);
+      } else {
+        setTemplates(data);
+      }
     } catch (error) {
       console.error("Error loading templates:", error);
       toast.error("Erro ao carregar templates");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const insertDefaultTemplates = async (userId: string) => {
+    try {
+      const templatesWithUserId = DEFAULT_TEMPLATES.map(template => ({
+        ...template,
+        user_id: userId,
+      }));
+
+      const { error } = await supabase
+        .from("certificate_templates")
+        .insert(templatesWithUserId);
+
+      if (error) throw error;
+      toast.success("Templates padrão criados com sucesso!");
+    } catch (error) {
+      console.error("Error inserting default templates:", error);
     }
   };
 

@@ -81,11 +81,46 @@ export const CertificateGenerator = () => {
     setSignatureUrl("");
   };
 
+  const saveSignature = async () => {
+    if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
+      toast.error("Por favor, desenhe sua assinatura primeiro");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const signatureDataUrl = signaturePadRef.current.toDataURL();
+      const blob = await fetch(signatureDataUrl).then(r => r.blob());
+      const fileName = `signature-${user.id}-${Date.now()}.png`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("laboratory-files")
+        .upload(`signatures/${fileName}`, blob, {
+          contentType: "image/png",
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("laboratory-files")
+        .getPublicUrl(`signatures/${fileName}`);
+
+      setSignatureUrl(urlData.publicUrl);
+      toast.success("Assinatura salva com sucesso!");
+    } catch (error) {
+      console.error("Error saving signature:", error);
+      toast.error("Erro ao salvar assinatura");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!signaturePadRef.current?.isEmpty() && !signatureUrl) {
-      toast.error("Por favor, finalize a assinatura antes de gerar o atestado");
+    if (!signatureUrl && (signaturePadRef.current && signaturePadRef.current.isEmpty())) {
+      toast.error("Por favor, adicione sua assinatura antes de gerar o atestado");
       return;
     }
 
@@ -98,29 +133,8 @@ export const CertificateGenerator = () => {
         return;
       }
 
-      // Save signature if drawn
-      let uploadedSignatureUrl = signatureUrl;
-      if (signaturePadRef.current && !signaturePadRef.current.isEmpty() && !signatureUrl) {
-        const signatureDataUrl = signaturePadRef.current.toDataURL();
-        const blob = await fetch(signatureDataUrl).then(r => r.blob());
-        const fileName = `signature-${Date.now()}.png`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("laboratory-files")
-          .upload(`signatures/${fileName}`, blob, {
-            contentType: "image/png",
-            upsert: true,
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from("laboratory-files")
-          .getPublicUrl(`signatures/${fileName}`);
-
-        uploadedSignatureUrl = urlData.publicUrl;
-        setSignatureUrl(uploadedSignatureUrl);
-      }
+      // Use existing signature URL or the saved one
+      const finalSignatureUrl = signatureUrl;
 
       const { data, error } = await supabase.functions.invoke("generate-certificate-pdf", {
         body: {
@@ -134,7 +148,7 @@ export const CertificateGenerator = () => {
           reason: formData.reason,
           observations: formData.observations,
           customText: formData.customText,
-          signatureUrl: uploadedSignatureUrl,
+          signatureUrl: finalSignatureUrl,
           issueDate: format(new Date(), "dd/MM/yyyy", { locale: ptBR }),
         },
       });
@@ -329,16 +343,29 @@ export const CertificateGenerator = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Assinatura Digital *</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={clearSignature}
-                className="gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Limpar
-              </Button>
+              <div className="flex gap-2">
+                {!signatureUrl && (
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={saveSignature}
+                    className="gap-2"
+                  >
+                    Salvar Assinatura
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSignature}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Limpar
+                </Button>
+              </div>
             </div>
             <div className="border-2 border-dashed rounded-lg p-4 bg-muted/50">
               {signatureUrl ? (
@@ -346,10 +373,10 @@ export const CertificateGenerator = () => {
                   <img 
                     src={signatureUrl} 
                     alt="Assinatura" 
-                    className="max-h-32 mx-auto border rounded"
+                    className="max-h-32 mx-auto border rounded bg-white p-2"
                   />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Assinatura salva
+                  <p className="text-xs text-green-600 font-medium mt-2">
+                    ✓ Assinatura salva e pronta para uso
                   </p>
                 </div>
               ) : (
@@ -361,7 +388,7 @@ export const CertificateGenerator = () => {
                     }}
                   />
                   <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Assine acima com o mouse ou dedo
+                    Assine acima e clique em "Salvar Assinatura"
                   </p>
                 </>
               )}
