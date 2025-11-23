@@ -16,6 +16,7 @@ export const FreemiumBanner = ({ feature, currentUsage, limit, percentage }: Fre
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
 
+  // Show banner for all users when approaching or exceeding limits
   if (dismissed || percentage < 70) return null;
 
   return (

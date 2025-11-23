@@ -68,9 +68,16 @@ const NewOrder = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Check freemium limits
-    if (!limits.canCreateOrder && !limits.isSubscribed) {
-      setUpgradeDialogOpen(true);
+    // Check freemium limits - enforce for all users
+    if (!limits.canCreateOrder) {
+      toast.error("Limite de pedidos atingido", {
+        description: limits.isSubscribed 
+          ? "Você atingiu o limite mensal do seu plano atual." 
+          : "Faça upgrade para criar mais pedidos."
+      });
+      if (!limits.isSubscribed) {
+        setUpgradeDialogOpen(true);
+      }
       return;
     }
 
@@ -192,7 +199,7 @@ const NewOrder = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-3xl">
-        {!limits.loading && !limits.isSubscribed && (
+        {!limits.loading && limits.orders && limits.orders.limit !== -1 && (
           <FreemiumBanner
             feature="pedidos por mês"
             currentUsage={limits.orders?.current || 0}

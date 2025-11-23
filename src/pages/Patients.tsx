@@ -78,10 +78,17 @@ const Patients = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check freemium limits only for new patients
-    if (!editingPatient && !limits.canCreatePatient && !limits.isSubscribed) {
+    // Check freemium limits only for new patients - enforce for all users
+    if (!editingPatient && !limits.canCreatePatient) {
       setDialogOpen(false);
-      setUpgradeDialogOpen(true);
+      toast.error("Limite de pacientes atingido", {
+        description: limits.isSubscribed 
+          ? "Você atingiu o limite do seu plano atual." 
+          : "Faça upgrade para cadastrar mais pacientes."
+      });
+      if (!limits.isSubscribed) {
+        setUpgradeDialogOpen(true);
+      }
       return;
     }
 
@@ -181,9 +188,9 @@ const Patients = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {!limits.loading && !limits.isSubscribed && (
+      {!limits.loading && limits.patients && limits.patients.limit !== -1 && (
         <FreemiumBanner
-          feature="clientes cadastrados"
+          feature="pacientes cadastrados"
           currentUsage={limits.patients?.current || 0}
           limit={limits.patients?.limit || 10}
           percentage={limits.patients?.percentage || 0}
