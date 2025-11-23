@@ -83,6 +83,51 @@ export type Database = {
           },
         ]
       }
+      automatic_report_schedules: {
+        Row: {
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          day_of_month: number
+          id: string
+          is_active: boolean
+          last_sent_at: string | null
+          send_via_email: boolean
+          send_via_whatsapp: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          send_via_email?: boolean
+          send_via_whatsapp?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          send_via_email?: boolean
+          send_via_whatsapp?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       certificate_templates: {
         Row: {
           category: string
