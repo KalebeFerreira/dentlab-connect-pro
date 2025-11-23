@@ -19,6 +19,7 @@ interface CertificateRequest {
   customText?: string;
   signatureUrl?: string;
   issueDate: string;
+  logoUrl?: string;
 }
 
 const generateCertificateHTML = (data: CertificateRequest): string => {
@@ -90,6 +91,11 @@ const generateCertificateHTML = (data: CertificateRequest): string => {
     </head>
     <body>
       <div class="header">
+        ${data.logoUrl ? `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="${data.logoUrl}" alt="Logo" style="max-width: 150px; max-height: 80px;" />
+          </div>
+        ` : ''}
         <div class="title">Atestado Odontológico</div>
       </div>
       

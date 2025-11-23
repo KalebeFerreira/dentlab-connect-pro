@@ -18,6 +18,7 @@ interface CompanyInfo {
   cpf_cnpj: string;
   email: string;
   phone: string;
+  logo_url?: string;
 }
 
 serve(async (req) => {
@@ -87,6 +88,11 @@ serve(async (req) => {
         </head>
         <body>
           <div class="header">
+            ${companyInfo.logo_url ? `
+              <div style="text-align: center; margin-bottom: 20px;">
+                <img src="${companyInfo.logo_url}" alt="Logo" style="max-width: 150px; max-height: 80px;" />
+              </div>
+            ` : ''}
             <h1>NOTA FISCAL DE SERVIÇOS</h1>
             <p class="invoice-number">Número: ${invoiceNumber}</p>
             <p class="invoice-number">Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
