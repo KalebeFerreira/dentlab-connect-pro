@@ -32,6 +32,8 @@ import { QuickSearch } from "@/components/QuickSearch";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { WelcomeVideoAd } from "@/components/ads/WelcomeVideoAd";
 import { SidebarAd } from "@/components/ads/SidebarAd";
+import { AdSenseBanner } from "@/components/ads/AdSenseBanner";
+import { AdSenseSidebar } from "@/components/ads/AdSenseSidebar";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -336,6 +338,9 @@ const Dashboard = () => {
         </div>
 
         <AdBanner />
+        
+        {/* Google AdSense Banner */}
+        <AdSenseBanner adSlot="1234567890" />
 
         {/* Quick Actions - Mobile Optimized */}
         <div className="mb-6 lg:hidden">
@@ -586,8 +591,9 @@ const Dashboard = () => {
         </div>
 
         {/* Ad Banner for free users */}
-        <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <SidebarAd />
+          <AdSenseSidebar adSlot="0987654321" />
         </div>
 
         {/* Financial Summary */}
