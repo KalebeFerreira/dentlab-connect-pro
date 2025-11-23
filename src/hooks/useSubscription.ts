@@ -78,7 +78,8 @@ export const useSubscription = () => {
   const checkSubscription = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      
+      if (!session?.access_token) {
         setSubscriptionInfo({
           subscribed: false,
           product_id: null,
@@ -90,6 +91,18 @@ export const useSubscription = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("check-subscription");
+      
+      // Se houver erro de autenticação (401), apenas define como não inscrito
+      if (error?.message?.includes("Authentication") || error?.status === 401) {
+        setSubscriptionInfo({
+          subscribed: false,
+          product_id: null,
+          price_id: null,
+          subscription_end: null,
+          loading: false,
+        });
+        return;
+      }
       
       if (error) throw error;
 
