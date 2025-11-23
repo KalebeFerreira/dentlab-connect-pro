@@ -453,6 +453,18 @@ const Dashboard = () => {
                 <span className="text-sm font-medium text-center">Laboratório</span>
               </CardContent>
             </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/clinic")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-teal-500/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-teal-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Clínica</span>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
