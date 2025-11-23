@@ -71,9 +71,16 @@ export const DentalImageGenerator = () => {
       return;
     }
 
-    // Check freemium limits
-    if (!limits.canGenerateImage && !limits.isSubscribed) {
-      setUpgradeDialogOpen(true);
+    // Check freemium limits - enforce for all users
+    if (!limits.canGenerateImage) {
+      toast.error("Limite de gerações IA atingido", {
+        description: limits.isSubscribed 
+          ? "Você atingiu o limite mensal do seu plano atual." 
+          : "Faça upgrade para gerar mais imagens."
+      });
+      if (!limits.isSubscribed) {
+        setUpgradeDialogOpen(true);
+      }
       return;
     }
 
@@ -145,7 +152,7 @@ export const DentalImageGenerator = () => {
 
   return (
     <div className="space-y-6">
-      {!limits.loading && !limits.isSubscribed && (
+      {!limits.loading && limits.imageGenerations && limits.imageGenerations.limit !== -1 && (
         <FreemiumBanner
           feature="gerações de imagem IA por mês"
           currentUsage={limits.imageGenerations?.current || 0}
