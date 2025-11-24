@@ -27,6 +27,10 @@ import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import ClinicDashboard from "./pages/ClinicDashboard";
 import DentistDashboard from "./pages/DentistDashboard";
+import Deliveries from "./pages/Deliveries";
+import NewDelivery from "./pages/NewDelivery";
+import DeliveryDetails from "./pages/DeliveryDetails";
+import DeliveryPersons from "./pages/DeliveryPersons";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +75,10 @@ const App = () => (
                         <Route path="/laboratory" element={<Laboratory />} />
                         <Route path="/laboratories" element={<Laboratories />} />
                         <Route path="/billing" element={<Billing />} />
+                        <Route path="/deliveries" element={<Deliveries />} />
+                        <Route path="/deliveries/new" element={<NewDelivery />} />
+                        <Route path="/deliveries/:id" element={<DeliveryDetails />} />
+                        <Route path="/delivery-persons" element={<DeliveryPersons />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
