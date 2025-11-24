@@ -37,6 +37,10 @@ const NewDelivery = () => {
     notes: "",
     distance_km: "",
     delivery_fee: "",
+    pickup_lat: undefined as number | undefined,
+    pickup_lng: undefined as number | undefined,
+    delivery_lat: undefined as number | undefined,
+    delivery_lng: undefined as number | undefined,
   });
 
   useEffect(() => {
@@ -82,6 +86,10 @@ const NewDelivery = () => {
         ...formData,
         distance_km: data.distance_km.toFixed(2),
         delivery_fee: data.delivery_fee.toFixed(2),
+        pickup_lat: data.pickup_lat,
+        pickup_lng: data.pickup_lng,
+        delivery_lat: data.delivery_lat,
+        delivery_lng: data.delivery_lng,
       });
 
       toast.success("Taxa calculada com sucesso!");
@@ -110,7 +118,11 @@ const NewDelivery = () => {
         user_id: user.id,
         delivery_person_id: formData.delivery_person_id || null,
         pickup_address: formData.pickup_address,
+        pickup_lat: formData.pickup_lat,
+        pickup_lng: formData.pickup_lng,
         delivery_address: formData.delivery_address,
+        delivery_lat: formData.delivery_lat,
+        delivery_lng: formData.delivery_lng,
         recipient_name: formData.recipient_name,
         recipient_phone: formData.recipient_phone,
         notes: formData.notes || null,

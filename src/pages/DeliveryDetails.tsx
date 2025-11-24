@@ -4,16 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Package, Truck, CheckCircle, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Package, Truck, CheckCircle, Clock, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import DeliveryMap from "@/components/DeliveryMap";
 
 interface Delivery {
   id: string;
   tracking_code: string;
   pickup_address: string;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
   delivery_address: string;
+  delivery_lat: number | null;
+  delivery_lng: number | null;
   recipient_name: string;
   recipient_phone: string;
   delivery_fee: number;
@@ -43,6 +48,8 @@ const DeliveryDetails = () => {
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [tracking, setTracking] = useState<TrackingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [updatingLocation, setUpdatingLocation] = useState(false);
 
   useEffect(() => {
     loadDelivery();
@@ -137,6 +144,44 @@ const DeliveryDetails = () => {
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Erro ao atualizar status");
+    }
+  };
+
+  const updateCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não suportada");
+      return;
+    }
+
+    setUpdatingLocation(true);
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          setCurrentLocation({ lat: latitude, lng: longitude });
+
+          await supabase.from("delivery_tracking").insert({
+            delivery_id: id,
+            status: delivery?.status || "in_transit",
+            location_lat: latitude,
+            location_lng: longitude,
+            notes: "Localização atualizada",
+          });
+
+          toast.success("Localização atualizada!");
+          setUpdatingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast.error("Erro ao obter localização");
+          setUpdatingLocation(false);
+        }
+      );
+    } catch (error) {
+      console.error("Error updating location:", error);
+      toast.error("Erro ao atualizar localização");
+      setUpdatingLocation(false);
     }
   };
 
@@ -277,6 +322,15 @@ const DeliveryDetails = () => {
 
           {delivery.status === "in_transit" && (
             <div className="flex gap-2">
+              <Button 
+                onClick={updateCurrentLocation} 
+                disabled={updatingLocation}
+                variant="outline"
+                className="flex-1"
+              >
+                <Navigation className="w-4 h-4 mr-2" />
+                {updatingLocation ? "Atualizando..." : "Atualizar Localização"}
+              </Button>
               <Button onClick={() => updateStatus("delivered")} className="flex-1">
                 Confirmar Entrega
               </Button>
@@ -284,6 +338,26 @@ const DeliveryDetails = () => {
           )}
         </CardContent>
       </Card>
+
+      {(delivery.pickup_lat && delivery.pickup_lng && delivery.delivery_lat && delivery.delivery_lng) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mapa de Rastreamento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeliveryMap
+              deliveryId={delivery.id}
+              pickupLat={delivery.pickup_lat}
+              pickupLng={delivery.pickup_lng}
+              deliveryLat={delivery.delivery_lat}
+              deliveryLng={delivery.delivery_lng}
+              currentLat={currentLocation?.lat}
+              currentLng={currentLocation?.lng}
+              status={delivery.status}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
