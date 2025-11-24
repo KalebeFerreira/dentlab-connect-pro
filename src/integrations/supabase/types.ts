@@ -206,6 +206,176 @@ export type Database = {
         }
         Relationships: []
       }
+      deliveries: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          delivery_address: string
+          delivery_fee: number
+          delivery_lat: number | null
+          delivery_lng: number | null
+          delivery_person_id: string | null
+          distance_km: number | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          picked_up_at: string | null
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          recipient_name: string
+          recipient_phone: string
+          scheduled_time: string | null
+          status: string
+          tracking_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_address: string
+          delivery_fee: number
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_person_id?: string | null
+          distance_km?: number | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          picked_up_at?: string | null
+          pickup_address: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          recipient_name: string
+          recipient_phone: string
+          scheduled_time?: string | null
+          status?: string
+          tracking_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_address?: string
+          delivery_fee?: number
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_person_id?: string | null
+          distance_km?: number | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          picked_up_at?: string | null
+          pickup_address?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          recipient_name?: string
+          recipient_phone?: string
+          scheduled_time?: string | null
+          status?: string
+          tracking_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliveries_delivery_person_id_fkey"
+            columns: ["delivery_person_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_persons: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          license_plate: string | null
+          name: string
+          phone: string
+          rating: number | null
+          total_deliveries: number | null
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_plate?: string | null
+          name: string
+          phone: string
+          rating?: number | null
+          total_deliveries?: number | null
+          updated_at?: string
+          user_id: string
+          vehicle_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_plate?: string | null
+          name?: string
+          phone?: string
+          rating?: number | null
+          total_deliveries?: number | null
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
+      delivery_tracking: {
+        Row: {
+          created_at: string
+          delivery_id: string
+          id: string
+          location_lat: number | null
+          location_lng: number | null
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_id: string
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          delivery_id?: string
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_tracking_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dentists: {
         Row: {
           auth_enabled: boolean | null
@@ -952,6 +1122,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_tracking_code: { Args: never; Returns: string }
       get_monthly_image_usage: { Args: { p_user_id: string }; Returns: number }
       get_monthly_pdf_usage: { Args: { p_user_id: string }; Returns: number }
       get_next_document_number: {
