@@ -13,6 +13,11 @@ export const serviceFormSchema = z.object({
     .max(200, { message: "Nome do cliente deve ter no máximo 200 caracteres" })
     .optional()
     .nullable(),
+  patient_name: z.string()
+    .trim()
+    .max(200, { message: "Nome do paciente deve ter no máximo 200 caracteres" })
+    .optional()
+    .nullable(),
 });
 
 export const transactionFormSchema = z.object({

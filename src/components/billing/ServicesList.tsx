@@ -122,15 +122,16 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
       [`Total de Serviços: ${services.length}`],
       [`Valor Total: ${formatCurrency(services.reduce((sum, s) => sum + Number(s.service_value), 0))}`],
       [],
-      ['Serviço', 'Cliente', 'Valor', 'Data'],
+      ['Serviço', 'Cliente', 'Paciente', 'Valor', 'Data'],
       ...services.map(service => [
         service.service_name,
         service.client_name || '-',
+        service.patient_name || '-',
         Number(service.service_value),
         format(new Date(service.service_date), 'dd/MM/yyyy', { locale: ptBR })
       ]),
       [],
-      ['TOTAL', '', services.reduce((sum, s) => sum + Number(s.service_value), 0), '']
+      ['TOTAL', '', '', services.reduce((sum, s) => sum + Number(s.service_value), 0), '']
     ].filter(row => row.length > 0);
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -139,6 +140,7 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
     worksheet['!cols'] = [
       { wch: 30 }, // Serviço
       { wch: 20 }, // Cliente
+      { wch: 20 }, // Paciente
       { wch: 15 }, // Valor
       { wch: 12 }  // Data
     ];
@@ -186,6 +188,7 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
             <TableRow>
               <TableHead>Serviço</TableHead>
               <TableHead>Cliente</TableHead>
+              <TableHead>Paciente</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Data</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -196,6 +199,7 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
               <TableRow key={service.id}>
                 <TableCell className="font-medium">{service.service_name}</TableCell>
                 <TableCell>{service.client_name || "-"}</TableCell>
+                <TableCell>{service.patient_name || "-"}</TableCell>
                 <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
                 <TableCell>
                   {format(new Date(service.service_date), "dd/MM/yyyy", {

@@ -16,6 +16,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [serviceValue, setServiceValue] = useState("");
   const [clientName, setClientName] = useState("");
+  const [patientName, setPatientName] = useState("");
   const [loading, setLoading] = useState(false);
 
   const formatCurrency = (value: string) => {
@@ -52,6 +53,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         service_name: serviceName,
         service_value: numericValue,
         client_name: clientName || null,
+        patient_name: patientName || null,
       });
 
       if (!validationResult.success) {
@@ -66,6 +68,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
           service_name: serviceName.trim(),
           service_value: numericValue,
           client_name: clientName?.trim() || null,
+          patient_name: patientName?.trim() || null,
           service_date: new Date().toISOString().split("T")[0],
           status: "active",
         },
@@ -77,6 +80,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setServiceName("");
       setServiceValue("");
       setClientName("");
+      setPatientName("");
       await onServiceAdd();
     } catch (error) {
       console.error(error);
@@ -93,7 +97,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="service_name">Serviço Prestado</Label>
               <Input
@@ -117,12 +121,22 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="client_name">Nome do Cliente (Opcional)</Label>
+              <Label htmlFor="client_name">Nome da Clínica (Cliente)</Label>
               <Input
                 id="client_name"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder="Nome do cliente"
+                placeholder="Nome da clínica"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="patient_name">Nome do Paciente (Opcional)</Label>
+              <Input
+                id="patient_name"
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                placeholder="Nome do paciente"
               />
             </div>
           </div>
