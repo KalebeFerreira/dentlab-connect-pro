@@ -23,8 +23,6 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Pedidos", url: "/orders", icon: FileText },
-  { title: "Entregas", url: "/deliveries", icon: Truck },
-  { title: "Motoboys", url: "/delivery-persons", icon: Bike },
   { title: "Financeiro", url: "/financial", icon: DollarSign },
   { title: "Faturamento", url: "/billing", icon: Receipt },
   { title: "Pacientes", url: "/patients", icon: Users },
