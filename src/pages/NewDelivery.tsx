@@ -32,6 +32,8 @@ const NewDelivery = () => {
     delivery_person_id: "",
     pickup_address: "",
     delivery_address: "",
+    city: "",
+    state: "",
     recipient_name: "",
     recipient_phone: "",
     notes: "",
@@ -66,8 +68,8 @@ const NewDelivery = () => {
   };
 
   const calculateDeliveryFee = async () => {
-    if (!formData.pickup_address || !formData.delivery_address) {
-      toast.error("Preencha os endereços de origem e destino");
+    if (!formData.pickup_address || !formData.delivery_address || !formData.city || !formData.state) {
+      toast.error("Preencha todos os campos de endereço (origem, destino, cidade e estado)");
       return;
     }
 
@@ -77,6 +79,8 @@ const NewDelivery = () => {
         body: {
           pickup_address: formData.pickup_address,
           delivery_address: formData.delivery_address,
+          city: formData.city,
+          state: formData.state,
         },
       });
 
@@ -191,7 +195,7 @@ const NewDelivery = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, pickup_address: e.target.value })
                   }
-                  placeholder="Rua, número, bairro, cidade"
+                  placeholder="Rua, número, bairro"
                 />
               </div>
 
@@ -204,8 +208,37 @@ const NewDelivery = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, delivery_address: e.target.value })
                   }
-                  placeholder="Rua, número, bairro, cidade"
+                  placeholder="Rua, número, bairro"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city">Cidade *</Label>
+                  <Input
+                    id="city"
+                    required
+                    value={formData.city}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    placeholder="Ex: Brasília"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="state">Estado *</Label>
+                  <Input
+                    id="state"
+                    required
+                    value={formData.state}
+                    onChange={(e) =>
+                      setFormData({ ...formData, state: e.target.value })
+                    }
+                    placeholder="Ex: DF"
+                    maxLength={2}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

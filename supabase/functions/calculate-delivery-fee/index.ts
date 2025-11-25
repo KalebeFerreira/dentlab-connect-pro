@@ -25,16 +25,27 @@ serve(async (req) => {
   }
 
   try {
-    const { pickup_address, delivery_address } = await req.json();
+    const { pickup_address, delivery_address, city, state } = await req.json();
 
     console.log("Calculating delivery fee for:", {
       pickup_address,
-      delivery_address
+      delivery_address,
+      city,
+      state
     });
+
+    // Format addresses with city and state for better geocoding
+    const pickupQuery = city && state 
+      ? `${pickup_address}, ${city}, ${state}, Brazil`
+      : `${pickup_address}, Brazil`;
+    
+    const deliveryQuery = city && state
+      ? `${delivery_address}, ${city}, ${state}, Brazil`
+      : `${delivery_address}, Brazil`;
 
     // Geocode pickup address using Nominatim (OpenStreetMap)
     const pickupGeocode = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup_address)},Brazil&limit=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickupQuery)}&limit=3&addressdetails=1`,
       {
         headers: {
           'User-Agent': 'DentalLabDelivery/1.0'
@@ -43,16 +54,30 @@ serve(async (req) => {
     );
     const pickupData = await pickupGeocode.json();
     
+    console.log("Pickup geocoding results:", pickupData.length);
+    
     if (!pickupData || pickupData.length === 0) {
-      throw new Error('Endereço de origem não encontrado');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Endereço de origem não encontrado. Tente adicionar mais detalhes como CEP, cidade ou estado.',
+          suggestions: 'Exemplo: Rua X, 123, Bairro Y, Cidade - Estado'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const pickupLat = parseFloat(pickupData[0].lat);
     const pickupLng = parseFloat(pickupData[0].lon);
 
+    // Add delay to respect Nominatim rate limits (1 request per second)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Geocode delivery address
     const deliveryGeocode = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(delivery_address)},Brazil&limit=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(deliveryQuery)}&limit=3&addressdetails=1`,
       {
         headers: {
           'User-Agent': 'DentalLabDelivery/1.0'
@@ -61,8 +86,19 @@ serve(async (req) => {
     );
     const deliveryData = await deliveryGeocode.json();
 
+    console.log("Delivery geocoding results:", deliveryData.length);
+
     if (!deliveryData || deliveryData.length === 0) {
-      throw new Error('Endereço de destino não encontrado');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Endereço de destino não encontrado. Tente adicionar mais detalhes como CEP, cidade ou estado.',
+          suggestions: 'Exemplo: Rua X, 123, Bairro Y, Cidade - Estado'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const deliveryLat = parseFloat(deliveryData[0].lat);
