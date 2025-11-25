@@ -32,6 +32,7 @@ const NewDelivery = () => {
     delivery_person_id: "",
     pickup_address: "",
     delivery_address: "",
+    cep: "",
     city: "",
     state: "",
     recipient_name: "",
@@ -44,6 +45,7 @@ const NewDelivery = () => {
     delivery_lat: undefined as number | undefined,
     delivery_lng: undefined as number | undefined,
   });
+  const [loadingCep, setLoadingCep] = useState(false);
 
   useEffect(() => {
     loadDeliveryPersons();
@@ -64,6 +66,54 @@ const NewDelivery = () => {
       setDeliveryPersons(data || []);
     } catch (error) {
       console.error("Error loading delivery persons:", error);
+    }
+  };
+
+  const fetchAddressByCep = async (cep: string) => {
+    // Remove non-numeric characters
+    const cleanCep = cep.replace(/\D/g, "");
+    
+    if (cleanCep.length !== 8) {
+      return;
+    }
+
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        city: data.localidade,
+        state: data.uf,
+      }));
+
+      toast.success("Endereço preenchido automaticamente!");
+    } catch (error) {
+      console.error("Error fetching CEP:", error);
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setLoadingCep(false);
+    }
+  };
+
+  const handleCepChange = (value: string) => {
+    // Format CEP as user types (XXXXX-XXX)
+    let formattedCep = value.replace(/\D/g, "");
+    if (formattedCep.length > 5) {
+      formattedCep = formattedCep.slice(0, 5) + "-" + formattedCep.slice(5, 8);
+    }
+    
+    setFormData({ ...formData, cep: formattedCep });
+
+    // Auto-fetch when CEP is complete
+    if (formattedCep.replace(/\D/g, "").length === 8) {
+      fetchAddressByCep(formattedCep);
     }
   };
 
@@ -187,29 +237,20 @@ const NewDelivery = () => {
               </div>
 
               <div>
-                <Label htmlFor="pickup_address">Endereço de Origem *</Label>
-                <Textarea
-                  id="pickup_address"
-                  required
-                  value={formData.pickup_address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, pickup_address: e.target.value })
-                  }
-                  placeholder="Rua, número, bairro"
+                <Label htmlFor="cep">CEP</Label>
+                <Input
+                  id="cep"
+                  value={formData.cep}
+                  onChange={(e) => handleCepChange(e.target.value)}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  disabled={loadingCep}
                 />
-              </div>
-
-              <div>
-                <Label htmlFor="delivery_address">Endereço de Destino *</Label>
-                <Textarea
-                  id="delivery_address"
-                  required
-                  value={formData.delivery_address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, delivery_address: e.target.value })
-                  }
-                  placeholder="Rua, número, bairro"
-                />
+                {loadingCep && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Buscando endereço...
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -239,6 +280,32 @@ const NewDelivery = () => {
                     maxLength={2}
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="pickup_address">Endereço de Origem *</Label>
+                <Textarea
+                  id="pickup_address"
+                  required
+                  value={formData.pickup_address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pickup_address: e.target.value })
+                  }
+                  placeholder="Rua, número, bairro"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="delivery_address">Endereço de Destino *</Label>
+                <Textarea
+                  id="delivery_address"
+                  required
+                  value={formData.delivery_address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, delivery_address: e.target.value })
+                  }
+                  placeholder="Rua, número, bairro"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
