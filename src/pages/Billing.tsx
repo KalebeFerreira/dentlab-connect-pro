@@ -27,6 +27,7 @@ export interface Service {
   service_name: string;
   service_value: number;
   client_name?: string;
+  patient_name?: string;
   service_date: string;
   status: string;
   created_at: string;

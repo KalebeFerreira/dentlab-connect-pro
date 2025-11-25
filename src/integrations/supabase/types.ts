@@ -1017,6 +1017,7 @@ export type Database = {
           client_name: string | null
           created_at: string
           id: string
+          patient_name: string | null
           service_date: string
           service_name: string
           service_value: number
@@ -1028,6 +1029,7 @@ export type Database = {
           client_name?: string | null
           created_at?: string
           id?: string
+          patient_name?: string | null
           service_date?: string
           service_name: string
           service_value: number
@@ -1039,6 +1041,7 @@ export type Database = {
           client_name?: string | null
           created_at?: string
           id?: string
+          patient_name?: string | null
           service_date?: string
           service_name?: string
           service_value?: number
