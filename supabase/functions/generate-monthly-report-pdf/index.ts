@@ -75,6 +75,18 @@ serve(async (req) => {
 
     const { services, companyInfo, totalValue, month, isConsolidated, months } = await req.json();
 
+    // Agrupar serviços por clínica
+    const servicesByClinic = services.reduce((acc: any, service: any) => {
+      const clinicName = service.client_name || "Sem Clínica";
+      if (!acc[clinicName]) {
+        acc[clinicName] = [];
+      }
+      acc[clinicName].push(service);
+      return acc;
+    }, {});
+
+    const clinicNames = Object.keys(servicesByClinic).sort();
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -118,15 +130,36 @@ serve(async (req) => {
             border-radius: 5px;
             color: #000;
           }
+          .clinic-section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+          }
+          .clinic-header {
+            background: #e8e8e8;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #000;
+          }
+          .clinic-header h2 {
+            margin: 0 0 10px 0;
+            color: #000;
+            font-size: 20px;
+          }
+          .clinic-header .clinic-total {
+            font-weight: bold;
+            font-size: 16px;
+            color: #000;
+          }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
           }
           th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #000;
+            border-bottom: 1px solid #ddd;
             color: #000;
           }
           th {
@@ -141,9 +174,9 @@ serve(async (req) => {
             text-align: right;
             font-size: 20px;
             font-weight: bold;
-            margin-top: 20px;
+            margin-top: 30px;
             padding-top: 20px;
-            border-top: 2px solid #000;
+            border-top: 3px solid #000;
             color: #000;
           }
           .footer {
@@ -181,29 +214,51 @@ serve(async (req) => {
           <p><strong>Total de Serviços:</strong> ${services.length}</p>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Serviço</th>
-              <th>Cliente</th>
-              <th>Data</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${services.map((service: any) => `
-              <tr>
-                <td>${service.service_name}</td>
-                <td>${service.client_name || '-'}</td>
-                <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
-                <td>R$ ${Number(service.service_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        ${clinicNames.map((clinicName: string) => {
+          const clinicServices = servicesByClinic[clinicName];
+          const clinicTotal = clinicServices.reduce(
+            (sum: number, service: any) => sum + Number(service.service_value),
+            0
+          );
+
+          return `
+            <div class="clinic-section">
+              <div class="clinic-header">
+                <h2>${clinicName}</h2>
+                <div class="clinic-total">
+                  Subtotal: R$ ${clinicTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                  ${clinicServices.length} ${clinicServices.length === 1 ? 'serviço' : 'serviços'}
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Serviço</th>
+                    <th>Paciente</th>
+                    <th>Data</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${clinicServices.map((service: any) => `
+                    <tr>
+                      <td>${service.service_name}</td>
+                      <td>${service.patient_name || '-'}</td>
+                      <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
+                      <td>R$ ${Number(service.service_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }).join('')}
 
         <div class="total">
-          Total do Período: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          Total Geral do Período: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </div>
 
         <div class="footer">
