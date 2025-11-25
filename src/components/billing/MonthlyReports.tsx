@@ -258,28 +258,52 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
     }
 
     try {
-      const worksheetData = [
+      // Agrupar serviços por clínica
+      const servicesByClinic = monthlyServices.reduce((acc, service) => {
+        const clinicName = service.client_name || "Sem Clínica";
+        if (!acc[clinicName]) {
+          acc[clinicName] = [];
+        }
+        acc[clinicName].push(service);
+        return acc;
+      }, {} as Record<string, typeof monthlyServices>);
+
+      const worksheetData: any[] = [
         ['Relatório Mensal de Serviços'],
         [`Mês: ${selectedMonth}`],
-        [`Total: ${formatCurrency(totalMonth)}`],
-        [],
-        ['Serviço', 'Cliente', 'Valor', 'Data'],
-        ...monthlyServices.map(service => [
-          service.service_name,
-          service.client_name || '-',
-          Number(service.service_value),
-          new Date(service.service_date).toLocaleDateString('pt-BR')
-        ]),
-        [],
-        ['TOTAL', '', totalMonth, '']
+        [`Total Geral: ${formatCurrency(totalMonth)}`],
+        []
       ];
+
+      // Adicionar cada clínica
+      Object.keys(servicesByClinic).sort().forEach((clinicName) => {
+        const clinicServices = servicesByClinic[clinicName];
+        const clinicTotal = clinicServices.reduce(
+          (sum, service) => sum + Number(service.service_value),
+          0
+        );
+
+        worksheetData.push(
+          [`CLÍNICA: ${clinicName}`, '', '', `Subtotal: ${formatCurrency(clinicTotal)}`],
+          ['Serviço', 'Paciente', 'Valor', 'Data'],
+          ...clinicServices.map(service => [
+            service.service_name,
+            service.patient_name || '-',
+            Number(service.service_value),
+            new Date(service.service_date).toLocaleDateString('pt-BR')
+          ]),
+          []
+        );
+      });
+
+      worksheetData.push(['TOTAL GERAL', '', totalMonth, '']);
 
       const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
       
       // Define largura das colunas
       worksheet['!cols'] = [
         { wch: 30 }, // Serviço
-        { wch: 20 }, // Cliente
+        { wch: 20 }, // Paciente
         { wch: 15 }, // Valor
         { wch: 12 }  // Data
       ];
@@ -593,70 +617,112 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
               <p className="text-2xl font-bold">{formatCurrency(totalMonth)}</p>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {monthlyServices.map((service) => (
-                <Card key={service.id} className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-sm">{service.service_name}</h3>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          service.status === "paid"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {service.status === "paid" ? "Pago" : "Pendente"}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cliente:</span>
-                        <span className="font-medium">{service.client_name || "-"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Valor:</span>
-                        <span className="font-semibold text-primary">
-                          {formatCurrency(Number(service.service_value))}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Data:</span>
-                        <span>{new Date(service.service_date).toLocaleDateString("pt-BR")}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+            {/* Agrupar serviços por clínica */}
+            {(() => {
+              const servicesByClinic = monthlyServices.reduce((acc, service) => {
+                const clinicName = service.client_name || "Sem Clínica";
+                if (!acc[clinicName]) {
+                  acc[clinicName] = [];
+                }
+                acc[clinicName].push(service);
+                return acc;
+              }, {} as Record<string, typeof monthlyServices>);
 
-            {/* Desktop Table View */}
-            <ScrollArea className="hidden md:block w-full rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Serviço</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {monthlyServices.map((service) => (
-                    <TableRow key={service.id}>
-                      <TableCell>{service.service_name}</TableCell>
-                      <TableCell>{service.client_name || "-"}</TableCell>
-                      <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
-                      <TableCell>
-                        {new Date(service.service_date).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+              const clinicNames = Object.keys(servicesByClinic).sort();
+
+              return clinicNames.map((clinicName) => {
+                const clinicServices = servicesByClinic[clinicName];
+                const clinicTotal = clinicServices.reduce(
+                  (sum, service) => sum + Number(service.service_value),
+                  0
+                );
+
+                return (
+                  <div key={clinicName} className="space-y-3">
+                    {/* Cabeçalho da Clínica */}
+                    <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-lg">{clinicName}</h3>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Subtotal</p>
+                          <p className="text-lg font-bold">{formatCurrency(clinicTotal)}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {clinicServices.length} {clinicServices.length === 1 ? 'serviço' : 'serviços'}
+                      </p>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-2 pl-2">
+                      {clinicServices.map((service) => (
+                        <Card key={service.id} className="p-3">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-semibold text-sm">{service.service_name}</h4>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  service.status === "paid"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {service.status === "paid" ? "Pago" : "Pendente"}
+                              </span>
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              {service.patient_name && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Paciente:</span>
+                                  <span className="font-medium">{service.patient_name}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Valor:</span>
+                                <span className="font-semibold text-primary">
+                                  {formatCurrency(Number(service.service_value))}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Data:</span>
+                                <span>{new Date(service.service_date).toLocaleDateString("pt-BR")}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <ScrollArea className="hidden md:block w-full rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Serviço</TableHead>
+                            <TableHead>Paciente</TableHead>
+                            <TableHead>Valor</TableHead>
+                            <TableHead>Data</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {clinicServices.map((service) => (
+                            <TableRow key={service.id}>
+                              <TableCell>{service.service_name}</TableCell>
+                              <TableCell>{service.patient_name || "-"}</TableCell>
+                              <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
+                              <TableCell>
+                                {new Date(service.service_date).toLocaleDateString("pt-BR")}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
 
