@@ -6,6 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Haversine formula to calculate distance between two coordinates
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,47 +32,44 @@ serve(async (req) => {
       delivery_address
     });
 
-    const MAPBOX_TOKEN = Deno.env.get('MAPBOX_ACCESS_TOKEN');
-    if (!MAPBOX_TOKEN) {
-      throw new Error('MAPBOX_ACCESS_TOKEN is not configured');
-    }
-
-    // Geocode pickup address
+    // Geocode pickup address using Nominatim (OpenStreetMap)
     const pickupGeocode = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickup_address)}.json?access_token=${MAPBOX_TOKEN}&country=BR&limit=1`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup_address)},Brazil&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'DentalLabDelivery/1.0'
+        }
+      }
     );
     const pickupData = await pickupGeocode.json();
     
-    if (!pickupData.features || pickupData.features.length === 0) {
+    if (!pickupData || pickupData.length === 0) {
       throw new Error('Endereço de origem não encontrado');
     }
 
-    const pickupCoords = pickupData.features[0].center; // [lng, lat]
+    const pickupLat = parseFloat(pickupData[0].lat);
+    const pickupLng = parseFloat(pickupData[0].lon);
 
     // Geocode delivery address
     const deliveryGeocode = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(delivery_address)}.json?access_token=${MAPBOX_TOKEN}&country=BR&limit=1`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(delivery_address)},Brazil&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'DentalLabDelivery/1.0'
+        }
+      }
     );
     const deliveryData = await deliveryGeocode.json();
 
-    if (!deliveryData.features || deliveryData.features.length === 0) {
+    if (!deliveryData || deliveryData.length === 0) {
       throw new Error('Endereço de destino não encontrado');
     }
 
-    const deliveryCoords = deliveryData.features[0].center; // [lng, lat]
+    const deliveryLat = parseFloat(deliveryData[0].lat);
+    const deliveryLng = parseFloat(deliveryData[0].lon);
 
-    // Calculate distance using Mapbox Directions API
-    const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoords[0]},${pickupCoords[1]};${deliveryCoords[0]},${deliveryCoords[1]}?access_token=${MAPBOX_TOKEN}&geometries=geojson`;
-    
-    const directionsResponse = await fetch(directionsUrl);
-    const directionsData = await directionsResponse.json();
-
-    if (!directionsData.routes || directionsData.routes.length === 0) {
-      throw new Error('Não foi possível calcular a rota');
-    }
-
-    const distanceMeters = directionsData.routes[0].distance;
-    const distance_km = distanceMeters / 1000;
+    // Calculate distance using Haversine formula
+    const distance_km = calculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng);
 
     // Calculate delivery fee based on distance
     // Base fee: R$ 10.00
@@ -71,8 +81,8 @@ serve(async (req) => {
     console.log("Calculated:", {
       distance_km: distance_km.toFixed(2),
       delivery_fee: delivery_fee.toFixed(2),
-      pickup_coords: pickupCoords,
-      delivery_coords: deliveryCoords
+      pickup_coords: [pickupLat, pickupLng],
+      delivery_coords: [deliveryLat, deliveryLng]
     });
 
     return new Response(
@@ -81,11 +91,10 @@ serve(async (req) => {
         delivery_fee: parseFloat(delivery_fee.toFixed(2)),
         base_fee,
         per_km_rate,
-        pickup_lat: pickupCoords[1],
-        pickup_lng: pickupCoords[0],
-        delivery_lat: deliveryCoords[1],
-        delivery_lng: deliveryCoords[0],
-        route_geometry: directionsData.routes[0].geometry
+        pickup_lat: pickupLat,
+        pickup_lng: pickupLng,
+        delivery_lat: deliveryLat,
+        delivery_lng: deliveryLng
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
