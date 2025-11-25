@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Package, Truck, MapPin, CheckCircle } from "lucide-react";
+import { Plus, Package, Truck, MapPin, CheckCircle, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DeliveryOptimizer } from "@/components/DeliveryOptimizer";
 
 interface Delivery {
   id: string;
@@ -138,6 +140,20 @@ const Deliveries = () => {
         </Button>
       </div>
 
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="list">
+            <Package className="mr-2 h-4 w-4" />
+            Lista de Entregas
+          </TabsTrigger>
+          <TabsTrigger value="optimizer">
+            <TrendingUp className="mr-2 h-4 w-4" />
+            Otimização
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="space-y-6">
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
@@ -251,6 +267,12 @@ const Deliveries = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="optimizer">
+          <DeliveryOptimizer />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { ArrowLeft, MapPin, Package, Truck, CheckCircle, Clock, Navigation } fro
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import DeliveryMap from "@/components/DeliveryMap";
+import { DeliveryMap } from "@/components/DeliveryMap";
 
 interface Delivery {
   id: string;
@@ -351,9 +351,6 @@ const DeliveryDetails = () => {
               pickupLng={delivery.pickup_lng}
               deliveryLat={delivery.delivery_lat}
               deliveryLng={delivery.delivery_lng}
-              currentLat={currentLocation?.lat}
-              currentLng={currentLocation?.lng}
-              status={delivery.status}
             />
           </CardContent>
         </Card>

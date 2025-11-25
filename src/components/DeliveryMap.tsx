@@ -1,176 +1,131 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import { supabase } from "@/integrations/supabase/client";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix for default marker icons in React-Leaflet
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
+
+// Custom icons
+const pickupIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const deliveryIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const motoIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 interface DeliveryMapProps {
+  pickupLat: number;
+  pickupLng: number;
+  deliveryLat: number;
+  deliveryLng: number;
   deliveryId: string;
-  pickupLat?: number;
-  pickupLng?: number;
-  deliveryLat?: number;
-  deliveryLng?: number;
-  currentLat?: number;
-  currentLng?: number;
-  status: string;
+  deliveryPersonId?: string;
 }
 
-const DeliveryMap: React.FC<DeliveryMapProps> = ({
-  deliveryId,
+export function DeliveryMap({
   pickupLat,
   pickupLng,
   deliveryLat,
   deliveryLng,
-  currentLat,
-  currentLng,
-  status,
-}) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
-  const pickupMarker = useRef<mapboxgl.Marker | null>(null);
-  const deliveryMarker = useRef<mapboxgl.Marker | null>(null);
-  const currentMarker = useRef<mapboxgl.Marker | null>(null);
+  deliveryId,
+  deliveryPersonId,
+}: DeliveryMapProps) {
+  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
 
   useEffect(() => {
-    // Get Mapbox token from Supabase secrets
-    const getMapboxToken = async () => {
-      // For now, we'll use a placeholder - in production, this would come from an edge function
-      // that securely retrieves the token
-      setMapboxToken('pk.eyJ1IjoibG92YWJsZS1kZW1vIiwiYSI6ImNtNXBzdXh2eTBjNGgya3M4azh3aGdxeXcifQ.placeholder');
-    };
-    
-    getMapboxToken();
-  }, []);
-
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
-
-    // Initialize map
-    mapboxgl.accessToken = mapboxToken;
-    
-    const centerLat = pickupLat || -23.5505;
-    const centerLng = pickupLng || -46.6333;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [centerLng, centerLat],
-      zoom: 12,
-    });
-
-    // Add navigation controls
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        visualizePitch: false,
-      }),
-      'top-right'
-    );
-
-    // Add markers
-    if (pickupLat && pickupLng) {
-      const el = document.createElement('div');
-      el.className = 'pickup-marker';
-      el.style.backgroundImage = 'url(https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png)';
-      el.style.width = '32px';
-      el.style.height = '40px';
-      el.style.backgroundSize = '100%';
-
-      pickupMarker.current = new mapboxgl.Marker({ element: el, color: '#22c55e' })
-        .setLngLat([pickupLng, pickupLat])
-        .setPopup(new mapboxgl.Popup().setHTML('<h3>Origem</h3>'))
-        .addTo(map.current);
-    }
-
-    if (deliveryLat && deliveryLng) {
-      deliveryMarker.current = new mapboxgl.Marker({ color: '#ef4444' })
-        .setLngLat([deliveryLng, deliveryLat])
-        .setPopup(new mapboxgl.Popup().setHTML('<h3>Destino</h3>'))
-        .addTo(map.current);
-    }
-
-    // Fit bounds to show both markers
-    if (pickupLat && pickupLng && deliveryLat && deliveryLng) {
-      const bounds = new mapboxgl.LngLatBounds()
-        .extend([pickupLng, pickupLat])
-        .extend([deliveryLng, deliveryLat]);
-      
-      map.current.fitBounds(bounds, { padding: 50 });
-    }
-
     // Subscribe to real-time location updates
     const channel = supabase
-      .channel(`delivery-location-${deliveryId}`)
+      .channel(`delivery-tracking-${deliveryId}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'delivery_tracking',
+          event: "INSERT",
+          schema: "public",
+          table: "delivery_tracking",
           filter: `delivery_id=eq.${deliveryId}`,
         },
-        (payload) => {
-          const tracking = payload.new;
-          if (tracking.location_lat && tracking.location_lng && map.current) {
-            // Update or create current location marker
-            if (currentMarker.current) {
-              currentMarker.current.setLngLat([tracking.location_lng, tracking.location_lat]);
-            } else {
-              currentMarker.current = new mapboxgl.Marker({ color: '#3b82f6' })
-                .setLngLat([tracking.location_lng, tracking.location_lat])
-                .setPopup(new mapboxgl.Popup().setHTML('<h3>Localização Atual</h3>'))
-                .addTo(map.current);
-            }
-
-            // Center map on new location
-            map.current.easeTo({
-              center: [tracking.location_lng, tracking.location_lat],
-              zoom: 14,
-              duration: 1000,
-            });
+        (payload: any) => {
+          if (payload.new.location_lat && payload.new.location_lng) {
+            setCurrentLocation([payload.new.location_lat, payload.new.location_lng]);
           }
         }
       )
       .subscribe();
 
-    // Cleanup
     return () => {
-      map.current?.remove();
       supabase.removeChannel(channel);
     };
-  }, [mapboxToken, deliveryId, pickupLat, pickupLng, deliveryLat, deliveryLng]);
+  }, [deliveryId]);
 
-  // Update current location marker if provided
-  useEffect(() => {
-    if (currentLat && currentLng && map.current) {
-      if (currentMarker.current) {
-        currentMarker.current.setLngLat([currentLng, currentLat]);
-      } else {
-        currentMarker.current = new mapboxgl.Marker({ color: '#3b82f6' })
-          .setLngLat([currentLng, currentLat])
-          .setPopup(new mapboxgl.Popup().setHTML('<h3>Localização Atual</h3>'))
-          .addTo(map.current);
-      }
-    }
-  }, [currentLat, currentLng]);
+  const center: [number, number] = [
+    (pickupLat + deliveryLat) / 2,
+    (pickupLng + deliveryLng) / 2,
+  ];
 
-  if (!mapboxToken) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
-        <p className="text-muted-foreground">Carregando mapa...</p>
-      </div>
-    );
-  }
+  const routeCoordinates: [number, number][] = [
+    [pickupLat, pickupLng],
+    [deliveryLat, deliveryLng],
+  ];
 
   return (
-    <div className="relative w-full h-96 rounded-lg overflow-hidden shadow-lg">
-      <div ref={mapContainer} className="absolute inset-0" />
-      {status === 'in_transit' && (
-        <div className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-          🚚 Em trânsito
-        </div>
-      )}
+    <div className="h-[400px] w-full rounded-lg overflow-hidden border border-border">
+      <MapContainer
+        center={center}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        <Marker position={[pickupLat, pickupLng]} icon={pickupIcon}>
+          <Popup>Ponto de Coleta</Popup>
+        </Marker>
+        
+        <Marker position={[deliveryLat, deliveryLng]} icon={deliveryIcon}>
+          <Popup>Ponto de Entrega</Popup>
+        </Marker>
+        
+        {currentLocation && (
+          <Marker position={currentLocation} icon={motoIcon}>
+            <Popup>Localização Atual do Motoboy</Popup>
+          </Marker>
+        )}
+        
+        <Polyline positions={routeCoordinates} color="blue" weight={3} opacity={0.7} />
+      </MapContainer>
     </div>
   );
-};
-
-export default DeliveryMap;
+}
