@@ -55,7 +55,7 @@ serve(async (req) => {
         { p_user_id: user.id }
       );
 
-      const PDF_LIMIT = 2;
+      const PDF_LIMIT = 30;
       if (pdfUsage >= PDF_LIMIT) {
         return new Response(
           JSON.stringify({ 

@@ -26,6 +26,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { Badge } from "@/components/ui/badge";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
 interface MonthlyReportsProps {
   services: Service[];
@@ -56,6 +57,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [reportHistory, setReportHistory] = useState<ReportHistoryItem[]>([]);
+  const { isSubscribed } = useFreemiumLimits();
 
   const getAvailableMonths = () => {
     const months = new Set<string>();
@@ -326,7 +328,13 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
         clients.add(service.client_name);
       }
     });
-    return Array.from(clients).sort();
+    const allClients = Array.from(clients).sort();
+    
+    // Limitar a 2 clientes no plano gratuito
+    if (!isSubscribed) {
+      return allClients.slice(0, 2);
+    }
+    return allClients;
   };
 
   const getClientMonthlyServices = () => {
@@ -551,6 +559,11 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                 size="sm"
               >
                 Por Cliente
+                {!isSubscribed && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    Máx. 2
+                  </Badge>
+                )}
               </Button>
             </div>
 
@@ -803,6 +816,14 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
 
         {clientReportMode && (
           <div className="space-y-4">
+            {!isSubscribed && (
+              <div className="p-4 bg-muted rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Plano Gratuito:</strong> Você pode visualizar relatórios de até 2 clientes. 
+                  Faça upgrade para acessar relatórios de todos os seus clientes.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Cliente</Label>
