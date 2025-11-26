@@ -23,15 +23,15 @@ const PLAN_LIMITS = {
     PDF_GENERATIONS: 30,
   },
   basic: {
-    ORDERS_PER_MONTH: 100,
-    PATIENTS: 110,
-    IMAGE_GENERATIONS: 50,
+    ORDERS_PER_MONTH: 130,
+    PATIENTS: 150,
+    IMAGE_GENERATIONS: 70,
     PDF_GENERATIONS: 110,
   },
   professional: {
     ORDERS_PER_MONTH: -1, // unlimited
     PATIENTS: -1, // unlimited
-    IMAGE_GENERATIONS: 110,
+    IMAGE_GENERATIONS: 150,
     PDF_GENERATIONS: 200,
   },
 };
