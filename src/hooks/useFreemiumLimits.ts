@@ -17,8 +17,8 @@ export interface FreemiumLimits {
 
 const PLAN_LIMITS = {
   free: {
-    ORDERS_PER_MONTH: 10,
-    PATIENTS: 10,
+    ORDERS_PER_MONTH: 30,
+    PATIENTS: 30,
     IMAGE_GENERATIONS: 10,
     PDF_GENERATIONS: 30,
   },
