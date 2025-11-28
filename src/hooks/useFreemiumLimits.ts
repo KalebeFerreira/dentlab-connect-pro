@@ -8,57 +8,54 @@ export interface FreemiumLimits {
   patients: { current: number; limit: number; percentage: number };
   imageGenerations: { current: number; limit: number; percentage: number };
   pdfGenerations: { current: number; limit: number; percentage: number };
+  priceTables: { current: number; limit: number; percentage: number };
+  monthlyReports: { current: number; limit: number; percentage: number };
   canCreateOrder: boolean;
   canCreatePatient: boolean;
   canGenerateImage: boolean;
   canGeneratePdf: boolean;
+  canCreatePriceTable: boolean;
+  canGenerateMonthlyReport: boolean;
   isSubscribed: boolean;
   loading: boolean;
 }
 
-const LABORATORY_LIMITS = {
-  free: {
-    ORDERS_PER_MONTH: 30,
-    PATIENTS: 30,
-    IMAGE_GENERATIONS: 10,
-    PDF_GENERATIONS: 30,
-  },
-  basic: {
-    ORDERS_PER_MONTH: 130,
-    PATIENTS: 150,
-    IMAGE_GENERATIONS: 70,
-    PDF_GENERATIONS: 110,
-  },
-  professional: {
-    ORDERS_PER_MONTH: -1, // unlimited
-    PATIENTS: -1, // unlimited
-    IMAGE_GENERATIONS: 150,
-    PDF_GENERATIONS: 200,
-  },
-};
-
-const CLINIC_LIMITS = {
+const PLAN_LIMITS = {
   free: {
     ORDERS_PER_MONTH: 50,
     PATIENTS: 50,
     IMAGE_GENERATIONS: 20,
-    PDF_GENERATIONS: 50,
+    PDF_GENERATIONS: 40,
+    PRICE_TABLES: 1,
+    MONTHLY_REPORTS: 3,
   },
   basic: {
-    ORDERS_PER_MONTH: 200,
-    PATIENTS: 300,
-    IMAGE_GENERATIONS: 100,
-    PDF_GENERATIONS: 200,
+    ORDERS_PER_MONTH: 120,
+    PATIENTS: 120,
+    IMAGE_GENERATIONS: 70,
+    PDF_GENERATIONS: 150,
+    PRICE_TABLES: -1, // unlimited
+    MONTHLY_REPORTS: -1, // unlimited
   },
   professional: {
     ORDERS_PER_MONTH: -1, // unlimited
     PATIENTS: -1, // unlimited
-    IMAGE_GENERATIONS: 300,
+    IMAGE_GENERATIONS: 140,
+    PDF_GENERATIONS: 300,
+    PRICE_TABLES: -1, // unlimited
+    MONTHLY_REPORTS: -1, // unlimited
+  },
+  premium: {
+    ORDERS_PER_MONTH: -1, // unlimited
+    PATIENTS: -1, // unlimited
+    IMAGE_GENERATIONS: -1, // unlimited
     PDF_GENERATIONS: -1, // unlimited
+    PRICE_TABLES: -1, // unlimited
+    MONTHLY_REPORTS: -1, // unlimited
   },
 };
 
-type PlanType = keyof typeof LABORATORY_LIMITS;
+type PlanType = keyof typeof PLAN_LIMITS;
 
 export const useFreemiumLimits = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -84,17 +81,18 @@ export const useFreemiumLimits = () => {
           patients: { current: 0, limit: -1, percentage: 0 },
           imageGenerations: { current: 0, limit: -1, percentage: 0 },
           pdfGenerations: { current: 0, limit: -1, percentage: 0 },
+          priceTables: { current: 0, limit: -1, percentage: 0 },
+          monthlyReports: { current: 0, limit: -1, percentage: 0 },
           canCreateOrder: true,
           canCreatePatient: true,
           canGenerateImage: true,
           canGeneratePdf: true,
+          canCreatePriceTable: true,
+          canGenerateMonthlyReport: true,
           isSubscribed: true,
           loading: false,
         };
       }
-
-      // Seleciona os limites baseado no tipo de usuário
-      const PLAN_LIMITS = role === 'laboratory' ? LABORATORY_LIMITS : CLINIC_LIMITS;
 
       // Check subscription status
       const { data: subscription } = await supabase
@@ -113,6 +111,8 @@ export const useFreemiumLimits = () => {
           currentPlan = 'basic';
         } else if (planName.includes('professional') || planName.includes('profissional') || planName.includes('pro')) {
           currentPlan = 'professional';
+        } else if (planName.includes('premium')) {
+          currentPlan = 'premium';
         }
       }
 
@@ -160,11 +160,26 @@ export const useFreemiumLimits = () => {
 
       const pdfCount = pdfUsage?.count || 0;
 
+      // Count price tables
+      const { count: priceTablesCount } = await supabase
+        .from('price_tables')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      // Count monthly reports for current month
+      const { count: monthlyReportsCount } = await supabase
+        .from('report_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('month', `${currentYear}-${String(currentMonth).padStart(2, '0')}`);
+
       // Calculate percentages (handle unlimited plans)
       const ordersPercentage = limits.ORDERS_PER_MONTH === -1 ? 0 : ((ordersCount || 0) / limits.ORDERS_PER_MONTH) * 100;
       const patientsPercentage = limits.PATIENTS === -1 ? 0 : ((patientsCount || 0) / limits.PATIENTS) * 100;
       const imagesPercentage = limits.IMAGE_GENERATIONS === -1 ? 0 : (imageCount / limits.IMAGE_GENERATIONS) * 100;
       const pdfsPercentage = limits.PDF_GENERATIONS === -1 ? 0 : (pdfCount / limits.PDF_GENERATIONS) * 100;
+      const priceTablesPercentage = limits.PRICE_TABLES === -1 ? 0 : ((priceTablesCount || 0) / limits.PRICE_TABLES) * 100;
+      const monthlyReportsPercentage = limits.MONTHLY_REPORTS === -1 ? 0 : ((monthlyReportsCount || 0) / limits.MONTHLY_REPORTS) * 100;
 
       return {
         orders: {
@@ -187,10 +202,22 @@ export const useFreemiumLimits = () => {
           limit: limits.PDF_GENERATIONS,
           percentage: Math.min(pdfsPercentage, 100),
         },
+        priceTables: {
+          current: priceTablesCount || 0,
+          limit: limits.PRICE_TABLES,
+          percentage: Math.min(priceTablesPercentage, 100),
+        },
+        monthlyReports: {
+          current: monthlyReportsCount || 0,
+          limit: limits.MONTHLY_REPORTS,
+          percentage: Math.min(monthlyReportsPercentage, 100),
+        },
         canCreateOrder: limits.ORDERS_PER_MONTH === -1 || (ordersCount || 0) < limits.ORDERS_PER_MONTH,
         canCreatePatient: limits.PATIENTS === -1 || (patientsCount || 0) < limits.PATIENTS,
         canGenerateImage: limits.IMAGE_GENERATIONS === -1 || imageCount < limits.IMAGE_GENERATIONS,
         canGeneratePdf: limits.PDF_GENERATIONS === -1 || pdfCount < limits.PDF_GENERATIONS,
+        canCreatePriceTable: limits.PRICE_TABLES === -1 || (priceTablesCount || 0) < limits.PRICE_TABLES,
+        canGenerateMonthlyReport: limits.MONTHLY_REPORTS === -1 || (monthlyReportsCount || 0) < limits.MONTHLY_REPORTS,
         isSubscribed,
         loading: false,
       };
