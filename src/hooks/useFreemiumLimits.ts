@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useUserRole } from './useUserRole';
 
 export interface FreemiumLimits {
   orders: { current: number; limit: number; percentage: number };
@@ -40,6 +41,7 @@ type PlanType = keyof typeof PLAN_LIMITS;
 
 export const useFreemiumLimits = () => {
   const [userId, setUserId] = useState<string | null>(null);
+  const { role, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
     const getUser = async () => {
@@ -50,9 +52,25 @@ export const useFreemiumLimits = () => {
   }, []);
 
   const { data: limits, isLoading, refetch } = useQuery({
-    queryKey: ['freemium-limits', userId],
+    queryKey: ['freemium-limits', userId, role],
     queryFn: async () => {
       if (!userId) throw new Error('No user');
+
+      // Limites freemium aplicam-se APENAS a laboratórios
+      if (role !== 'laboratory') {
+        return {
+          orders: { current: 0, limit: -1, percentage: 0 },
+          patients: { current: 0, limit: -1, percentage: 0 },
+          imageGenerations: { current: 0, limit: -1, percentage: 0 },
+          pdfGenerations: { current: 0, limit: -1, percentage: 0 },
+          canCreateOrder: true,
+          canCreatePatient: true,
+          canGenerateImage: true,
+          canGeneratePdf: true,
+          isSubscribed: true,
+          loading: false,
+        };
+      }
 
       // Check subscription status
       const { data: subscription } = await supabase
@@ -153,7 +171,7 @@ export const useFreemiumLimits = () => {
         loading: false,
       };
     },
-    enabled: !!userId,
+    enabled: !!userId && !roleLoading,
   });
 
   return {
