@@ -12,6 +12,10 @@ interface NotificationState {
   images90: boolean;
   pdfs70: boolean;
   pdfs90: boolean;
+  priceTables70: boolean;
+  priceTables90: boolean;
+  monthlyReports70: boolean;
+  monthlyReports90: boolean;
 }
 
 const STORAGE_KEY = 'freemium-notifications';
@@ -41,6 +45,10 @@ export const useFreemiumNotifications = () => {
             images90: false,
             pdfs70: false,
             pdfs90: false,
+            priceTables70: false,
+            priceTables90: false,
+            monthlyReports70: false,
+            monthlyReports90: false,
           };
         }
       } else {
@@ -53,6 +61,10 @@ export const useFreemiumNotifications = () => {
           images90: false,
           pdfs70: false,
           pdfs90: false,
+          priceTables70: false,
+          priceTables90: false,
+          monthlyReports70: false,
+          monthlyReports90: false,
         };
       }
     }
@@ -153,6 +165,54 @@ export const useFreemiumNotifications = () => {
           duration: 6000,
         });
         newState.pdfs70 = true;
+        shouldSave = true;
+      }
+    }
+
+    // Check price tables limit
+    if (limits.priceTables && limits.priceTables.limit !== -1) {
+      const percentage = limits.priceTables.percentage;
+      
+      if (percentage >= 90 && !state.priceTables90) {
+        toast({
+          title: "⚠️ Limite Crítico: Tabelas de Valores",
+          description: `Você criou ${limits.priceTables.current} de ${limits.priceTables.limit} tabelas de valores. Faça upgrade!`,
+          variant: "destructive",
+          duration: 8000,
+        });
+        newState.priceTables90 = true;
+        shouldSave = true;
+      } else if (percentage >= 70 && percentage < 90 && !state.priceTables70) {
+        toast({
+          title: "⚠️ Alerta: Tabelas de Valores",
+          description: `Você criou ${limits.priceTables.current} de ${limits.priceTables.limit} tabelas de valores. Considere fazer upgrade.`,
+          duration: 6000,
+        });
+        newState.priceTables70 = true;
+        shouldSave = true;
+      }
+    }
+
+    // Check monthly reports limit
+    if (limits.monthlyReports && limits.monthlyReports.limit !== -1) {
+      const percentage = limits.monthlyReports.percentage;
+      
+      if (percentage >= 90 && !state.monthlyReports90) {
+        toast({
+          title: "⚠️ Limite Crítico: Relatórios Mensais",
+          description: `Você enviou ${limits.monthlyReports.current} de ${limits.monthlyReports.limit} relatórios este mês. Faça upgrade!`,
+          variant: "destructive",
+          duration: 8000,
+        });
+        newState.monthlyReports90 = true;
+        shouldSave = true;
+      } else if (percentage >= 70 && percentage < 90 && !state.monthlyReports70) {
+        toast({
+          title: "⚠️ Alerta: Relatórios Mensais",
+          description: `Você enviou ${limits.monthlyReports.current} de ${limits.monthlyReports.limit} relatórios este mês. Considere fazer upgrade.`,
+          duration: 6000,
+        });
+        newState.monthlyReports70 = true;
         shouldSave = true;
       }
     }
