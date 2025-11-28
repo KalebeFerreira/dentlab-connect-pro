@@ -35,7 +35,7 @@ const PLAN_LIMITS = {
     IMAGE_GENERATIONS: 70,
     PDF_GENERATIONS: 150,
     PRICE_TABLES: -1, // unlimited
-    MONTHLY_REPORTS: -1, // unlimited
+    MONTHLY_REPORTS: 40,
   },
   professional: {
     ORDERS_PER_MONTH: -1, // unlimited

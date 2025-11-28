@@ -10,6 +10,24 @@ export interface SubscriptionInfo {
 }
 
 export const PLANS = {
+  free: {
+    name: "Plano Gratuito",
+    price: "R$ 0,00",
+    price_id: null,
+    annual_price: "R$ 0,00",
+    annual_price_id: null,
+    product_id: null,
+    features: [
+      "50 pedidos por mês",
+      "50 pacientes cadastrados",
+      "20 gerações de imagem IA por mês",
+      "40 PDFs gerados por mês",
+      "1 tabela de valores",
+      "3 relatórios mensais",
+      "Suporte por email",
+    ],
+    limit: 20,
+  },
   basic: {
     name: "Plano Básico",
     price: "R$ 44,00",
@@ -23,7 +41,7 @@ export const PLANS = {
       "70 gerações de imagem IA por mês",
       "150 PDFs gerados por mês",
       "Tabelas de valores ilimitadas",
-      "3 relatórios mensais gratuitos",
+      "40 relatórios mensais",
       "Suporte por email",
     ],
     limit: 70,
