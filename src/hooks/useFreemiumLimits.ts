@@ -16,7 +16,7 @@ export interface FreemiumLimits {
   loading: boolean;
 }
 
-const PLAN_LIMITS = {
+const LABORATORY_LIMITS = {
   free: {
     ORDERS_PER_MONTH: 30,
     PATIENTS: 30,
@@ -37,7 +37,28 @@ const PLAN_LIMITS = {
   },
 };
 
-type PlanType = keyof typeof PLAN_LIMITS;
+const CLINIC_LIMITS = {
+  free: {
+    ORDERS_PER_MONTH: 50,
+    PATIENTS: 50,
+    IMAGE_GENERATIONS: 20,
+    PDF_GENERATIONS: 50,
+  },
+  basic: {
+    ORDERS_PER_MONTH: 200,
+    PATIENTS: 300,
+    IMAGE_GENERATIONS: 100,
+    PDF_GENERATIONS: 200,
+  },
+  professional: {
+    ORDERS_PER_MONTH: -1, // unlimited
+    PATIENTS: -1, // unlimited
+    IMAGE_GENERATIONS: 300,
+    PDF_GENERATIONS: -1, // unlimited
+  },
+};
+
+type PlanType = keyof typeof LABORATORY_LIMITS;
 
 export const useFreemiumLimits = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -56,8 +77,8 @@ export const useFreemiumLimits = () => {
     queryFn: async () => {
       if (!userId) throw new Error('No user');
 
-      // Limites freemium aplicam-se APENAS a laboratórios
-      if (role !== 'laboratory') {
+      // Limites freemium aplicam-se APENAS a laboratórios e clínicas
+      if (role !== 'laboratory' && role !== 'clinic') {
         return {
           orders: { current: 0, limit: -1, percentage: 0 },
           patients: { current: 0, limit: -1, percentage: 0 },
@@ -71,6 +92,9 @@ export const useFreemiumLimits = () => {
           loading: false,
         };
       }
+
+      // Seleciona os limites baseado no tipo de usuário
+      const PLAN_LIMITS = role === 'laboratory' ? LABORATORY_LIMITS : CLINIC_LIMITS;
 
       // Check subscription status
       const { data: subscription } = await supabase
