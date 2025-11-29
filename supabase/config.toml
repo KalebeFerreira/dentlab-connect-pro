@@ -3,6 +3,9 @@ project_id = "idotyktgeqkpsypmztrg"
 [functions.setup-stripe-products]
 verify_jwt = false
 
+[functions.stripe-webhook]
+verify_jwt = false
+
 [functions.generate-order-pdf]
 verify_jwt = true
 
