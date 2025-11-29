@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "https://esm.sh/resend@3.5.0";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2025-08-27.basil",
@@ -44,7 +44,8 @@ serve(async (req) => {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       logStep("Webhook signature verified", { type: event.type });
     } catch (err) {
-      logStep("Webhook signature verification failed", { error: err.message });
+      const error = err as Error;
+      logStep("Webhook signature verification failed", { error: error.message });
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -104,7 +105,8 @@ serve(async (req) => {
       JSON.stringify({ received: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     logStep("ERROR", { message: error.message });
     return new Response(
       JSON.stringify({ error: error.message }),
@@ -181,7 +183,8 @@ async function sendExpiringSubscriptionEmail(
     });
     
     logStep("Expiring subscription email sent", { email, daysUntilEnd });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     logStep("Error sending expiring subscription email", { error: error.message });
   }
 }
@@ -256,7 +259,8 @@ async function sendPaymentFailedEmail(email: string, invoice: Stripe.Invoice) {
     });
     
     logStep("Payment failed email sent", { email, amount });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     logStep("Error sending payment failed email", { error: error.message });
   }
 }
@@ -331,7 +335,8 @@ async function sendSubscriptionCanceledEmail(
     });
     
     logStep("Subscription canceled email sent", { email });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     logStep("Error sending subscription canceled email", { error: error.message });
   }
 }
