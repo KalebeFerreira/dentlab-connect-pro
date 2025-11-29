@@ -25,7 +25,9 @@ import {
   ArrowRight,
   TrendingUp,
   Package,
-  Stethoscope
+  Stethoscope,
+  CreditCard,
+  Settings
 } from "lucide-react";
 
 interface QuickAction {
@@ -126,6 +128,22 @@ const ClinicDashboard = () => {
       path: "/image-generator",
       color: "text-violet-600",
       bgColor: "bg-violet-500/10 hover:bg-violet-500/20"
+    },
+    {
+      title: "Planos",
+      description: "Gerenciar assinatura",
+      icon: CreditCard,
+      path: "/planos",
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-500/10 hover:bg-indigo-500/20"
+    },
+    {
+      title: "Configurações",
+      description: "Preferências da conta",
+      icon: Settings,
+      path: "/settings",
+      color: "text-slate-600",
+      bgColor: "bg-slate-500/10 hover:bg-slate-500/20"
     }
   ];
 
