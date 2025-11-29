@@ -23,7 +23,9 @@ import {
   Calendar,
   Search,
   Upload,
-  FileUp
+  FileUp,
+  CreditCard,
+  Settings
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -465,6 +467,30 @@ const Dashboard = () => {
                   <Users className="h-6 w-6 text-teal-600" />
                 </div>
                 <span className="text-sm font-medium text-center">Clínica</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/planos")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center">
+                  <CreditCard className="h-6 w-6 text-violet-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Planos</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/settings")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-slate-500/10 flex items-center justify-center">
+                  <Settings className="h-6 w-6 text-slate-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Configurações</span>
               </CardContent>
             </Card>
           </div>
