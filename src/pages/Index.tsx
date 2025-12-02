@@ -9,43 +9,43 @@ const Index = () => {
   const features = [
     {
       icon: FileText,
-      title: "Gestão de Ordens de Trabalho",
-      description: "Controle completo de todas as ordens com acompanhamento em tempo real"
+      title: "Ordens de Trabalho Digitais",
+      description: "Envio e recebimento de pedidos entre clínicas e laboratórios em tempo real, com acompanhamento completo do status"
     },
     {
       icon: Users,
-      title: "Comunicação Integrada",
-      description: "WhatsApp integrado para comunicação direta com clínicas e dentistas"
+      title: "Comunicação Direta",
+      description: "Dentistas e protéticos conectados diretamente - tire dúvidas, envie fotos e acompanhe cada etapa do trabalho"
     },
     {
       icon: TrendingUp,
-      title: "Relatórios Financeiros",
-      description: "Análise completa de receitas, despesas e lucratividade do laboratório"
+      title: "Gestão Financeira Integrada",
+      description: "Controle de pagamentos, faturamento e relatórios automáticos tanto para clínicas quanto laboratórios"
     },
     {
       icon: Clock,
-      title: "Gestão de Prazos",
-      description: "Notificações automáticas e controle de entregas para nunca atrasar"
+      title: "Prazos Sob Controle",
+      description: "Notificações automáticas de prazos de entrega para clínicas e laboratórios - nunca mais perca um deadline"
     },
     {
       icon: Shield,
-      title: "Dados Seguros",
-      description: "Seus dados protegidos com criptografia e backups automáticos"
+      title: "Segurança Total",
+      description: "Dados de pacientes e trabalhos protegidos com criptografia e backup automático na nuvem"
     },
     {
       icon: Smartphone,
-      title: "Acesso pelo Smartphone",
-      description: "Gerencie seu laboratório de qualquer lugar, a qualquer momento"
+      title: "Acesso Mobile",
+      description: "Dentistas e protéticos podem acessar e gerenciar tudo pelo celular, de qualquer lugar"
     }
   ];
 
   const benefits = [
-    "Redução de 70% no tempo de gestão de ordens",
-    "Comunicação 100% integrada com WhatsApp",
-    "Controle financeiro completo e automatizado",
-    "Geração automática de PDFs e documentos",
-    "Tabelas de preços com IA para impressionar clientes",
-    "Relatórios mensais prontos para envio"
+    "Eliminação de 90% dos erros de comunicação entre clínica e laboratório",
+    "Envio e recebimento de pedidos em segundos, sem telefonemas ou WhatsApp perdido",
+    "Acompanhamento em tempo real do status de cada trabalho protético",
+    "Notificações automáticas de prazos para dentistas e laboratórios",
+    "Gestão financeira integrada - controle total de pagamentos e faturamento",
+    "Histórico completo de todos os trabalhos e comunicações em um só lugar"
   ];
 
   const testimonials = [
@@ -80,15 +80,15 @@ const Index = () => {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-block rounded-full bg-white/20 px-4 py-2 backdrop-blur-sm animate-fade-in">
               <span className="text-sm font-medium text-white">
-                ✨ Sistema Profissional de Gestão Odontológica
+                ✨ A Ponte Digital Entre Clínicas e Laboratórios
               </span>
             </div>
             <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl animate-fade-in [animation-delay:100ms]">
-              Conectando Clínicas e Laboratórios de Forma Inteligente
+              Integração Total Entre Dentistas e Protéticos
             </h1>
             <p className="mb-8 text-lg text-white md:text-xl animate-fade-in [animation-delay:200ms]">
-              Gerencie ordens de trabalho, controle financeiro e comunicação em uma única plataforma. 
-              Mais eficiência, menos trabalho manual.
+              Envie pedidos, acompanhe em tempo real, comunique-se diretamente e gerencie tudo em uma única plataforma. 
+              Mais agilidade para clínicas. Mais organização para laboratórios. Zero erros de comunicação.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center animate-fade-in [animation-delay:300ms]">
               <Button 
@@ -116,10 +116,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="mb-16 text-center animate-fade-in">
             <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
-              Tudo que seu laboratório precisa
+              Tudo que clínicas e laboratórios precisam
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-foreground">
-              Uma plataforma completa para transformar a gestão do seu laboratório odontológico
+              Uma plataforma completa que conecta dentistas e protéticos de forma inteligente, rápida e sem erros
             </p>
           </div>
 
@@ -149,10 +149,10 @@ const Index = () => {
           <div className="mx-auto max-w-4xl">
             <div className="mb-12 text-center animate-fade-in">
               <h2 className="mb-4 text-3xl font-bold text-primary md:text-4xl">
-                Por que escolher o Essência?
+                Por que clínicas e laboratórios escolhem o Essência?
               </h2>
               <p className="text-lg text-foreground">
-                Resultados comprovados que fazem a diferença no seu dia a dia
+                Eficiência comprovada na comunicação e gestão entre dentistas e protéticos
               </p>
             </div>
 
@@ -180,15 +180,15 @@ const Index = () => {
               Como funciona?
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-foreground">
-              Em poucos passos você está pronto para otimizar sua gestão
+              Em poucos passos clínicas e laboratórios estarão conectados e trabalhando de forma integrada
             </p>
           </div>
 
           <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-3">
             {[
-              { step: "1", title: "Cadastre-se", desc: "Crie sua conta gratuitamente em menos de 2 minutos" },
-              { step: "2", title: "Configure", desc: "Adicione seus dados e personalize conforme sua necessidade" },
-              { step: "3", title: "Comece a usar", desc: "Gerencie tudo de forma intuitiva e eficiente" }
+              { step: "1", title: "Cadastre-se", desc: "Clínica ou laboratório? Crie sua conta grátis em 2 minutos" },
+              { step: "2", title: "Conecte-se", desc: "Adicione seus parceiros - laboratórios ou clínicas - e comece a integração" },
+              { step: "3", title: "Trabalhe Integrado", desc: "Envie pedidos, acompanhe status, comunique-se e gerencie tudo em tempo real" }
             ].map((item, index) => (
               <div 
                 key={index} 
@@ -241,10 +241,10 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center relative z-10">
           <div className="mx-auto max-w-3xl animate-fade-in">
             <h2 className="mb-6 text-3xl font-bold text-white md:text-4xl">
-              Pronto para transformar seu laboratório?
+              Pronto para integrar clínica e laboratório?
             </h2>
             <p className="mb-8 text-lg text-white md:text-xl">
-              Junte-se a centenas de laboratórios que já otimizaram sua gestão
+              Junte-se a centenas de dentistas e protéticos que já trabalham de forma integrada e eficiente
             </p>
             <Button 
               size="lg" 
@@ -264,7 +264,7 @@ const Index = () => {
             <div>
               <h3 className="mb-4 text-lg font-semibold text-primary">Essência dental-lab</h3>
               <p className="text-sm text-foreground">
-                Sistema profissional para gestão de ordens de trabalho odontológico
+                A plataforma que conecta clínicas odontológicas e laboratórios de prótese em uma única solução integrada
               </p>
             </div>
             <div>
