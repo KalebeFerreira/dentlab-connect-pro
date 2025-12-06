@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 interface Laboratory {
   id: string;
@@ -36,9 +37,32 @@ const Orders = () => {
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [selectedLab, setSelectedLab] = useState<string>("all");
 
+  // Realtime subscription para ordens
+  useRealtimeSubscription({
+    table: 'orders',
+    queryKey: ['orders'],
+    enabled: true
+  });
+
   useEffect(() => {
     checkAuthAndLoadOrders();
     loadLaboratories();
+    
+    // Configurar listener para mudanças em tempo real
+    const channel = supabase
+      .channel('orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          checkAuthAndLoadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
