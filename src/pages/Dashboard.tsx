@@ -78,7 +78,39 @@ const Dashboard = () => {
 
   useEffect(() => {
     checkUser();
-  }, []);
+    
+    // Configurar listeners de tempo real
+    const ordersChannel = supabase
+      .channel('dashboard-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          if (user?.id) {
+            loadStats(user.id);
+          }
+        }
+      )
+      .subscribe();
+
+    const servicesChannel = supabase
+      .channel('dashboard-services-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'services' },
+        () => {
+          if (user?.id) {
+            loadFinancialStats(user.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(servicesChannel);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
