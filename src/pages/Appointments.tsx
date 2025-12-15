@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { ScheduleAnalyzer } from "@/components/clinic/ScheduleAnalyzer";
 
 interface Patient {
   id: string;
@@ -309,8 +310,23 @@ const Appointments = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <NotificationSettings />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <NotificationSettings />
+        </div>
+        <div>
+          <ScheduleAnalyzer 
+            appointments={appointments.map(apt => ({
+              id: apt.id,
+              appointment_date: apt.appointment_date,
+              patient_name: apt.patients?.name,
+              procedure_type: apt.procedure_type || undefined,
+              type: apt.type,
+              duration_minutes: apt.duration_minutes,
+              status: apt.status,
+            }))}
+          />
+        </div>
       </div>
 
       <div className="flex justify-between items-center mb-6">
