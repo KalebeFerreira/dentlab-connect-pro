@@ -1012,6 +1012,50 @@ export type Database = {
         }
         Relationships: []
       }
+      scanned_documents: {
+        Row: {
+          clinic_name: string | null
+          created_at: string
+          id: string
+          image_url: string
+          patient_name: string | null
+          service_id: string | null
+          service_name: string | null
+          service_value: number | null
+          user_id: string
+        }
+        Insert: {
+          clinic_name?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          patient_name?: string | null
+          service_id?: string | null
+          service_name?: string | null
+          service_value?: number | null
+          user_id: string
+        }
+        Update: {
+          clinic_name?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          patient_name?: string | null
+          service_id?: string | null
+          service_name?: string | null
+          service_value?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanned_documents_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           client_name: string | null
