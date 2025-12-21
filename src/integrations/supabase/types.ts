@@ -1016,6 +1016,8 @@ export type Database = {
         Row: {
           clinic_name: string | null
           created_at: string
+          file_name: string | null
+          file_type: string | null
           id: string
           image_url: string
           patient_name: string | null
@@ -1027,6 +1029,8 @@ export type Database = {
         Insert: {
           clinic_name?: string | null
           created_at?: string
+          file_name?: string | null
+          file_type?: string | null
           id?: string
           image_url: string
           patient_name?: string | null
@@ -1038,6 +1042,8 @@ export type Database = {
         Update: {
           clinic_name?: string | null
           created_at?: string
+          file_name?: string | null
+          file_type?: string | null
           id?: string
           image_url?: string
           patient_name?: string | null
