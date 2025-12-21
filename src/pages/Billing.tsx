@@ -186,11 +186,19 @@ const Billing = () => {
       <BillingStats services={services} />
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="services">Serviços</TabsTrigger>
-          <TabsTrigger value="monthly">Relatórios Mensais</TabsTrigger>
-          <TabsTrigger value="clients">Relatórios de Clientes</TabsTrigger>
-          <TabsTrigger value="automatic">Envios Automáticos</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 p-1">
+          <TabsTrigger value="services" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            Serviços
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            Rel. Mensais
+          </TabsTrigger>
+          <TabsTrigger value="clients" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            Rel. Clientes
+          </TabsTrigger>
+          <TabsTrigger value="automatic" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            Envio Auto
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="services" className="space-y-6">
