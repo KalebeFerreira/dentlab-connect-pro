@@ -93,6 +93,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_sent_at: string | null
+          report_format: string | null
           send_via_email: boolean
           send_via_whatsapp: boolean
           updated_at: string
@@ -107,6 +108,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_sent_at?: string | null
+          report_format?: string | null
           send_via_email?: boolean
           send_via_whatsapp?: boolean
           updated_at?: string
@@ -121,6 +123,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_sent_at?: string | null
+          report_format?: string | null
           send_via_email?: boolean
           send_via_whatsapp?: boolean
           updated_at?: string

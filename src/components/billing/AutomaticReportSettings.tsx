@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Mail, MessageCircle, Calendar } from "lucide-react";
+import { Plus, Trash2, Mail, MessageCircle, Calendar, FileText, FileSpreadsheet, FileImage, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -30,6 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Service } from "@/pages/Billing";
 
 interface AutomaticReportSchedule {
@@ -42,11 +44,20 @@ interface AutomaticReportSchedule {
   day_of_month: number;
   is_active: boolean;
   last_sent_at?: string;
+  report_format?: string;
 }
 
 interface AutomaticReportSettingsProps {
   services: Service[];
 }
+
+const REPORT_FORMATS = [
+  { value: 'pdf', label: 'PDF', icon: FileText },
+  { value: 'excel', label: 'Excel', icon: FileSpreadsheet },
+  { value: 'word', label: 'Word', icon: FileText },
+  { value: 'jpg', label: 'JPG', icon: FileImage },
+  { value: 'png', label: 'PNG', icon: FileImage },
+];
 
 export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsProps) => {
   const [schedules, setSchedules] = useState<AutomaticReportSchedule[]>([]);
@@ -60,6 +71,7 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
   const [sendViaEmail, setSendViaEmail] = useState(true);
   const [sendViaWhatsApp, setSendViaWhatsApp] = useState(false);
   const [dayOfMonth, setDayOfMonth] = useState("1");
+  const [reportFormat, setReportFormat] = useState("pdf");
 
   useEffect(() => {
     loadSchedules();
@@ -127,6 +139,7 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
           send_via_whatsapp: sendViaWhatsApp,
           day_of_month: parseInt(dayOfMonth),
           is_active: true,
+          report_format: reportFormat,
         });
 
       if (error) throw error;
@@ -154,8 +167,8 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
 
       toast.success(
         !currentStatus
-          ? "Agendamento ativado com sucesso!"
-          : "Agendamento desativado com sucesso!"
+          ? "Agendamento ativado!"
+          : "Agendamento desativado!"
       );
       loadSchedules();
     } catch (error) {
@@ -175,7 +188,7 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
 
       if (error) throw error;
 
-      toast.success("Agendamento excluído com sucesso!");
+      toast.success("Agendamento excluído!");
       loadSchedules();
     } catch (error) {
       console.error("Erro ao excluir agendamento:", error);
@@ -190,6 +203,18 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
     setSendViaEmail(true);
     setSendViaWhatsApp(false);
     setDayOfMonth("1");
+    setReportFormat("pdf");
+  };
+
+  const getFormatIcon = (format: string) => {
+    const formatInfo = REPORT_FORMATS.find(f => f.value === format);
+    if (!formatInfo) return null;
+    const Icon = formatInfo.icon;
+    return <Icon className="h-3 w-3" />;
+  };
+
+  const getFormatLabel = (format: string) => {
+    return REPORT_FORMATS.find(f => f.value === format)?.label || format.toUpperCase();
   };
 
   const availableClients = getAvailableClients();
@@ -197,143 +222,172 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Envio Automático de Relatórios</CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <CardTitle className="text-base sm:text-lg">Envio Automático de Relatórios</CardTitle>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm" className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh]">
               <DialogHeader>
-                <DialogTitle>Novo Agendamento Automático</DialogTitle>
+                <DialogTitle className="text-base">Novo Agendamento Automático</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label>Cliente</Label>
-                  <Select value={selectedClient} onValueChange={setSelectedClient}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableClients.map((client) => (
-                        <SelectItem key={client} value={client}>
-                          {client}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Dia do Mês para Envio</Label>
-                  <Select value={dayOfMonth} onValueChange={setDayOfMonth}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o dia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {days.map((day) => (
-                        <SelectItem key={day} value={day.toString()}>
-                          Dia {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    O relatório do mês anterior será enviado neste dia
-                  </p>
-                </div>
-
-                <div className="space-y-4 border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      <Label htmlFor="send-email">Enviar por Email</Label>
-                    </div>
-                    <Switch
-                      id="send-email"
-                      checked={sendViaEmail}
-                      onCheckedChange={setSendViaEmail}
-                    />
+              <ScrollArea className="max-h-[70vh] pr-4">
+                <div className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Cliente</Label>
+                    <Select value={selectedClient} onValueChange={setSelectedClient}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Selecione o cliente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableClients.map((client) => (
+                          <SelectItem key={client} value={client}>
+                            {client}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {sendViaEmail && (
-                    <div>
-                      <Label htmlFor="client-email">Email do Cliente</Label>
-                      <Input
-                        id="client-email"
-                        type="email"
-                        placeholder="cliente@email.com"
-                        value={clientEmail}
-                        onChange={(e) => setClientEmail(e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4" />
-                      <Label htmlFor="send-whatsapp">Enviar por WhatsApp</Label>
-                    </div>
-                    <Switch
-                      id="send-whatsapp"
-                      checked={sendViaWhatsApp}
-                      onCheckedChange={setSendViaWhatsApp}
-                    />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Dia do Mês para Envio</Label>
+                    <Select value={dayOfMonth} onValueChange={setDayOfMonth}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Selecione o dia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {days.map((day) => (
+                          <SelectItem key={day} value={day.toString()}>
+                            Dia {day}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Relatório do mês anterior será enviado neste dia
+                    </p>
                   </div>
 
-                  {sendViaWhatsApp && (
-                    <div>
-                      <Label htmlFor="client-phone">Telefone do Cliente</Label>
-                      <Input
-                        id="client-phone"
-                        type="tel"
-                        placeholder="(00) 00000-0000"
-                        value={clientPhone}
-                        onChange={(e) => setClientPhone(e.target.value)}
-                      />
+                  <div className="space-y-2 border-t pt-3">
+                    <Label className="text-sm font-medium">Formato do Relatório</Label>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      {REPORT_FORMATS.map((format) => {
+                        const Icon = format.icon;
+                        return (
+                          <Button
+                            key={format.value}
+                            type="button"
+                            variant={reportFormat === format.value ? "default" : "outline"}
+                            size="sm"
+                            className="flex flex-col items-center gap-1 h-auto py-2 px-2"
+                            onClick={() => setReportFormat(format.value)}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="text-xs">{format.label}</span>
+                          </Button>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                <Button
-                  onClick={handleAddSchedule}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? "Salvando..." : "Criar Agendamento"}
-                </Button>
-              </div>
+                  <div className="space-y-3 border-t pt-3">
+                    <Label className="text-sm font-medium">Canais de Envio</Label>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <Label htmlFor="send-email" className="text-sm font-normal">Email</Label>
+                        </div>
+                        <Switch
+                          id="send-email"
+                          checked={sendViaEmail}
+                          onCheckedChange={setSendViaEmail}
+                        />
+                      </div>
+
+                      {sendViaEmail && (
+                        <Input
+                          type="email"
+                          placeholder="cliente@email.com"
+                          value={clientEmail}
+                          onChange={(e) => setClientEmail(e.target.value)}
+                          className="h-10"
+                        />
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                          <Label htmlFor="send-whatsapp" className="text-sm font-normal">WhatsApp</Label>
+                        </div>
+                        <Switch
+                          id="send-whatsapp"
+                          checked={sendViaWhatsApp}
+                          onCheckedChange={setSendViaWhatsApp}
+                        />
+                      </div>
+
+                      {sendViaWhatsApp && (
+                        <Input
+                          type="tel"
+                          placeholder="(00) 00000-0000"
+                          value={clientPhone}
+                          onChange={(e) => setClientPhone(e.target.value)}
+                          className="h-10"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleAddSchedule}
+                    disabled={loading}
+                    className="w-full h-11"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Criar Agendamento"
+                    )}
+                  </Button>
+                </div>
+              </ScrollArea>
             </DialogContent>
           </Dialog>
         </div>
       </CardHeader>
       <CardContent>
         {schedules.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">
-              Nenhum agendamento automático configurado
+          <div className="text-center py-8 sm:py-12">
+            <Calendar className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-muted-foreground mb-2">
+              Nenhum agendamento configurado
             </p>
-            <p className="text-sm text-muted-foreground">
-              Configure o envio automático de relatórios mensais para seus clientes
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Configure o envio automático de relatórios para seus clientes
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Mobile view */}
             <div className="md:hidden space-y-3">
               {schedules.map((schedule) => (
-                <Card key={schedule.id} className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold">{schedule.client_name}</h4>
+                <Card key={schedule.id} className="p-3">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-sm truncate">{schedule.client_name}</h4>
                         <p className="text-xs text-muted-foreground">
-                          Todo dia {schedule.day_of_month} do mês
+                          Dia {schedule.day_of_month} do mês
                         </p>
                       </div>
                       <Switch
@@ -344,15 +398,19 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
                       />
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
+                        {getFormatIcon(schedule.report_format || 'pdf')}
+                        <span className="ml-1">{getFormatLabel(schedule.report_format || 'pdf')}</span>
+                      </Badge>
                       {schedule.send_via_email && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
                           <Mail className="h-3 w-3 mr-1" />
                           Email
                         </Badge>
                       )}
                       {schedule.send_via_whatsapp && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
                           <MessageCircle className="h-3 w-3 mr-1" />
                           WhatsApp
                         </Badge>
@@ -361,8 +419,7 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
 
                     {schedule.last_sent_at && (
                       <p className="text-xs text-muted-foreground">
-                        Último envio:{" "}
-                        {new Date(schedule.last_sent_at).toLocaleDateString("pt-BR")}
+                        Último envio: {new Date(schedule.last_sent_at).toLocaleDateString("pt-BR")}
                       </p>
                     )}
 
@@ -370,7 +427,7 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDeleteSchedule(schedule.id)}
-                      className="w-full"
+                      className="w-full h-9"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Excluir
@@ -381,16 +438,17 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
             </div>
 
             {/* Desktop view */}
-            <div className="hidden md:block">
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Cliente</TableHead>
+                    <TableHead>Formato</TableHead>
                     <TableHead>Canais</TableHead>
-                    <TableHead>Dia do Mês</TableHead>
+                    <TableHead>Dia</TableHead>
                     <TableHead>Último Envio</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead>Ativo</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -400,15 +458,21 @@ export const AutomaticReportSettings = ({ services }: AutomaticReportSettingsPro
                         {schedule.client_name}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {getFormatIcon(schedule.report_format || 'pdf')}
+                          <span className="ml-1">{getFormatLabel(schedule.report_format || 'pdf')}</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
                           {schedule.send_via_email && (
-                            <Badge variant="secondary">
+                            <Badge variant="secondary" className="text-xs">
                               <Mail className="h-3 w-3 mr-1" />
                               Email
                             </Badge>
                           )}
                           {schedule.send_via_whatsapp && (
-                            <Badge variant="secondary">
+                            <Badge variant="secondary" className="text-xs">
                               <MessageCircle className="h-3 w-3 mr-1" />
                               WhatsApp
                             </Badge>
