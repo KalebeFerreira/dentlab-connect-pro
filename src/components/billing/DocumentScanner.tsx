@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -13,7 +15,9 @@ import {
   Loader2, 
   X, 
   Check,
-  FileImage
+  FileImage,
+  Layers,
+  SkipForward
 } from "lucide-react";
 
 interface ExtractedData {
@@ -35,6 +39,10 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Batch mode states
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchCount, setBatchCount] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -210,18 +218,50 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         }
       }
 
-      toast.success('Serviço adicionado ao relatório!');
+      // Update batch count
+      if (batchMode) {
+        setBatchCount(prev => prev + 1);
+        toast.success(`Documento ${batchCount + 1} adicionado! Pronto para o próximo.`);
+      } else {
+        toast.success('Serviço adicionado ao relatório!');
+      }
+      
       setShowConfirmDialog(false);
       setExtractedData(null);
       setPreviewImage(null);
       onServiceAdd();
       onScanComplete?.();
+
+      // In batch mode, automatically restart camera
+      if (batchMode) {
+        setTimeout(() => startCamera(), 500);
+      }
     } catch (error: any) {
       console.error('Erro ao salvar serviço:', error);
       toast.error('Erro ao salvar serviço: ' + error.message);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSkipDocument = () => {
+    setShowConfirmDialog(false);
+    setExtractedData(null);
+    setPreviewImage(null);
+    
+    if (batchMode) {
+      toast.info('Documento pulado. Pronto para o próximo.');
+      setTimeout(() => startCamera(), 500);
+    }
+  };
+
+  const finishBatchMode = () => {
+    setBatchMode(false);
+    stopCamera();
+    if (batchCount > 0) {
+      toast.success(`Modo lote finalizado! ${batchCount} documento(s) processado(s).`);
+    }
+    setBatchCount(0);
   };
 
   const handleEditField = (field: keyof ExtractedData, value: string | number) => {
@@ -244,12 +284,52 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scan className="h-5 w-5" />
-            Scanner de Documentos
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Scan className="h-5 w-5" />
+              Scanner de Documentos
+              {batchMode && batchCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {batchCount} escaneado(s)
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="batch-mode" className="text-sm font-normal text-muted-foreground">
+                Modo Lote
+              </Label>
+              <Switch
+                id="batch-mode"
+                checked={batchMode}
+                onCheckedChange={(checked) => {
+                  setBatchMode(checked);
+                  if (!checked && batchCount > 0) {
+                    finishBatchMode();
+                  } else {
+                    setBatchCount(0);
+                  }
+                }}
+              />
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {batchMode && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">
+                  Modo lote ativo - escaneie múltiplos documentos em sequência
+                </span>
+              </div>
+              {batchCount > 0 && (
+                <Button size="sm" variant="outline" onClick={finishBatchMode}>
+                  Finalizar ({batchCount})
+                </Button>
+              )}
+            </div>
+          )}
+
           {!showCamera && !previewImage && !isScanning && (
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
@@ -272,6 +352,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                multiple={batchMode}
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -288,14 +369,21 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 border-2 border-dashed border-white/50 m-8 pointer-events-none rounded" />
+                {batchMode && (
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="secondary" className="bg-black/70 text-white">
+                      Lote: {batchCount + 1}
+                    </Badge>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button onClick={captureImage} className="flex-1">
                   <Camera className="mr-2 h-4 w-4" />
                   Capturar
                 </Button>
-                <Button onClick={stopCamera} variant="outline">
-                  <X className="h-4 w-4" />
+                <Button onClick={batchMode ? finishBatchMode : stopCamera} variant="outline">
+                  {batchMode ? 'Finalizar' : <X className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -390,14 +478,28 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
           </div>
 
           <DialogFooter className="gap-2">
+            {batchMode && (
+              <Button
+                variant="ghost"
+                onClick={handleSkipDocument}
+                disabled={isSaving}
+              >
+                <SkipForward className="mr-2 h-4 w-4" />
+                Pular
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => {
                 setShowConfirmDialog(false);
-                resetScanner();
+                if (batchMode) {
+                  finishBatchMode();
+                } else {
+                  resetScanner();
+                }
               }}
             >
-              Cancelar
+              {batchMode ? 'Finalizar Lote' : 'Cancelar'}
             </Button>
             <Button
               onClick={handleConfirmData}
@@ -408,7 +510,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
               ) : (
                 <Check className="mr-2 h-4 w-4" />
               )}
-              Adicionar ao Relatório
+              {batchMode ? 'Adicionar e Próximo' : 'Adicionar ao Relatório'}
             </Button>
           </DialogFooter>
         </DialogContent>
