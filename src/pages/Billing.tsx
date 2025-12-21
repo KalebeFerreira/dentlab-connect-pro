@@ -11,6 +11,7 @@ import { BillingStats } from "@/components/billing/BillingStats";
 import { MonthlyReports } from "@/components/billing/MonthlyReports";
 import { ClientReports } from "@/components/billing/ClientReports";
 import { AutomaticReportSettings } from "@/components/billing/AutomaticReportSettings";
+import { DocumentScanner } from "@/components/billing/DocumentScanner";
 import { Loader2 } from "lucide-react";
 
 export interface CompanyInfo {
@@ -191,6 +192,7 @@ const Billing = () => {
         </TabsList>
 
         <TabsContent value="services" className="space-y-6">
+          <DocumentScanner onServiceAdd={handleServiceAdd} />
           <ServiceForm onServiceAdd={handleServiceAdd} />
           <ServicesList
             services={services}

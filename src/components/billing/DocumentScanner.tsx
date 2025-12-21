@@ -1,0 +1,353 @@
+import { useState, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { 
+  Camera, 
+  Upload, 
+  Scan, 
+  Loader2, 
+  X, 
+  Check,
+  FileImage
+} from "lucide-react";
+
+interface ExtractedData {
+  clinic_name: string | null;
+  patient_name: string | null;
+  service_name: string | null;
+  service_value: number | null;
+}
+
+interface DocumentScannerProps {
+  onServiceAdd: () => void;
+}
+
+export const DocumentScanner = ({ onServiceAdd }: DocumentScannerProps) => {
+  const [isScanning, setIsScanning] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setShowCamera(true);
+    } catch (error) {
+      console.error('Erro ao acessar câmera:', error);
+      toast.error('Não foi possível acessar a câmera');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const captureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        setPreviewImage(imageData);
+        stopCamera();
+        processImage(imageData);
+      }
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        setPreviewImage(imageData);
+        processImage(imageData);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const processImage = async (imageBase64: string) => {
+    setIsScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('scan-document', {
+        body: { imageBase64 }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.success && data?.data) {
+        setExtractedData(data.data);
+        setShowConfirmDialog(true);
+        toast.success('Dados extraídos com sucesso!');
+      } else {
+        throw new Error(data?.error || 'Erro ao processar imagem');
+      }
+    } catch (error: any) {
+      console.error('Erro ao processar documento:', error);
+      toast.error('Erro ao processar documento: ' + (error.message || 'Tente novamente'));
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleConfirmData = async () => {
+    if (!extractedData) return;
+
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
+
+      // Inserir serviço na tabela services
+      const { error } = await supabase.from('services').insert({
+        user_id: user.id,
+        service_name: extractedData.service_name || 'Serviço escaneado',
+        service_value: extractedData.service_value || 0,
+        client_name: extractedData.clinic_name,
+        patient_name: extractedData.patient_name,
+        service_date: new Date().toISOString().split('T')[0],
+        status: 'active'
+      });
+
+      if (error) throw error;
+
+      toast.success('Serviço adicionado ao relatório!');
+      setShowConfirmDialog(false);
+      setExtractedData(null);
+      setPreviewImage(null);
+      onServiceAdd();
+    } catch (error: any) {
+      console.error('Erro ao salvar serviço:', error);
+      toast.error('Erro ao salvar serviço: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditField = (field: keyof ExtractedData, value: string | number) => {
+    if (extractedData) {
+      setExtractedData({
+        ...extractedData,
+        [field]: field === 'service_value' ? parseFloat(String(value)) || 0 : value
+      });
+    }
+  };
+
+  const resetScanner = () => {
+    setPreviewImage(null);
+    setExtractedData(null);
+    setShowConfirmDialog(false);
+    stopCamera();
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Scan className="h-5 w-5" />
+            Scanner de Documentos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!showCamera && !previewImage && !isScanning && (
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={startCamera}
+                variant="outline"
+                className="flex-1"
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Usar Câmera
+              </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="flex-1"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload de Imagem
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          )}
+
+          {showCamera && (
+            <div className="space-y-4">
+              <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 border-2 border-dashed border-white/50 m-8 pointer-events-none rounded" />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={captureImage} className="flex-1">
+                  <Camera className="mr-2 h-4 w-4" />
+                  Capturar
+                </Button>
+                <Button onClick={stopCamera} variant="outline">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {isScanning && (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">
+                Analisando documento com IA...
+              </p>
+            </div>
+          )}
+
+          {previewImage && !isScanning && !showConfirmDialog && (
+            <div className="space-y-4">
+              <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden">
+                <img
+                  src={previewImage}
+                  alt="Documento escaneado"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <Button onClick={resetScanner} variant="outline" className="w-full">
+                <X className="mr-2 h-4 w-4" />
+                Escanear outro documento
+              </Button>
+            </div>
+          )}
+
+          <canvas ref={canvasRef} className="hidden" />
+        </CardContent>
+      </Card>
+
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileImage className="h-5 w-5" />
+              Confirmar Dados Extraídos
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Verifique e edite os dados antes de adicionar ao relatório:
+            </p>
+            
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="clinic_name">Nome da Clínica</Label>
+                <Input
+                  id="clinic_name"
+                  value={extractedData?.clinic_name || ''}
+                  onChange={(e) => handleEditField('clinic_name', e.target.value)}
+                  placeholder="Nome da clínica"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="patient_name">Nome do Paciente</Label>
+                <Input
+                  id="patient_name"
+                  value={extractedData?.patient_name || ''}
+                  onChange={(e) => handleEditField('patient_name', e.target.value)}
+                  placeholder="Nome do paciente"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_name">Trabalho a Executar</Label>
+                <Input
+                  id="service_name"
+                  value={extractedData?.service_name || ''}
+                  onChange={(e) => handleEditField('service_name', e.target.value)}
+                  placeholder="Tipo de serviço"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_value">Valor (R$)</Label>
+                <Input
+                  id="service_value"
+                  type="number"
+                  step="0.01"
+                  value={extractedData?.service_value || ''}
+                  onChange={(e) => handleEditField('service_value', e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConfirmDialog(false);
+                resetScanner();
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmData}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="mr-2 h-4 w-4" />
+              )}
+              Adicionar ao Relatório
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
