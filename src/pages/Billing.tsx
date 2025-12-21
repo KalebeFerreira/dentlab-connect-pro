@@ -12,6 +12,7 @@ import { MonthlyReports } from "@/components/billing/MonthlyReports";
 import { ClientReports } from "@/components/billing/ClientReports";
 import { AutomaticReportSettings } from "@/components/billing/AutomaticReportSettings";
 import { DocumentScanner } from "@/components/billing/DocumentScanner";
+import { ScanHistory } from "@/components/billing/ScanHistory";
 import { Loader2 } from "lucide-react";
 
 export interface CompanyInfo {
@@ -39,6 +40,7 @@ const Billing = () => {
   const [loading, setLoading] = useState(true);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [scanRefreshTrigger, setScanRefreshTrigger] = useState(0);
 
   useEffect(() => {
     checkAuth();
@@ -192,7 +194,13 @@ const Billing = () => {
         </TabsList>
 
         <TabsContent value="services" className="space-y-6">
-          <DocumentScanner onServiceAdd={handleServiceAdd} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DocumentScanner 
+              onServiceAdd={handleServiceAdd} 
+              onScanComplete={() => setScanRefreshTrigger(prev => prev + 1)}
+            />
+            <ScanHistory refreshTrigger={scanRefreshTrigger} />
+          </div>
           <ServiceForm onServiceAdd={handleServiceAdd} />
           <ServicesList
             services={services}

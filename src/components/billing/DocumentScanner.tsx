@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,9 +25,10 @@ interface ExtractedData {
 
 interface DocumentScannerProps {
   onServiceAdd: () => void;
+  onScanComplete?: () => void;
 }
 
-export const DocumentScanner = ({ onServiceAdd }: DocumentScannerProps) => {
+export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -122,8 +123,45 @@ export const DocumentScanner = ({ onServiceAdd }: DocumentScannerProps) => {
     }
   };
 
+  const uploadImageToStorage = async (userId: string, imageBase64: string): Promise<string | null> => {
+    try {
+      // Convert base64 to blob
+      const base64Data = imageBase64.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      const fileName = `${userId}/${Date.now()}.jpg`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('scanned-documents')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('scanned-documents')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      return null;
+    }
+  };
+
   const handleConfirmData = async () => {
-    if (!extractedData) return;
+    if (!extractedData || !previewImage) return;
 
     setIsSaving(true);
     try {
@@ -133,24 +171,51 @@ export const DocumentScanner = ({ onServiceAdd }: DocumentScannerProps) => {
         return;
       }
 
-      // Inserir serviço na tabela services
-      const { error } = await supabase.from('services').insert({
-        user_id: user.id,
-        service_name: extractedData.service_name || 'Serviço escaneado',
-        service_value: extractedData.service_value || 0,
-        client_name: extractedData.clinic_name,
-        patient_name: extractedData.patient_name,
-        service_date: new Date().toISOString().split('T')[0],
-        status: 'active'
-      });
+      // Upload image to storage
+      const imageUrl = await uploadImageToStorage(user.id, previewImage);
 
-      if (error) throw error;
+      // Insert service
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('services')
+        .insert({
+          user_id: user.id,
+          service_name: extractedData.service_name || 'Serviço escaneado',
+          service_value: extractedData.service_value || 0,
+          client_name: extractedData.clinic_name,
+          patient_name: extractedData.patient_name,
+          service_date: new Date().toISOString().split('T')[0],
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (serviceError) throw serviceError;
+
+      // Save scan history with image
+      if (imageUrl) {
+        const { error: historyError } = await supabase
+          .from('scanned_documents')
+          .insert({
+            user_id: user.id,
+            image_url: imageUrl,
+            clinic_name: extractedData.clinic_name,
+            patient_name: extractedData.patient_name,
+            service_name: extractedData.service_name,
+            service_value: extractedData.service_value,
+            service_id: serviceData?.id
+          });
+
+        if (historyError) {
+          console.error('Erro ao salvar histórico:', historyError);
+        }
+      }
 
       toast.success('Serviço adicionado ao relatório!');
       setShowConfirmDialog(false);
       setExtractedData(null);
       setPreviewImage(null);
       onServiceAdd();
+      onScanComplete?.();
     } catch (error: any) {
       console.error('Erro ao salvar serviço:', error);
       toast.error('Erro ao salvar serviço: ' + error.message);
