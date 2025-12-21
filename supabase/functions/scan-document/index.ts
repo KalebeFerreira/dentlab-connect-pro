@@ -21,11 +21,16 @@ serve(async (req) => {
 
     console.log('Processando imagem para extração de dados...');
 
-    // Usar Lovable AI (Gemini) para extrair dados estruturados da imagem
+    // Usar Lovable AI para extrair dados estruturados da imagem
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY não configurada');
+    }
+
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENROUTER_API_KEY')}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://lovable.dev',
         'X-Title': 'Lovable Document Scanner'
