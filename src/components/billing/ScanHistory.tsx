@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from 'xlsx';
 import { 
   History, 
   Loader2, 
@@ -24,6 +25,8 @@ import {
   FileText,
   DollarSign,
   Calendar,
+  FileDown,
+  FileSpreadsheet,
   FileImage,
   File,
   Filter,
@@ -147,6 +150,149 @@ export const ScanHistory = ({ refreshTrigger }: ScanHistoryProps) => {
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
+  const handleExportExcel = () => {
+    if (filteredDocuments.length === 0) {
+      toast.error("Nenhum documento para exportar");
+      return;
+    }
+
+    try {
+      const totalValue = filteredDocuments.reduce((sum, doc) => sum + (doc.service_value || 0), 0);
+      
+      const worksheetData = [
+        ['Histórico de Documentos Escaneados'],
+        [selectedClient !== "all" ? `Cliente: ${selectedClient}` : 'Todos os clientes'],
+        [`Total de documentos: ${filteredDocuments.length}`],
+        [`Valor total: ${formatCurrency(totalValue)}`],
+        [],
+        ['Cliente', 'Paciente', 'Serviço', 'Valor', 'Data do Scan', 'Tipo de Arquivo'],
+        ...filteredDocuments.map(doc => [
+          doc.clinic_name || '-',
+          doc.patient_name || '-',
+          doc.service_name || '-',
+          doc.service_value || 0,
+          format(new Date(doc.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+          doc.file_name || 'Imagem'
+        ]),
+        [],
+        ['TOTAL', '', '', totalValue, '', '']
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      
+      worksheet['!cols'] = [
+        { wch: 25 },
+        { wch: 20 },
+        { wch: 25 },
+        { wch: 12 },
+        { wch: 18 },
+        { wch: 20 }
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Histórico Scans');
+      
+      const fileName = selectedClient !== "all" 
+        ? `historico_scans_${selectedClient.replace(/\s+/g, '_')}.xlsx`
+        : 'historico_scans_completo.xlsx';
+      
+      XLSX.writeFile(workbook, fileName);
+      toast.success('Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      toast.error('Erro ao exportar Excel');
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (filteredDocuments.length === 0) {
+      toast.error("Nenhum documento para exportar");
+      return;
+    }
+
+    try {
+      const totalValue = filteredDocuments.reduce((sum, doc) => sum + (doc.service_value || 0), 0);
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Histórico de Documentos Escaneados</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+            h1 { color: #2563eb; font-size: 24px; margin-bottom: 10px; }
+            .info { margin-bottom: 20px; color: #666; }
+            .info p { margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #2563eb; color: white; padding: 12px 8px; text-align: left; font-size: 12px; }
+            td { padding: 10px 8px; border-bottom: 1px solid #ddd; font-size: 11px; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            .total-row { font-weight: bold; background-color: #e0e7ff !important; }
+            .currency { text-align: right; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>Histórico de Documentos Escaneados</h1>
+          <div class="info">
+            <p><strong>Cliente:</strong> ${selectedClient !== "all" ? selectedClient : 'Todos os clientes'}</p>
+            <p><strong>Total de documentos:</strong> ${filteredDocuments.length}</p>
+            <p><strong>Valor total:</strong> ${formatCurrency(totalValue)}</p>
+            <p><strong>Data de exportação:</strong> ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Paciente</th>
+                <th>Serviço</th>
+                <th class="currency">Valor</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredDocuments.map(doc => `
+                <tr>
+                  <td>${doc.clinic_name || '-'}</td>
+                  <td>${doc.patient_name || '-'}</td>
+                  <td>${doc.service_name || '-'}</td>
+                  <td class="currency">${doc.service_value ? formatCurrency(doc.service_value) : '-'}</td>
+                  <td>${format(new Date(doc.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}</td>
+                </tr>
+              `).join('')}
+              <tr class="total-row">
+                <td colspan="3">TOTAL</td>
+                <td class="currency">${formatCurrency(totalValue)}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+      
+      toast.success('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+    }
+  };
+
   const availableClients = getAvailableClients();
 
   if (loading) {
@@ -206,6 +352,19 @@ export const ScanHistory = ({ refreshTrigger }: ScanHistoryProps) => {
               </div>
             )}
           </CardTitle>
+          
+          {filteredDocuments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button onClick={handleExportPDF} variant="outline" size="sm">
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+              <Button onClick={handleExportExcel} variant="outline" size="sm">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[350px] sm:h-[300px] pr-2 sm:pr-4">
