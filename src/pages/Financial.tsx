@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, FileDown, Loader2 } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner";
+import { FinancialCharts } from "@/components/FinancialCharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -27,9 +29,11 @@ const Financial = () => {
   const [showForm, setShowForm] = useState(false);
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allYearTransactions, setAllYearTransactions] = useState<Transaction[]>([]);
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState("transactions");
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -38,6 +42,7 @@ const Financial = () => {
   useEffect(() => {
     if (!loading) {
       loadTransactions();
+      loadAllYearTransactions();
     }
   }, [loading, filterMonth, filterYear]);
 
@@ -54,6 +59,7 @@ const Financial = () => {
         },
         () => {
           loadTransactions();
+          loadAllYearTransactions();
         }
       )
       .subscribe();
@@ -90,6 +96,21 @@ const Financial = () => {
       setTransactions(data || []);
     } catch (error) {
       console.error("Erro ao carregar transações:", error);
+    }
+  };
+
+  const loadAllYearTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("financial_transactions")
+        .select("*")
+        .eq("year", filterYear)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAllYearTransactions(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar transações do ano:", error);
     }
   };
 
@@ -130,7 +151,49 @@ const Financial = () => {
 
   const handleScanComplete = () => {
     loadTransactions();
-    // Optionally switch to transactions tab to show the new entry
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      // Get company info
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data: companyInfo } = await supabase
+        .from("company_info")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      const { data, error } = await supabase.functions.invoke('generate-financial-pdf', {
+        body: {
+          transactions,
+          month: filterMonth,
+          year: filterYear,
+          companyInfo: companyInfo || undefined
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.html) {
+        // Open HTML in new window for printing/saving as PDF
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(data.html);
+          printWindow.document.close();
+          toast.success('Relatório gerado! Use Ctrl+P para salvar como PDF.');
+        } else {
+          toast.error('Popup bloqueado. Permita popups para exportar.');
+        }
+      }
+    } catch (error: any) {
+      console.error("Erro ao exportar PDF:", error);
+      toast.error("Erro ao exportar: " + error.message);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (loading) {
@@ -145,30 +208,47 @@ const Financial = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">Controle Financeiro</h1>
-              <p className="text-sm text-muted-foreground">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold truncate">Controle Financeiro</h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">
                 Gerencie receitas, despesas e acompanhe seu lucro
               </p>
             </div>
-            {!showForm && activeTab === "transactions" && (
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Transação
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                size="sm"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                <span className="hidden sm:inline">Exportar PDF</span>
+                <span className="sm:hidden">PDF</span>
               </Button>
-            )}
+              {!showForm && activeTab === "transactions" && (
+                <Button onClick={() => setShowForm(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Nova Transação</span>
+                  <span className="sm:hidden">Nova</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-6 md:py-8 space-y-6 md:space-y-8">
         {/* Filters */}
-        <div className="flex gap-4">
-          <div className="w-48">
+        <div className="flex gap-2 md:gap-4">
+          <div className="flex-1 max-w-[180px]">
             <Select
               value={filterMonth.toString()}
               onValueChange={(value) => setFilterMonth(parseInt(value))}
@@ -185,7 +265,7 @@ const Financial = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-32">
+          <div className="w-24 md:w-32">
             <Select
               value={filterYear.toString()}
               onValueChange={(value) => setFilterYear(parseInt(value))}
@@ -205,70 +285,76 @@ const Financial = () => {
         </div>
 
         {/* Financial Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Receitas</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Receitas</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-green-600">
                 R$ {income.toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">Confirmadas</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Confirmadas</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Despesas</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Despesas</CardTitle>
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-red-600">
                 R$ {expense.toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">Confirmadas</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Confirmadas</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Lucro</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <CardContent className="px-3 md:px-6">
+              <div className={`text-lg md:text-2xl font-bold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
                 R$ {profit.toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">Receitas - Despesas</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Líquido</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Pendentes</CardTitle>
               <DollarSign className="h-4 w-4 text-yellow-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-yellow-600">
                 R$ {pending.toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">Aguardando confirmação</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Aguardando</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabs for Transactions and Scanner */}
+        {/* Tabs for Transactions, Scanner, and Charts */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="transactions" className="flex items-center gap-2">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsTrigger value="transactions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <List className="h-4 w-4" />
-              Transações
+              <span className="hidden sm:inline">Transações</span>
+              <span className="sm:hidden">Lista</span>
             </TabsTrigger>
-            <TabsTrigger value="scanner" className="flex items-center gap-2">
+            <TabsTrigger value="scanner" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <Scan className="h-4 w-4" />
               Scanner
+            </TabsTrigger>
+            <TabsTrigger value="charts" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Gráficos</span>
+              <span className="sm:hidden">Graf.</span>
             </TabsTrigger>
           </TabsList>
 
@@ -296,6 +382,13 @@ const Financial = () => {
               onScanComplete={handleScanComplete}
               defaultMonth={filterMonth}
               defaultYear={filterYear}
+            />
+          </TabsContent>
+
+          <TabsContent value="charts" className="space-y-6">
+            <FinancialCharts 
+              transactions={allYearTransactions} 
+              filterYear={filterYear}
             />
           </TabsContent>
         </Tabs>
