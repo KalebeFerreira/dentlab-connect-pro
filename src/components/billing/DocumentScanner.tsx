@@ -837,6 +837,28 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
               </AlertDescription>
             </Alert>
 
+            {/* Vídeo Tutorial */}
+            <div className="space-y-2">
+              <h4 className="font-semibold flex items-center gap-2 text-sm">
+                🎬 Vídeo Tutorial
+              </h4>
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted border">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/f7l5CeWX3GE?rel=0"
+                  title="Como liberar permissão de câmera no celular"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Vídeo mostrando como liberar permissões no navegador
+              </p>
+            </div>
+
             {/* iPhone / Safari */}
             <div className="space-y-2">
               <h4 className="font-semibold flex items-center gap-2 text-sm">
