@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
+import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Transaction {
@@ -27,6 +29,7 @@ const Financial = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [activeTab, setActiveTab] = useState("transactions");
 
   useEffect(() => {
     checkAuth();
@@ -111,6 +114,7 @@ const Financial = () => {
   const handleEdit = (transaction: Transaction) => {
     setEditTransaction(transaction);
     setShowForm(true);
+    setActiveTab("transactions");
   };
 
   const handleFormSuccess = () => {
@@ -122,6 +126,11 @@ const Financial = () => {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditTransaction(null);
+  };
+
+  const handleScanComplete = () => {
+    loadTransactions();
+    // Optionally switch to transactions tab to show the new entry
   };
 
   if (loading) {
@@ -146,7 +155,7 @@ const Financial = () => {
                 Gerencie receitas, despesas e acompanhe seu lucro
               </p>
             </div>
-            {!showForm && (
+            {!showForm && activeTab === "transactions" && (
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Transação
@@ -250,23 +259,49 @@ const Financial = () => {
           </Card>
         </div>
 
-        {/* Transaction Form */}
-        {showForm && (
-          <TransactionForm
-            onSuccess={handleFormSuccess}
-            onCancel={handleFormCancel}
-            editTransaction={editTransaction}
-          />
-        )}
+        {/* Tabs for Transactions and Scanner */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="transactions" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Transações
+            </TabsTrigger>
+            <TabsTrigger value="scanner" className="flex items-center gap-2">
+              <Scan className="h-4 w-4" />
+              Scanner
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Transaction List */}
-        <TransactionList
-          transactions={transactions}
-          onEdit={handleEdit}
-          onDelete={loadTransactions}
-        />
+          <TabsContent value="transactions" className="space-y-6">
+            {/* Transaction Form */}
+            {showForm && (
+              <TransactionForm
+                onSuccess={handleFormSuccess}
+                onCancel={handleFormCancel}
+                editTransaction={editTransaction}
+              />
+            )}
+
+            {/* Transaction List */}
+            <TransactionList
+              transactions={transactions}
+              onEdit={handleEdit}
+              onDelete={loadTransactions}
+            />
+          </TabsContent>
+
+          <TabsContent value="scanner" className="space-y-6">
+            <FinancialDocumentScanner
+              onTransactionAdd={loadTransactions}
+              onScanComplete={handleScanComplete}
+              defaultMonth={filterMonth}
+              defaultYear={filterYear}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
 };
+
 export default Financial;
