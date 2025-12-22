@@ -24,7 +24,8 @@ import {
   HelpCircle,
   Smartphone,
   Settings,
-  RefreshCw
+  RefreshCw,
+  Copy
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -709,9 +710,24 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
             {/* Preview do texto bruto capturado */}
             {extractedData?.raw_text && (
               <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Texto Capturado da Imagem</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Texto Capturado da Imagem</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (extractedData?.raw_text) {
+                        navigator.clipboard.writeText(extractedData.raw_text);
+                        toast.success("Texto copiado!");
+                      }
+                    }}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Copy className="h-3 w-3" />
+                    Copiar
+                  </button>
                 </div>
                 <div className="max-h-32 overflow-y-auto">
                   <p className="text-xs text-muted-foreground whitespace-pre-wrap font-mono bg-background p-2 rounded border">
