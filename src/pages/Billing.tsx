@@ -37,6 +37,8 @@ export interface Service {
   service_value: number;
   client_name?: string;
   patient_name?: string;
+  color?: string;
+  work_type?: string;
   service_date: string;
   status: string;
   created_at: string;

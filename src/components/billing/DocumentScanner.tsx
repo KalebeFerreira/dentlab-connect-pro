@@ -34,6 +34,8 @@ interface ExtractedData {
   patient_name: string | null;
   service_name: string | null;
   service_value: number | null;
+  color?: string | null;
+  work_type?: string | null;
   raw_text?: string | null;
 }
 
@@ -359,7 +361,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       // Upload file to storage
       const fileUrl = await uploadFileToStorage(user.id, currentFileData, previewFile.type, previewFile.name);
 
-      // Insert service
+      // Insert service - goes automatically to monthly report
       const { data: serviceData, error: serviceError } = await supabase
         .from('services')
         .insert({
@@ -368,6 +370,8 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
           service_value: extractedData.service_value || 0,
           client_name: extractedData.clinic_name,
           patient_name: extractedData.patient_name,
+          color: extractedData.color || null,
+          work_type: extractedData.work_type || extractedData.service_name || null,
           service_date: new Date().toISOString().split('T')[0],
           status: 'active'
         })
@@ -803,18 +807,31 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="service_value" className="text-sm">Valor (R$)</Label>
-                <Input
-                  id="service_value"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={extractedData?.service_value || ''}
-                  onChange={(e) => handleEditField('service_value', e.target.value)}
-                  placeholder="0.00"
-                  className="h-11"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="color" className="text-sm">Cor</Label>
+                  <Input
+                    id="color"
+                    value={extractedData?.color || ''}
+                    onChange={(e) => handleEditField('color', e.target.value)}
+                    placeholder="Ex: A2, B1, Bleach"
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="service_value" className="text-sm">Valor (R$)</Label>
+                  <Input
+                    id="service_value"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={extractedData?.service_value || ''}
+                    onChange={(e) => handleEditField('service_value', e.target.value)}
+                    placeholder="0.00"
+                    className="h-11"
+                  />
+                </div>
               </div>
             </div>
           </div>

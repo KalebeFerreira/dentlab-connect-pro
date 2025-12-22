@@ -1068,6 +1068,7 @@ export type Database = {
       services: {
         Row: {
           client_name: string | null
+          color: string | null
           created_at: string
           id: string
           patient_name: string | null
@@ -1077,9 +1078,11 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          work_type: string | null
         }
         Insert: {
           client_name?: string | null
+          color?: string | null
           created_at?: string
           id?: string
           patient_name?: string | null
@@ -1089,9 +1092,11 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          work_type?: string | null
         }
         Update: {
           client_name?: string | null
+          color?: string | null
           created_at?: string
           id?: string
           patient_name?: string | null
@@ -1101,6 +1106,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          work_type?: string | null
         }
         Relationships: []
       }
