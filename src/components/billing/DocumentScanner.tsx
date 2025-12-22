@@ -116,7 +116,48 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     setShowCamera(false);
   };
 
-  const captureImage = () => {
+  // Compressão de imagem para redes lentas (4G/3G)
+  const compressImage = (dataUrl: string, maxWidth = 1200, quality = 0.7): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Redimensionar se maior que maxWidth
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Aplicar suavização para melhor qualidade
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+        }
+
+        // Converter para JPEG com qualidade reduzida
+        const compressedData = canvas.toDataURL('image/jpeg', quality);
+        
+        // Log do tamanho para debug
+        const originalSize = Math.round(dataUrl.length / 1024);
+        const compressedSize = Math.round(compressedData.length / 1024);
+        console.log(`Imagem comprimida: ${originalSize}KB → ${compressedSize}KB (${Math.round((1 - compressedSize/originalSize) * 100)}% menor)`);
+        
+        resolve(compressedData);
+      };
+      img.onerror = () => resolve(dataUrl); // Fallback para original se falhar
+      img.src = dataUrl;
+    });
+  };
+
+  const captureImage = async () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -127,12 +168,17 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        const imageData = canvas.toDataURL('image/jpeg', 0.85);
-        setPreviewImage(imageData);
+        const rawImage = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // Comprimir antes de processar
+        toast.info('Otimizando imagem...');
+        const compressedImage = await compressImage(rawImage);
+        
+        setPreviewImage(compressedImage);
         setPreviewFile({ name: 'captured_photo.jpg', type: 'image/jpeg' });
-        setCurrentFileData(imageData);
+        setCurrentFileData(compressedImage);
         stopCamera();
-        processFile(imageData, 'image/jpeg');
+        processFile(compressedImage, 'image/jpeg');
       }
     }
   };
@@ -157,12 +203,15 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     return <File className="h-12 w-12 text-muted-foreground" />;
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check file type
-    if (!ALL_SUPPORTED_TYPES.includes(file.type)) {
+    // Check file type - ser mais flexível com imagens
+    const isImage = file.type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(file.type);
+    const isDoc = SUPPORTED_DOC_TYPES.includes(file.type);
+    
+    if (!isImage && !isDoc) {
       toast.error(`Tipo de arquivo não suportado. Use: JPG, PNG, PDF, Word ou Excel`);
       return;
     }
@@ -174,18 +223,22 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const fileData = e.target?.result as string;
-      setCurrentFileData(fileData);
-      setPreviewFile({ name: file.name, type: file.type });
+    reader.onload = async (e) => {
+      let fileData = e.target?.result as string;
       
-      if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+      // Comprimir imagens automaticamente para redes lentas
+      if (isImage) {
+        toast.info('Otimizando imagem para envio...');
+        fileData = await compressImage(fileData);
         setPreviewImage(fileData);
       } else {
         setPreviewImage(null);
       }
       
-      processFile(fileData, file.type);
+      setCurrentFileData(fileData);
+      setPreviewFile({ name: file.name, type: file.type });
+      
+      processFile(fileData, isImage ? 'image/jpeg' : file.type);
     };
     reader.readAsDataURL(file);
   };
