@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'applicati
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
 
 export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScannerProps) => {
+  const isMobile = useIsMobile();
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -99,12 +101,10 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
             ? 'Nenhuma câmera encontrada neste dispositivo.'
             : name === 'OverconstrainedError'
               ? 'Câmera não suportou a resolução solicitada.'
-              : 'Não foi possível abrir a câmera. Vou usar o modo alternativo.';
+              : 'Não foi possível abrir a câmera neste aparelho.';
 
       toast.error(msg);
-
-      // Fallback universal: usar input capture (abre a câmera no celular)
-      setTimeout(() => cameraInputRef.current?.click(), 150);
+      // No mobile, o modo mais compatível é via "captura" (input capture). A abertura precisa ser por clique do usuário.
     }
   };
 
@@ -391,9 +391,13 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         fileInputRef.current.value = '';
       }
 
-      // In batch mode, automatically restart camera
+      // In batch mode, no mobile o usuário precisa tocar novamente (o navegador pode bloquear abertura automática da câmera)
       if (batchMode) {
-        setTimeout(() => startCamera(), 500);
+        if (isMobile) {
+          toast.info('Pronto! Toque em "Usar Câmera" para o próximo documento.');
+        } else {
+          setTimeout(() => startCamera(), 500);
+        }
       }
     } catch (error: any) {
       console.error('Erro ao salvar serviço:', error);
@@ -416,7 +420,9 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     
     if (batchMode) {
       toast.info('Documento pulado. Pronto para o próximo.');
-      setTimeout(() => startCamera(), 500);
+      if (!isMobile) {
+        setTimeout(() => startCamera(), 500);
+      }
     }
   };
 
@@ -505,7 +511,13 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
           {!showCamera && !previewImage && !previewFile && !isScanning && (
             <div className="flex flex-col gap-3">
               <Button
-                onClick={startCamera}
+                onClick={() => {
+                  if (isMobile) {
+                    cameraInputRef.current?.click();
+                    return;
+                  }
+                  startCamera();
+                }}
                 variant="outline"
                 className="w-full h-14 text-base"
                 size="lg"
