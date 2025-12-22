@@ -1,19 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CompanyInfoForm } from "@/components/billing/CompanyInfoForm";
-import { ServiceForm } from "@/components/billing/ServiceForm";
-import { ServicesList } from "@/components/billing/ServicesList";
-import { BillingStats } from "@/components/billing/BillingStats";
-import { MonthlyReports } from "@/components/billing/MonthlyReports";
-import { ClientReports } from "@/components/billing/ClientReports";
-import { AutomaticReportSettings } from "@/components/billing/AutomaticReportSettings";
-import { DocumentScanner } from "@/components/billing/DocumentScanner";
-import { ScanHistory } from "@/components/billing/ScanHistory";
 import { Loader2 } from "lucide-react";
+
+// Lazy load heavy components
+const CompanyInfoForm = lazy(() => import("@/components/billing/CompanyInfoForm").then(m => ({ default: m.CompanyInfoForm })));
+const ServiceForm = lazy(() => import("@/components/billing/ServiceForm").then(m => ({ default: m.ServiceForm })));
+const ServicesList = lazy(() => import("@/components/billing/ServicesList").then(m => ({ default: m.ServicesList })));
+const BillingStats = lazy(() => import("@/components/billing/BillingStats").then(m => ({ default: m.BillingStats })));
+const MonthlyReports = lazy(() => import("@/components/billing/MonthlyReports").then(m => ({ default: m.MonthlyReports })));
+const ClientReports = lazy(() => import("@/components/billing/ClientReports").then(m => ({ default: m.ClientReports })));
+const AutomaticReportSettings = lazy(() => import("@/components/billing/AutomaticReportSettings").then(m => ({ default: m.AutomaticReportSettings })));
+const DocumentScanner = lazy(() => import("@/components/billing/DocumentScanner").then(m => ({ default: m.DocumentScanner })));
+const ScanHistory = lazy(() => import("@/components/billing/ScanHistory").then(m => ({ default: m.ScanHistory })));
+
+const ComponentLoader = memo(() => (
+  <div className="flex items-center justify-center py-8">
+    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+  </div>
+));
 
 export interface CompanyInfo {
   id?: string;
@@ -178,12 +185,16 @@ const Billing = () => {
         <h1 className="text-3xl font-bold">Faturamento</h1>
       </div>
 
-      <CompanyInfoForm
-        companyInfo={companyInfo}
-        onSave={handleCompanyInfoSave}
-      />
+      <Suspense fallback={<ComponentLoader />}>
+        <CompanyInfoForm
+          companyInfo={companyInfo}
+          onSave={handleCompanyInfoSave}
+        />
+      </Suspense>
 
-      <BillingStats services={services} />
+      <Suspense fallback={<ComponentLoader />}>
+        <BillingStats services={services} />
+      </Suspense>
 
       <Tabs defaultValue="services" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 p-1">
@@ -202,31 +213,43 @@ const Billing = () => {
         </TabsList>
 
         <TabsContent value="services" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <DocumentScanner 
-              onServiceAdd={handleServiceAdd} 
-              onScanComplete={() => setScanRefreshTrigger(prev => prev + 1)}
+          <Suspense fallback={<ComponentLoader />}>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <DocumentScanner 
+                onServiceAdd={handleServiceAdd} 
+                onScanComplete={() => setScanRefreshTrigger(prev => prev + 1)}
+              />
+              <ScanHistory refreshTrigger={scanRefreshTrigger} />
+            </div>
+          </Suspense>
+          <Suspense fallback={<ComponentLoader />}>
+            <ServiceForm onServiceAdd={handleServiceAdd} />
+          </Suspense>
+          <Suspense fallback={<ComponentLoader />}>
+            <ServicesList
+              services={services}
+              onDelete={handleServiceDelete}
+              companyInfo={companyInfo}
             />
-            <ScanHistory refreshTrigger={scanRefreshTrigger} />
-          </div>
-          <ServiceForm onServiceAdd={handleServiceAdd} />
-          <ServicesList
-            services={services}
-            onDelete={handleServiceDelete}
-            companyInfo={companyInfo}
-          />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="monthly">
-          <MonthlyReports services={services} companyInfo={companyInfo} />
+          <Suspense fallback={<ComponentLoader />}>
+            <MonthlyReports services={services} companyInfo={companyInfo} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="clients">
-          <ClientReports services={services} companyInfo={companyInfo} />
+          <Suspense fallback={<ComponentLoader />}>
+            <ClientReports services={services} companyInfo={companyInfo} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="automatic">
-          <AutomaticReportSettings services={services} />
+          <Suspense fallback={<ComponentLoader />}>
+            <AutomaticReportSettings services={services} />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
