@@ -690,6 +690,12 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                                   <span className="font-medium">{service.patient_name}</span>
                                 </div>
                               )}
+                              {service.color && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Cor:</span>
+                                  <span className="font-medium">{service.color}</span>
+                                </div>
+                              )}
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Valor:</span>
                                 <span className="font-semibold text-primary">
@@ -713,6 +719,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                           <TableRow>
                             <TableHead>Serviço</TableHead>
                             <TableHead>Paciente</TableHead>
+                            <TableHead>Cor</TableHead>
                             <TableHead>Valor</TableHead>
                             <TableHead>Data</TableHead>
                           </TableRow>
@@ -722,6 +729,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                             <TableRow key={service.id}>
                               <TableCell>{service.service_name}</TableCell>
                               <TableCell>{service.patient_name || "-"}</TableCell>
+                              <TableCell>{service.color || "-"}</TableCell>
                               <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
                               <TableCell>
                                 {new Date(service.service_date).toLocaleDateString("pt-BR")}
@@ -769,6 +777,12 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                         <span className="text-muted-foreground">Cliente:</span>
                         <span className="font-medium">{service.client_name || "-"}</span>
                       </div>
+                      {service.color && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Cor:</span>
+                          <span className="font-medium">{service.color}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Valor:</span>
                         <span className="font-semibold text-primary">
@@ -792,6 +806,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                   <TableRow>
                     <TableHead>Serviço</TableHead>
                     <TableHead>Cliente</TableHead>
+                    <TableHead>Cor</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Data</TableHead>
                   </TableRow>
@@ -801,6 +816,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                     <TableRow key={service.id}>
                       <TableCell>{service.service_name}</TableCell>
                       <TableCell>{service.client_name || "-"}</TableCell>
+                      <TableCell>{service.color || "-"}</TableCell>
                       <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
                       <TableCell>
                         {new Date(service.service_date).toLocaleDateString("pt-BR")}
