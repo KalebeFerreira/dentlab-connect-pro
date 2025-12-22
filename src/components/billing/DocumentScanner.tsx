@@ -56,25 +56,55 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const startCamera = async () => {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('getUserMedia não suportado');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
       });
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // iOS/Safari às vezes precisa disso para iniciar o vídeo
+        videoRef.current.onloadedmetadata = async () => {
+          try {
+            await videoRef.current?.play();
+          } catch {
+            // ignore
+          }
+        };
       }
       setShowCamera(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao acessar câmera:', error);
-      toast.error('Não foi possível acessar a câmera. Verifique as permissões.');
+
+      const name = error?.name || '';
+      const msg =
+        name === 'NotAllowedError'
+          ? 'Permissão de câmera negada. Ative nas configurações do navegador.'
+          : name === 'NotFoundError'
+            ? 'Nenhuma câmera encontrada neste dispositivo.'
+            : name === 'OverconstrainedError'
+              ? 'Câmera não suportou a resolução solicitada.'
+              : 'Não foi possível abrir a câmera. Vou usar o modo alternativo.';
+
+      toast.error(msg);
+
+      // Fallback universal: usar input capture (abre a câmera no celular)
+      setTimeout(() => cameraInputRef.current?.click(), 150);
     }
   };
 
@@ -442,6 +472,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
               <p className="text-xs text-muted-foreground text-center">
                 Suporta: JPG, PNG, PDF, Word, Excel (máx. 10MB)
               </p>
+              {/* Upload geral (imagens + docs) */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -449,7 +480,17 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                 multiple={false}
                 onChange={handleFileUpload}
                 className="hidden"
+              />
+
+              {/* Fallback universal de câmera (mobile) */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
                 capture="environment"
+                multiple={false}
+                onChange={handleFileUpload}
+                className="hidden"
               />
             </div>
           )}
