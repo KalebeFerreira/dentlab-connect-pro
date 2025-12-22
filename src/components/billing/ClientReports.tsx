@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { FileDown, FileSpreadsheet, Eye, X, Printer } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import {
   Table,
@@ -23,6 +23,12 @@ import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { SignaturePad } from "./SignaturePad";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ClientReportsProps {
   services: Service[];
@@ -32,6 +38,9 @@ interface ClientReportsProps {
 export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => {
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [signature, setSignature] = useState<string>("");
+  const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getAvailableClients = () => {
     const clients = new Set<string>();
@@ -62,12 +71,7 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
     });
   };
 
-  const handleExportPDF = async () => {
-    if (!signature) {
-      toast.error("Por favor, adicione sua assinatura digital primeiro");
-      return;
-    }
-
+  const handlePreviewPDF = async () => {
     if (!companyInfo) {
       toast.error("Informações da empresa não encontradas. Configure em 'Informações da Empresa'");
       return;
@@ -78,6 +82,7 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
       return;
     }
 
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
         body: {
@@ -93,32 +98,52 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
         throw error;
       }
 
-      if (!data || !data.html) {
+      if (!data) {
         throw new Error('Resposta inválida do servidor');
       }
 
-      // Add signature to the HTML
-      const htmlWithSignature = data.html.replace(
-        '</body>',
-        `<div style="margin-top: 50px; text-align: center;">
-          <img src="${signature}" style="max-width: 300px; border: 1px solid #ddd; padding: 10px;" />
-          <p style="margin-top: 10px; color: #666; font-size: 12px;">Assinatura Digital</p>
-        </div></body>`
-      );
-
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(htmlWithSignature);
-        printWindow.document.close();
-        printWindow.print();
+      // Check for limit error (403)
+      if (data.error) {
+        toast.error(data.message || data.error);
+        return;
       }
-      
-      toast.success('PDF gerado com sucesso!');
+
+      if (!data.html) {
+        throw new Error('HTML não retornado pelo servidor');
+      }
+
+      // Add signature to the HTML if available
+      let finalHtml = data.html;
+      if (signature) {
+        finalHtml = data.html.replace(
+          '</body>',
+          `<div style="margin-top: 50px; text-align: center;">
+            <img src="${signature}" style="max-width: 300px; border: 1px solid #ddd; padding: 10px;" />
+            <p style="margin-top: 10px; color: #666; font-size: 12px;">Assinatura Digital</p>
+          </div></body>`
+        );
+      }
+
+      setPreviewHtml(finalHtml);
+      setShowPreview(true);
     } catch (error: any) {
       console.error('Erro ao gerar PDF:', error);
       const errorMessage = error?.message || 'Erro desconhecido ao gerar PDF';
       toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handlePrintPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(previewHtml);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    setShowPreview(false);
+    toast.success('PDF enviado para impressão!');
   };
 
   const handleSaveSignature = (sig: string) => {
@@ -196,9 +221,9 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
 
           {selectedClient && (
             <div className="flex gap-2">
-              <Button onClick={handleExportPDF} variant="outline">
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar PDF
+              <Button onClick={handlePreviewPDF} variant="outline" disabled={isLoading}>
+                <Eye className="h-4 w-4 mr-2" />
+                {isLoading ? 'Gerando...' : 'Pré-visualizar PDF'}
               </Button>
               <Button onClick={handleExportExcel} variant="outline">
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -207,6 +232,30 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
             </div>
           )}
         </div>
+
+        {/* Preview Dialog */}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>Pré-visualização do PDF</span>
+                <div className="flex gap-2">
+                  <Button onClick={handlePrintPDF} size="sm">
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimir / Salvar PDF
+                  </Button>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto border rounded-lg bg-white">
+              <iframe
+                srcDoc={previewHtml}
+                className="w-full h-[70vh] border-0"
+                title="Pré-visualização do PDF"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {selectedClient && clientServices.length > 0 && (
           <div className="space-y-4">
