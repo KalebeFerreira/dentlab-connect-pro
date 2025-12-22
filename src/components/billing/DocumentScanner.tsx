@@ -67,7 +67,6 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const startCamera = async () => {
@@ -529,21 +528,35 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
           {!showCamera && !previewImage && !previewFile && !isScanning && (
             <div className="flex flex-col gap-3">
-              <Button
-                onClick={() => {
-                  if (isMobile) {
-                    cameraInputRef.current?.click();
-                    return;
-                  }
-                  startCamera();
-                }}
-                variant="outline"
-                className="w-full h-14 text-base"
-                size="lg"
-              >
-                <Camera className="mr-2 h-5 w-5" />
-                Usar Câmera
-              </Button>
+              {/* Mobile: usar label nativo (mais confiável em iOS/Android) */}
+              {isMobile ? (
+                <label
+                  htmlFor="camera-input-mobile"
+                  className="flex items-center justify-center w-full h-14 text-base rounded-md border border-input bg-background px-4 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <Camera className="mr-2 h-5 w-5" />
+                  Usar Câmera
+                  <input
+                    id="camera-input-mobile"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileUpload}
+                    className="sr-only"
+                  />
+                </label>
+              ) : (
+                <Button
+                  onClick={startCamera}
+                  variant="outline"
+                  className="w-full h-14 text-base"
+                  size="lg"
+                >
+                  <Camera className="mr-2 h-5 w-5" />
+                  Usar Câmera
+                </Button>
+              )}
+              
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
@@ -582,22 +595,12 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                   </AlertDescription>
                 </Alert>
               )}
+              
               {/* Upload geral (imagens + docs) */}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept={acceptedFileTypes}
-                multiple={false}
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-
-              {/* Fallback universal de câmera (mobile) */}
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
                 multiple={false}
                 onChange={handleFileUpload}
                 className="hidden"
