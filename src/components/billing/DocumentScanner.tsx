@@ -20,8 +20,13 @@ import {
   Layers,
   SkipForward,
   FileText,
-  File
+  File,
+  HelpCircle,
+  Smartphone,
+  Settings,
+  RefreshCw
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ExtractedData {
   clinic_name: string | null;
@@ -54,6 +59,10 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   // Batch mode states
   const [batchMode, setBatchMode] = useState(false);
   const [batchCount, setBatchCount] = useState(0);
+  
+  // Camera help dialog
+  const [showCameraHelp, setShowCameraHelp] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,17 +103,27 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       console.error('Erro ao acessar câmera:', error);
 
       const name = error?.name || '';
-      const msg =
-        name === 'NotAllowedError'
-          ? 'Permissão de câmera negada. Ative nas configurações do navegador.'
-          : name === 'NotFoundError'
-            ? 'Nenhuma câmera encontrada neste dispositivo.'
-            : name === 'OverconstrainedError'
-              ? 'Câmera não suportou a resolução solicitada.'
-              : 'Não foi possível abrir a câmera neste aparelho.';
+      let errorType = 'unknown';
+      let msg = 'Não foi possível abrir a câmera neste aparelho.';
+      
+      if (name === 'NotAllowedError') {
+        errorType = 'permission';
+        msg = 'Permissão de câmera negada.';
+      } else if (name === 'NotFoundError') {
+        errorType = 'notfound';
+        msg = 'Nenhuma câmera encontrada neste dispositivo.';
+      } else if (name === 'OverconstrainedError') {
+        errorType = 'overconstrained';
+        msg = 'Câmera não suportou a resolução solicitada.';
+      }
 
-      toast.error(msg);
-      // No mobile, o modo mais compatível é via "captura" (input capture). A abertura precisa ser por clique do usuário.
+      setCameraError(errorType);
+      toast.error(msg, {
+        action: errorType === 'permission' ? {
+          label: 'Ver ajuda',
+          onClick: () => setShowCameraHelp(true)
+        } : undefined
+      });
     }
   };
 
@@ -534,9 +553,35 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                 <Upload className="mr-2 h-5 w-5" />
                 Upload de Arquivo
               </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Suporta: JPG, PNG, PDF, Word, Excel (máx. 10MB)
-              </p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Suporta: JPG, PNG, PDF, Word, Excel (máx. 10MB)
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowCameraHelp(true)}
+                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  Ajuda
+                </button>
+              </div>
+              
+              {/* Aviso se houve erro de câmera */}
+              {cameraError === 'permission' && (
+                <Alert className="bg-amber-50 border-amber-200">
+                  <Settings className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 text-xs">
+                    Câmera bloqueada. 
+                    <button 
+                      onClick={() => setShowCameraHelp(true)}
+                      className="ml-1 underline font-medium"
+                    >
+                      Veja como liberar
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              )}
               {/* Upload geral (imagens + docs) */}
               <input
                 ref={fileInputRef}
@@ -769,6 +814,82 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                 <Check className="mr-2 h-4 w-4" />
               )}
               {batchMode ? 'Adicionar e Próximo' : 'Adicionar ao Relatório'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de ajuda para permissão de câmera */}
+      <Dialog open={showCameraHelp} onOpenChange={setShowCameraHelp}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-primary" />
+              Como liberar a câmera
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <Alert>
+              <Smartphone className="h-4 w-4" />
+              <AlertDescription>
+                A permissão de câmera pode estar bloqueada. Siga os passos abaixo para seu dispositivo:
+              </AlertDescription>
+            </Alert>
+
+            {/* iPhone / Safari */}
+            <div className="space-y-2">
+              <h4 className="font-semibold flex items-center gap-2 text-sm">
+                🍎 iPhone / Safari
+              </h4>
+              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Abra <strong>Ajustes</strong> do iPhone</li>
+                <li>Role até <strong>Safari</strong></li>
+                <li>Toque em <strong>Câmera</strong></li>
+                <li>Selecione <strong>Permitir</strong></li>
+                <li>Volte ao app e toque em "Usar Câmera" novamente</li>
+              </ol>
+            </div>
+
+            {/* Android / Chrome */}
+            <div className="space-y-2">
+              <h4 className="font-semibold flex items-center gap-2 text-sm">
+                🤖 Android / Chrome
+              </h4>
+              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Toque no <strong>cadeado 🔒</strong> na barra de endereço</li>
+                <li>Toque em <strong>Permissões</strong> ou <strong>Configurações do site</strong></li>
+                <li>Encontre <strong>Câmera</strong> e altere para <strong>Permitir</strong></li>
+                <li>Recarregue a página e tente novamente</li>
+              </ol>
+            </div>
+
+            {/* Android / Samsung Internet */}
+            <div className="space-y-2">
+              <h4 className="font-semibold flex items-center gap-2 text-sm">
+                📱 Samsung Internet
+              </h4>
+              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Toque no menu <strong>≡</strong> → <strong>Configurações</strong></li>
+                <li>Vá em <strong>Sites e downloads</strong> → <strong>Permissões do site</strong></li>
+                <li>Toque em <strong>Câmera</strong> e permita para este site</li>
+              </ol>
+            </div>
+
+            {/* Dica alternativa */}
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <RefreshCw className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <strong>Dica:</strong> Se a câmera ao vivo não funcionar, use o botão <strong>"Usar Câmera"</strong> que abre o app de câmera do seu celular diretamente.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowCameraHelp(false)} className="w-full">
+              Entendi
             </Button>
           </DialogFooter>
         </DialogContent>
