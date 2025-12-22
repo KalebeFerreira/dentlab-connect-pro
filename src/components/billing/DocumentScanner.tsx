@@ -33,6 +33,7 @@ interface ExtractedData {
   patient_name: string | null;
   service_name: string | null;
   service_value: number | null;
+  raw_text?: string | null;
 }
 
 interface DocumentScannerProps {
@@ -272,10 +273,17 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
         if (error) throw error;
 
-        if (data?.success && data?.data) {
-          setExtractedData(data.data);
+        if (data?.data) {
+          setExtractedData({
+            ...data.data,
+            raw_text: data.raw_text || data.data.raw_text || null
+          });
           setShowConfirmDialog(true);
-          toast.success('Dados extraídos com sucesso!');
+          if (data.success) {
+            toast.success('Dados extraídos com sucesso!');
+          } else {
+            toast.info('Preencha ou corrija os dados manualmente');
+          }
         } else {
           throw new Error(data?.error || 'Erro ao processar imagem');
         }
@@ -698,11 +706,26 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
               </div>
             )}
             
+            {/* Preview do texto bruto capturado */}
+            {extractedData?.raw_text && (
+              <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Texto Capturado da Imagem</span>
+                </div>
+                <div className="max-h-32 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap font-mono bg-background p-2 rounded border">
+                    {extractedData.raw_text}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Preview do texto extraído */}
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2 mb-2">
                 <Scan className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Texto Extraído pela IA</span>
+                <span className="text-sm font-medium text-primary">Dados Identificados pela IA</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2 bg-background rounded border">
