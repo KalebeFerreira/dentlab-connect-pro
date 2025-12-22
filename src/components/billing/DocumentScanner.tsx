@@ -524,17 +524,56 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       </Card>
 
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileImage className="h-5 w-5" />
-              Confirmar Dados
+              Dados Extraídos do Documento
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
+            {/* Preview do documento escaneado */}
+            {previewImage && (
+              <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                <img
+                  src={previewImage}
+                  alt="Documento escaneado"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            
+            {/* Preview do texto extraído */}
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Scan className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Texto Extraído pela IA</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 bg-background rounded border">
+                  <span className="text-muted-foreground block">Clínica:</span>
+                  <span className="font-medium truncate block">{extractedData?.clinic_name || '—'}</span>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <span className="text-muted-foreground block">Paciente:</span>
+                  <span className="font-medium truncate block">{extractedData?.patient_name || '—'}</span>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <span className="text-muted-foreground block">Serviço:</span>
+                  <span className="font-medium truncate block">{extractedData?.service_name || '—'}</span>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <span className="text-muted-foreground block">Valor:</span>
+                  <span className="font-medium text-green-600">
+                    {extractedData?.service_value ? `R$ ${extractedData.service_value.toFixed(2)}` : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <p className="text-sm text-muted-foreground">
-              Verifique e edite os dados antes de adicionar ao relatório:
+              Edite os campos abaixo se necessário:
             </p>
             
             <div className="space-y-3">
