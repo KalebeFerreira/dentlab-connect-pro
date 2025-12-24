@@ -238,7 +238,7 @@ const Billing = () => {
 
         <TabsContent value="monthly">
           <Suspense fallback={<ComponentLoader />}>
-            <MonthlyReports services={services} companyInfo={companyInfo} />
+            <MonthlyReports services={services} companyInfo={companyInfo} onServiceUpdate={loadServices} />
           </Suspense>
         </TabsContent>
 

@@ -141,7 +141,7 @@ export const FinancialDocumentScanner = ({
     setShowCamera(false);
   };
 
-  const compressImage = (dataUrl: string, maxWidth = 1200, quality = 0.7): Promise<string> => {
+  const compressImage = (dataUrl: string, maxWidth = 800, quality = 0.5): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -159,8 +159,6 @@ export const FinancialDocumentScanner = ({
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
         }
 
@@ -300,6 +298,24 @@ export const FinancialDocumentScanner = ({
         return;
       }
 
+      const vendorName = extractedData.vendor_name || extractedData.description || 'Transação escaneada';
+      
+      // Check if there's an existing transaction with same vendor in same month/year
+      // to suggest client matching
+      const { data: existingTransactions } = await supabase
+        .from('financial_transactions')
+        .select('description')
+        .eq('user_id', user.id)
+        .eq('month', formMonth)
+        .eq('year', formYear)
+        .ilike('description', `%${vendorName.split(' ')[0]}%`)
+        .limit(1);
+
+      // Use existing description format if found
+      const finalDescription = existingTransactions && existingTransactions.length > 0
+        ? existingTransactions[0].description
+        : vendorName;
+
       // Insert financial transaction
       const { error: transactionError } = await supabase
         .from('financial_transactions')
@@ -307,7 +323,7 @@ export const FinancialDocumentScanner = ({
           user_id: user.id,
           transaction_type: extractedData.transaction_type || 'payment',
           amount: extractedData.amount || 0,
-          description: extractedData.description || extractedData.vendor_name || 'Transação escaneada',
+          description: finalDescription,
           status: formStatus,
           month: formMonth,
           year: formYear

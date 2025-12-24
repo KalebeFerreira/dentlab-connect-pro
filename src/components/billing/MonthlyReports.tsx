@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileDown, FileSpreadsheet, MessageCircle, Mail, History } from "lucide-react";
+import { FileDown, FileSpreadsheet, MessageCircle, Mail, History, Pencil, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,6 +31,7 @@ import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 interface MonthlyReportsProps {
   services: Service[];
   companyInfo: CompanyInfo | null;
+  onServiceUpdate?: () => void;
 }
 
 interface ReportHistoryItem {
@@ -44,7 +45,7 @@ interface ReportHistoryItem {
   sent_at: string;
 }
 
-export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) => {
+export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: MonthlyReportsProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [consolidatedMode, setConsolidatedMode] = useState(false);
@@ -58,6 +59,16 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
   const [showHistory, setShowHistory] = useState(false);
   const [reportHistory, setReportHistory] = useState<ReportHistoryItem[]>([]);
   const { isSubscribed } = useFreemiumLimits();
+  
+  // Edit service state
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    service_name: '',
+    service_value: 0,
+    patient_name: '',
+    color: ''
+  });
 
   const getAvailableMonths = () => {
     const months = new Set<string>();
@@ -393,6 +404,62 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
     }
   }, [showHistory]);
 
+  const handleEditService = (service: Service) => {
+    setEditingService(service);
+    setEditForm({
+      service_name: service.service_name,
+      service_value: service.service_value,
+      patient_name: service.patient_name || '',
+      color: service.color || ''
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingService) return;
+    
+    try {
+      const { error } = await supabase
+        .from('services')
+        .update({
+          service_name: editForm.service_name,
+          service_value: editForm.service_value,
+          patient_name: editForm.patient_name || null,
+          color: editForm.color || null
+        })
+        .eq('id', editingService.id);
+
+      if (error) throw error;
+
+      toast.success('Serviço atualizado!');
+      setEditDialogOpen(false);
+      setEditingService(null);
+      onServiceUpdate?.();
+    } catch (error: any) {
+      console.error('Erro ao atualizar serviço:', error);
+      toast.error('Erro ao atualizar: ' + error.message);
+    }
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    if (!confirm('Deseja realmente excluir este serviço?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', serviceId);
+
+      if (error) throw error;
+
+      toast.success('Serviço excluído!');
+      onServiceUpdate?.();
+    } catch (error: any) {
+      console.error('Erro ao excluir serviço:', error);
+      toast.error('Erro ao excluir: ' + error.message);
+    }
+  };
+
   const handleSendWhatsApp = async () => {
     if (!clientPhone) {
       toast.error("Por favor, insira o telefone do cliente");
@@ -673,15 +740,25 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                           <div className="space-y-2">
                             <div className="flex justify-between items-start">
                               <h4 className="font-semibold text-sm">{service.service_name}</h4>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs ${
-                                  service.status === "paid"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-yellow-100 text-yellow-800"
-                                }`}
-                              >
-                                {service.status === "paid" ? "Pago" : "Pendente"}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  onClick={() => handleEditService(service)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs ${
+                                    service.status === "paid"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                                  }`}
+                                >
+                                  {service.status === "paid" ? "Pago" : "Pendente"}
+                                </span>
+                              </div>
                             </div>
                             <div className="space-y-1 text-sm">
                               {service.patient_name && (
@@ -722,6 +799,7 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                             <TableHead>Cor</TableHead>
                             <TableHead>Valor</TableHead>
                             <TableHead>Data</TableHead>
+                            <TableHead className="w-20">Ações</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -733,6 +811,26 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
                               <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
                               <TableCell>
                                 {new Date(service.service_date).toLocaleDateString("pt-BR")}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    onClick={() => handleEditService(service)}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 text-destructive"
+                                    onClick={() => handleDeleteService(service.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1038,6 +1136,55 @@ export const MonthlyReports = ({ services, companyInfo }: MonthlyReportsProps) =
           </>
         )}
       </CardContent>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome do Serviço</Label>
+              <Input
+                value={editForm.service_name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, service_name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={editForm.service_value}
+                onChange={(e) => setEditForm(prev => ({ ...prev, service_value: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div>
+              <Label>Paciente</Label>
+              <Input
+                value={editForm.patient_name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, patient_name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Cor</Label>
+              <Input
+                value={editForm.color}
+                onChange={(e) => setEditForm(prev => ({ ...prev, color: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

@@ -27,36 +27,9 @@ serve(async (req) => {
       throw new Error('Configuração de IA não encontrada');
     }
 
-    const systemPrompt = `Você é um especialista em OCR e extração de dados de documentos financeiros.
-Analise a imagem de um documento financeiro (nota fiscal, recibo, boleto, comprovante, etc) e extraia os seguintes dados:
-
-- transaction_type: Tipo da transação. Use "receipt" para receitas/entradas (vendas, pagamentos recebidos) ou "payment" para despesas/saídas (compras, pagamentos, contas)
-- amount: Valor total do documento (apenas números, sem R$)
-- description: Descrição do documento (nome do fornecedor/cliente, serviço prestado, produto comprado, etc)
-- vendor_name: Nome do fornecedor ou empresa emissor do documento
-- document_number: Número da nota fiscal, recibo ou documento (se houver)
-- date: Data do documento no formato YYYY-MM-DD (se identificável)
-
-IMPORTANTE: Além de extrair os dados estruturados, você DEVE incluir um campo "raw_text" contendo TODO o texto que você conseguiu ler da imagem, mesmo que parcialmente legível.
-
-REGRAS PARA IDENTIFICAR O TIPO:
-- Se o documento menciona "venda", "recebido de", "prestação de serviço para", "nota de serviço" → transaction_type = "receipt" (receita)
-- Se o documento menciona "compra", "pagamento a", "fornecedor", "conta de luz/água/internet", "despesa" → transaction_type = "payment" (despesa)
-- Na dúvida, analise o contexto do documento
-
-Retorne APENAS um JSON válido no seguinte formato, sem explicações:
-{
-  "transaction_type": "receipt" ou "payment",
-  "amount": number ou null,
-  "description": "string ou null",
-  "vendor_name": "string ou null",
-  "document_number": "string ou null",
-  "date": "YYYY-MM-DD ou null",
-  "raw_text": "todo o texto identificado na imagem, separado por linhas"
-}
-
-Se não conseguir identificar algum campo, retorne null para esse campo.
-Seja preciso na extração e tente identificar mesmo com escrita manual.`;
+const systemPrompt = `Extraia dados de documento financeiro. Retorne JSON:
+{"transaction_type":"receipt|payment","amount":number|null,"description":"string|null","vendor_name":"string|null","document_number":"string|null","date":"YYYY-MM-DD|null"}
+receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
 
     // Usar Lovable AI Gateway
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -66,7 +39,7 @@ Seja preciso na extração e tente identificar mesmo com escrita manual.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [
           {
             role: 'system',
@@ -77,7 +50,7 @@ Seja preciso na extração e tente identificar mesmo com escrita manual.`;
             content: [
               {
                 type: 'text',
-                text: 'Extraia os dados e todo o texto deste documento financeiro (nota fiscal, recibo, comprovante, etc):'
+                text: 'Extraia dados deste documento:'
               },
               {
                 type: 'image_url',
@@ -88,8 +61,8 @@ Seja preciso na extração e tente identificar mesmo com escrita manual.`;
             ]
           }
         ],
-        max_tokens: 2000,
-        temperature: 0.1
+        max_tokens: 500,
+        temperature: 0
       })
     });
 
