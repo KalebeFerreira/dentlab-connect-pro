@@ -33,13 +33,17 @@ serve(async (req) => {
   }
 
   try {
-    const { transactions, month, year, companyInfo }: RequestBody = await req.json();
+    const { transactions, month, year, companyInfo, isSubscribed }: RequestBody & { isSubscribed?: boolean } = await req.json();
 
     if (!transactions || !month || !year) {
       throw new Error('Dados incompletos');
     }
 
     console.log(`Gerando PDF financeiro: ${month}/${year} com ${transactions.length} transações`);
+
+    // Logo Essência Dental-Lab para plano gratuito (usar logo em base64 inline)
+    const essenciaLogoSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMjAgNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiMxYzQ1ODciIHJ4PSI1Ii8+PHRleHQgeD0iNjAiIHk9IjI1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXNzw6puY2lhIERlbnRhbC1MYWI8L3RleHQ+PC9zdmc+`;
+    const showFreemiumLogo = !isSubscribed;
 
     // Calculate totals
     const income = transactions
@@ -308,6 +312,12 @@ serve(async (req) => {
       </div>
       
       <div class="footer">
+        ${showFreemiumLogo ? `
+          <div style="text-align: center; margin-bottom: 15px;">
+            <img src="${essenciaLogoSvg}" alt="Essência Dental-Lab" style="max-width: 100px; max-height: 35px;" />
+            <p style="font-size: 9px; color: #888; margin-top: 5px;">Gerado com Essência Dental-Lab</p>
+          </div>
+        ` : ''}
         <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
         <p>${companyInfo?.email ? `${companyInfo.email} | ` : ''}${companyInfo?.phone || ''}</p>
       </div>

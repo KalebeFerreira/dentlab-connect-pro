@@ -11,6 +11,7 @@ import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner"
 import { FinancialCharts } from "@/components/FinancialCharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
 interface Transaction {
   id: string;
@@ -34,6 +35,7 @@ const Financial = () => {
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState("transactions");
   const [isExporting, setIsExporting] = useState(false);
+  const { isSubscribed } = useFreemiumLimits();
 
   useEffect(() => {
     checkAuth();
@@ -171,7 +173,8 @@ const Financial = () => {
           transactions,
           month: filterMonth,
           year: filterYear,
-          companyInfo: companyInfo || undefined
+          companyInfo: companyInfo || undefined,
+          isSubscribed
         }
       });
 
