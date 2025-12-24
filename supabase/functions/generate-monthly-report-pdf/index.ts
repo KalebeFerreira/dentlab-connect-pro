@@ -75,6 +75,10 @@ serve(async (req) => {
 
     const { services, companyInfo, totalValue, month, isConsolidated, months } = await req.json();
 
+    // Logo Essência Dental-Lab para plano gratuito (usar logo em base64 inline)
+    const essenciaLogoSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMjAgNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiMxYzQ1ODciIHJ4PSI1Ii8+PHRleHQgeD0iNjAiIHk9IjI1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXNzw6puY2lhIERlbnRhbC1MYWI8L3RleHQ+PC9zdmc+`;
+    const showFreemiumLogo = !isSubscribed;
+
     // Agrupar serviços por clínica
     const servicesByClinic = services.reduce((acc: any, service: any) => {
       const clinicName = service.client_name || "Sem Clínica";
@@ -262,6 +266,12 @@ serve(async (req) => {
         </div>
 
         <div class="footer">
+          ${showFreemiumLogo ? `
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="${essenciaLogoSvg}" alt="Essência Dental-Lab" style="max-width: 120px; max-height: 40px;" />
+              <p style="font-size: 10px; color: #666; margin-top: 5px;">Gerado com Essência Dental-Lab</p>
+            </div>
+          ` : ''}
           <p>Este é um relatório gerencial gerado automaticamente.</p>
           <p>Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
         </div>

@@ -50,6 +50,10 @@ serve(async (req) => {
 
     const isSubscribed = subscription?.status === 'active' && subscription?.plan_name !== 'free';
 
+    // Logo Essência Dental-Lab para plano gratuito (usar logo em base64 inline)
+    const essenciaLogoSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMjAgNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiMxYzQ1ODciIHJ4PSI1Ii8+PHRleHQgeD0iNjAiIHk9IjI1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXNzw6puY2lhIERlbnRhbC1MYWI8L3RleHQ+PC9zdmc+`;
+    const showFreemiumLogo = !isSubscribed;
+
     // If not subscribed, check PDF generation limit
     if (!isSubscribed) {
       const { data: pdfUsage } = await supabaseAdmin.rpc(
@@ -86,7 +90,7 @@ serve(async (req) => {
     }
 
     // Generate HTML for PDF
-    const html = generatePDFHTML(tableName, items, laboratoryName || "");
+    const html = generatePDFHTML(tableName, items, laboratoryName || "", showFreemiumLogo, essenciaLogoSvg);
     
     // For now, we'll return the HTML that can be used with a client-side PDF library
     // In a production environment, you could use a service like Puppeteer
@@ -111,7 +115,7 @@ serve(async (req) => {
   }
 });
 
-function generatePDFHTML(tableName: string, items: any[], laboratoryName: string): string {
+function generatePDFHTML(tableName: string, items: any[], laboratoryName: string, showFreemiumLogo: boolean, essenciaLogo: string): string {
   const date = new Date().toLocaleDateString('pt-BR');
   
   const itemsHTML = items
@@ -334,6 +338,13 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
       ${laboratoryName ? `
       <div class="notes">
         <p>${laboratoryName}</p>
+      </div>
+      ` : ''}
+      
+      ${showFreemiumLogo ? `
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <img src="${essenciaLogo}" alt="Essência Dental-Lab" style="max-width: 100px; max-height: 35px;" />
+        <p style="font-size: 9px; color: #666; margin-top: 5px;">Gerado com Essência Dental-Lab</p>
       </div>
       ` : ''}
     </body>
