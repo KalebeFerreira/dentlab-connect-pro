@@ -447,7 +447,7 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     try {
       const { error } = await supabase
         .from('services')
-        .delete()
+        .update({ status: 'deleted' })
         .eq('id', serviceId);
 
       if (error) throw error;
