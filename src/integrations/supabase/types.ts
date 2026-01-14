@@ -880,6 +880,50 @@ export type Database = {
           },
         ]
       }
+      order_message_history: {
+        Row: {
+          created_at: string
+          id: string
+          message_content: string
+          message_type: string
+          order_id: string
+          recipient: string | null
+          sent_at: string
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_content: string
+          message_type: string
+          order_id: string
+          recipient?: string | null
+          sent_at?: string
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_content?: string
+          message_type?: string
+          order_id?: string
+          recipient?: string | null
+          sent_at?: string
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_message_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number | null
