@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { EmailSendDialog } from "@/components/EmailSendDialog";
 import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
 import { STLViewer } from "@/components/STLViewer";
+import { OrderMessageHistory } from "@/components/OrderMessageHistory";
 import {
   Table,
   TableBody,
@@ -65,6 +66,7 @@ const OrderDetails = () => {
   const [selectedFile, setSelectedFile] = useState<OrderFile | null>(null);
   const [labInfo, setLabInfo] = useState<any>(null);
   const [sendingOrderWhatsApp, setSendingOrderWhatsApp] = useState(false);
+  const [messageHistoryRefresh, setMessageHistoryRefresh] = useState(0);
 
   useEffect(() => {
     checkAuthAndLoadOrder();
@@ -196,7 +198,12 @@ const OrderDetails = () => {
     setWhatsappDialogOpen(true);
   };
 
-  const handleWhatsAppTemplateSelect = (message: string) => {
+  const handleWhatsAppTemplateSelect = async (message: string) => {
+    // Save to message history
+    if (selectedFile) {
+      await saveMessageHistory("whatsapp", message);
+    }
+    
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
@@ -282,7 +289,7 @@ const OrderDetails = () => {
     }
   };
 
-  const handleSendOrderWhatsApp = () => {
+  const handleSendOrderWhatsApp = async () => {
     if (!order) return;
     
     const formatDate = (dateStr: string | null) => {
@@ -317,6 +324,23 @@ ${order.observations ? `📌 *Observações:* ${order.observations}` : ""}
 ---
 _Enviado via DentLab Connect_`;
 
+    // Save to message history
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("order_message_history").insert({
+          order_id: order.id,
+          user_id: user.id,
+          message_type: "whatsapp",
+          message_content: message,
+          recipient: null,
+        });
+        setMessageHistoryRefresh(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error saving message history:", error);
+    }
+
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
@@ -324,6 +348,26 @@ _Enviado via DentLab Connect_`;
     toast.success("WhatsApp aberto!", {
       description: "Selecione o contato para enviar o pedido.",
     });
+  };
+
+  const saveMessageHistory = async (type: "whatsapp" | "email", content: string, recipient?: string, subject?: string) => {
+    if (!order) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("order_message_history").insert({
+          order_id: order.id,
+          user_id: user.id,
+          message_type: type,
+          message_content: content,
+          recipient: recipient || null,
+          subject: subject || null,
+        });
+        setMessageHistoryRefresh(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error saving message history:", error);
+    }
   };
 
   if (loading) {
@@ -589,6 +633,9 @@ _Enviado via DentLab Connect_`;
                 )}
               </CardContent>
             </Card>
+
+            {/* Message History */}
+            <OrderMessageHistory orderId={id!} refreshTrigger={messageHistoryRefresh} />
           </div>
         </div>
       </main>
