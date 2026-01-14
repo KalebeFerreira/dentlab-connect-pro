@@ -1106,6 +1106,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          favorite_laboratory_id: string | null
           id: string
           name: string | null
           updated_at: string
@@ -1113,6 +1114,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          favorite_laboratory_id?: string | null
           id?: string
           name?: string | null
           updated_at?: string
@@ -1120,12 +1122,21 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          favorite_laboratory_id?: string | null
           id?: string
           name?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_favorite_laboratory_id_fkey"
+            columns: ["favorite_laboratory_id"]
+            isOneToOne: false
+            referencedRelation: "laboratory_info"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_history: {
         Row: {
