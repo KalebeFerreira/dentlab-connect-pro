@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Layers
 } from "lucide-react";
+import { ExportOptions } from "./ExportOptions";
 
 interface CarouselSlide {
   id: string;
@@ -194,9 +195,16 @@ export const CarouselBuilder = ({
             <Layers className="h-5 w-5 text-primary" />
             Construtor de Carrossel
           </span>
-          <span className="text-sm font-normal text-muted-foreground">
-            {slides.length}/{MAX_SLIDES} slides
-          </span>
+          <div className="flex items-center gap-2">
+            <ExportOptions 
+              images={slides.map(s => ({ url: s.imageUrl, caption: s.caption }))}
+              fileName="carrossel-campanha"
+              disabled={slides.length === 0}
+            />
+            <span className="text-sm font-normal text-muted-foreground">
+              {slides.length}/{MAX_SLIDES} slides
+            </span>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

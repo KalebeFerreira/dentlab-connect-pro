@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Loader2, Sparkles, Download, Plus, Image as ImageIcon } from "lucide-react";
 import { CarouselTemplates } from "./CarouselTemplates";
+import { ExportOptions } from "./ExportOptions";
 
 interface ImageGeneratorProps {
   campaignId: string;
@@ -270,7 +271,13 @@ export const ImageGenerator = ({ campaignId, userId, onImageGenerated, onBatchGe
         {/* Generated Image Preview */}
         {generatedImage && (
           <div className="space-y-3 pt-4 border-t">
-            <Label className="text-sm font-medium">Imagem Gerada</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Imagem Gerada</Label>
+              <ExportOptions 
+                images={[{ url: generatedImage, caption: prompt }]} 
+                fileName="imagem-campanha"
+              />
+            </div>
             <div className="relative rounded-lg overflow-hidden bg-muted aspect-video">
               <img 
                 src={generatedImage} 
@@ -286,7 +293,7 @@ export const ImageGenerator = ({ campaignId, userId, onImageGenerated, onBatchGe
                 className="flex-1"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Baixar
+                Baixar PNG
               </Button>
               <Button 
                 size="sm" 
