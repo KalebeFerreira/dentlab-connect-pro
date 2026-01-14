@@ -29,6 +29,8 @@ const NewOrder = () => {
   const [signature, setSignature] = useState<string | null>(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
+  const [workType, setWorkType] = useState("");
+  const [customWorkType, setCustomWorkType] = useState("");
   const limits = useFreemiumLimits();
 
   useEffect(() => {
@@ -99,7 +101,7 @@ const NewOrder = () => {
         dentist_name: formData.get('dentist_name') as string,
         patient_name: formData.get('patient_name') as string,
         work_name: (formData.get('work_name') as string) || null,
-        work_type: formData.get('work_type') as string,
+        work_type: workType === 'outro' ? customWorkType : workType,
         custom_color: (formData.get('custom_color') as string) || null,
         teeth_numbers: formData.get('teeth_numbers') as string,
         observations: (formData.get('observations') as string) || null,
@@ -288,6 +290,8 @@ const NewOrder = () => {
                   <select
                     id="work_type"
                     name="work_type"
+                    value={workType}
+                    onChange={(e) => setWorkType(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     required
                   >
@@ -298,6 +302,7 @@ const NewOrder = () => {
                     <option value="alinhador">Alinhador</option>
                     <option value="protese_parcial">Prótese Parcial</option>
                     <option value="protese_total">Prótese Total</option>
+                    <option value="outro">Outro (digitar)</option>
                   </select>
                 </div>
 
@@ -310,6 +315,20 @@ const NewOrder = () => {
                   />
                 </div>
               </div>
+
+              {workType === 'outro' && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_work_type">Digite o Tipo de Trabalho *</Label>
+                  <Input
+                    id="custom_work_type"
+                    name="custom_work_type"
+                    value={customWorkType}
+                    onChange={(e) => setCustomWorkType(e.target.value)}
+                    placeholder="Ex: Faceta, Onlay, Inlay, etc."
+                    required
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
