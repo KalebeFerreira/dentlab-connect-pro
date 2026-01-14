@@ -36,6 +36,7 @@ const DeliveryDetails = lazy(() => import("./pages/DeliveryDetails"));
 const DeliveryPersons = lazy(() => import("./pages/DeliveryPersons"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Install = lazy(() => import("./pages/Install"));
+const Marketing = lazy(() => import("./pages/Marketing"));
 
 // Lazy load heavy components
 const AppSidebar = lazy(() => import("@/components/AppSidebar").then(m => ({ default: m.AppSidebar })));
@@ -124,6 +125,7 @@ const App = () => (
                                 <Route path="/delivery-persons" element={<DeliveryPersons />} />
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/install" element={<Install />} />
+                                <Route path="/marketing" element={<Marketing />} />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
                             </Suspense>

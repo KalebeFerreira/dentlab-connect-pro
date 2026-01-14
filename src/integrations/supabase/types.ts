@@ -131,6 +131,56 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_media: {
+        Row: {
+          campaign_id: string
+          caption: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          media_type: string
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          caption?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          media_type?: string
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          caption?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          media_type?: string
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_media_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_templates: {
         Row: {
           category: string
@@ -642,6 +692,63 @@ export type Database = {
           user_id?: string
           whatsapp?: string
           zip_code?: string | null
+        }
+        Relationships: []
+      }
+      marketing_campaigns: {
+        Row: {
+          budget: number | null
+          campaign_type: string
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          impressions: number | null
+          spent: number | null
+          start_date: string | null
+          status: string
+          target_audience: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number | null
+          campaign_type?: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          impressions?: number | null
+          spent?: number | null
+          start_date?: string | null
+          status?: string
+          target_audience?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number | null
+          campaign_type?: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          impressions?: number | null
+          spent?: number | null
+          start_date?: string | null
+          status?: string
+          target_audience?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
