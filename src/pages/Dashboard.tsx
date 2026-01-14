@@ -25,7 +25,8 @@ import {
   Upload,
   FileUp,
   CreditCard,
-  Settings
+  Settings,
+  Megaphone
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -487,6 +488,18 @@ const Dashboard = () => {
                   <FileText className="h-6 w-6 text-amber-600" />
                 </div>
                 <span className="text-sm font-medium text-center">Laboratório</span>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => navigate("/marketing")}
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-center gap-2 min-h-[100px]">
+                <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center">
+                  <Megaphone className="h-6 w-6 text-rose-600" />
+                </div>
+                <span className="text-sm font-medium text-center">Marketing</span>
               </CardContent>
             </Card>
 
