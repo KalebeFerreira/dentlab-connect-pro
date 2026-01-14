@@ -13,7 +13,7 @@ import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ServicesListProps {
   services: Service[];
@@ -115,40 +115,53 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
     }
   };
 
-  const handleExportAllExcel = () => {
-    const worksheetData = [
-      ['Relatório Completo de Serviços'],
-      companyInfo ? [`Empresa: ${companyInfo.company_name}`] : [],
-      [`Total de Serviços: ${services.length}`],
-      [`Valor Total: ${formatCurrency(services.reduce((sum, s) => sum + Number(s.service_value), 0))}`],
-      [],
-      ['Serviço', 'Cliente', 'Paciente', 'Valor', 'Data'],
-      ...services.map(service => [
+  const handleExportAllExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Todos os Serviços');
+    
+    // Header info
+    worksheet.addRow(['Relatório Completo de Serviços']);
+    if (companyInfo) {
+      worksheet.addRow([`Empresa: ${companyInfo.company_name}`]);
+    }
+    worksheet.addRow([`Total de Serviços: ${services.length}`]);
+    worksheet.addRow([`Valor Total: ${formatCurrency(services.reduce((sum, s) => sum + Number(s.service_value), 0))}`]);
+    worksheet.addRow([]);
+    
+    // Column headers
+    worksheet.addRow(['Serviço', 'Cliente', 'Paciente', 'Valor', 'Data']);
+    
+    // Data rows
+    services.forEach(service => {
+      worksheet.addRow([
         service.service_name,
         service.client_name || '-',
         service.patient_name || '-',
         Number(service.service_value),
         format(new Date(service.service_date), 'dd/MM/yyyy', { locale: ptBR })
-      ]),
-      [],
-      ['TOTAL', '', '', services.reduce((sum, s) => sum + Number(s.service_value), 0), '']
-    ].filter(row => row.length > 0);
-
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      ]);
+    });
     
-    // Define largura das colunas
-    worksheet['!cols'] = [
-      { wch: 30 }, // Serviço
-      { wch: 20 }, // Cliente
-      { wch: 20 }, // Paciente
-      { wch: 15 }, // Valor
-      { wch: 12 }  // Data
+    worksheet.addRow([]);
+    worksheet.addRow(['TOTAL', '', '', services.reduce((sum, s) => sum + Number(s.service_value), 0), '']);
+    
+    // Set column widths
+    worksheet.columns = [
+      { width: 30 },
+      { width: 20 },
+      { width: 20 },
+      { width: 15 },
+      { width: 12 }
     ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Todos os Serviços');
-    
-    XLSX.writeFile(workbook, `relatorio_completo_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio_completo_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   if (services.length === 0) {

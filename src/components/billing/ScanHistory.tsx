@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { 
   History, 
   Loader2, 
@@ -157,7 +157,7 @@ export const ScanHistory = ({ refreshTrigger }: ScanHistoryProps) => {
     });
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (filteredDocuments.length === 0) {
       toast.error("Nenhum documento para exportar");
       return;
@@ -166,44 +166,57 @@ export const ScanHistory = ({ refreshTrigger }: ScanHistoryProps) => {
     try {
       const totalValue = filteredDocuments.reduce((sum, doc) => sum + (doc.service_value || 0), 0);
       
-      const worksheetData = [
-        ['Histórico de Documentos Escaneados'],
-        [selectedClient !== "all" ? `Cliente: ${selectedClient}` : 'Todos os clientes'],
-        [`Total de documentos: ${filteredDocuments.length}`],
-        [`Valor total: ${formatCurrency(totalValue)}`],
-        [],
-        ['Cliente', 'Paciente', 'Serviço', 'Valor', 'Data do Scan', 'Tipo de Arquivo'],
-        ...filteredDocuments.map(doc => [
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Histórico Scans');
+      
+      // Header info
+      worksheet.addRow(['Histórico de Documentos Escaneados']);
+      worksheet.addRow([selectedClient !== "all" ? `Cliente: ${selectedClient}` : 'Todos os clientes']);
+      worksheet.addRow([`Total de documentos: ${filteredDocuments.length}`]);
+      worksheet.addRow([`Valor total: ${formatCurrency(totalValue)}`]);
+      worksheet.addRow([]);
+      
+      // Column headers
+      worksheet.addRow(['Cliente', 'Paciente', 'Serviço', 'Valor', 'Data do Scan', 'Tipo de Arquivo']);
+      
+      // Data rows
+      filteredDocuments.forEach(doc => {
+        worksheet.addRow([
           doc.clinic_name || '-',
           doc.patient_name || '-',
           doc.service_name || '-',
           doc.service_value || 0,
           format(new Date(doc.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
           doc.file_name || 'Imagem'
-        ]),
-        [],
-        ['TOTAL', '', '', totalValue, '', '']
+        ]);
+      });
+      
+      worksheet.addRow([]);
+      worksheet.addRow(['TOTAL', '', '', totalValue, '', '']);
+      
+      // Set column widths
+      worksheet.columns = [
+        { width: 25 },
+        { width: 20 },
+        { width: 25 },
+        { width: 12 },
+        { width: 18 },
+        { width: 20 }
       ];
 
-      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-      
-      worksheet['!cols'] = [
-        { wch: 25 },
-        { wch: 20 },
-        { wch: 25 },
-        { wch: 12 },
-        { wch: 18 },
-        { wch: 20 }
-      ];
-
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Histórico Scans');
-      
       const fileName = selectedClient !== "all" 
         ? `historico_scans_${selectedClient.replace(/\s+/g, '_')}.xlsx`
         : 'historico_scans_completo.xlsx';
       
-      XLSX.writeFile(workbook, fileName);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar Excel:', error);
