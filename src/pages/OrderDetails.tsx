@@ -64,6 +64,7 @@ const OrderDetails = () => {
   const [stlViewerOpen, setStlViewerOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<OrderFile | null>(null);
   const [labInfo, setLabInfo] = useState<any>(null);
+  const [sendingOrderWhatsApp, setSendingOrderWhatsApp] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoadOrder();
@@ -281,6 +282,50 @@ const OrderDetails = () => {
     }
   };
 
+  const handleSendOrderWhatsApp = () => {
+    if (!order) return;
+    
+    const formatDate = (dateStr: string | null) => {
+      if (!dateStr) return "Não definida";
+      return new Date(dateStr).toLocaleDateString("pt-BR");
+    };
+
+    const formatCurrency = (value: number | null) => {
+      if (!value) return "Não informado";
+      return `R$ ${value.toFixed(2)}`;
+    };
+
+    const message = `📋 *PEDIDO - ${labInfo?.lab_name || "Laboratório"}*
+
+👤 *Paciente:* ${order.patient_name}
+🏥 *Clínica:* ${order.clinic_name}
+👨‍⚕️ *Dentista:* Dr(a). ${order.dentist_name}
+
+🦷 *Tipo de Trabalho:* ${order.work_type.replace("_", " ")}
+${order.work_name ? `📝 *Nome do Trabalho:* ${order.work_name}` : ""}
+🔢 *Dentes:* ${order.teeth_numbers}
+${order.custom_color ? `🎨 *Cor:* ${order.custom_color}` : ""}
+
+💰 *Valor:* ${formatCurrency(order.amount)}
+📅 *Data de Criação:* ${formatDate(order.created_at)}
+📦 *Previsão de Entrega:* ${formatDate(order.delivery_date)}
+
+📊 *Status:* ${order.status === "pending" ? "Pendente" : order.status === "in_production" ? "Em Produção" : order.status === "completed" ? "Concluído" : order.status}
+
+${order.observations ? `📌 *Observações:* ${order.observations}` : ""}
+
+---
+_Enviado via DentLab Connect_`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+    
+    toast.success("WhatsApp aberto!", {
+      description: "Selecione o contato para enviar o pedido.",
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -309,6 +354,16 @@ const OrderDetails = () => {
             </div>
             <div className="flex items-center gap-2">
               <Button 
+                onClick={handleSendOrderWhatsApp}
+                variant="outline"
+                size="sm"
+                className="text-green-600 border-green-600 hover:bg-green-50"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Enviar WhatsApp</span>
+                <span className="sm:hidden">WhatsApp</span>
+              </Button>
+              <Button 
                 onClick={handleGeneratePdf}
                 disabled={generatingPdf}
                 size="sm"
@@ -321,7 +376,8 @@ const OrderDetails = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Gerar PDF
+                    <span className="hidden sm:inline">Gerar PDF</span>
+                    <span className="sm:hidden">PDF</span>
                   </>
                 )}
               </Button>
