@@ -20,6 +20,8 @@ interface Laboratory {
   lab_name: string;
   city: string | null;
   state: string | null;
+  email: string;
+  whatsapp: string;
 }
 
 const NewOrder = () => {
@@ -31,6 +33,7 @@ const NewOrder = () => {
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [workType, setWorkType] = useState("");
   const [customWorkType, setCustomWorkType] = useState("");
+  const [selectedLaboratoryId, setSelectedLaboratoryId] = useState<string | null>(null);
   const limits = useFreemiumLimits();
 
   useEffect(() => {
@@ -56,7 +59,7 @@ const NewOrder = () => {
     try {
       const { data, error } = await supabase
         .from("laboratory_info")
-        .select("id, lab_name, city, state")
+        .select("id, lab_name, city, state, email, whatsapp")
         .eq("is_public", true)
         .order("lab_name");
 
@@ -65,6 +68,57 @@ const NewOrder = () => {
     } catch (error) {
       console.error("Error loading laboratories:", error);
     }
+  };
+
+  const sendOrderToLaboratory = async (orderId: string, orderData: any, laboratory: Laboratory, userId: string) => {
+    const formatDate = (dateStr: string | null) => {
+      if (!dateStr) return "Não definida";
+      return new Date(dateStr).toLocaleDateString("pt-BR");
+    };
+
+    const formatCurrency = (value: number | null) => {
+      if (!value) return "Não informado";
+      return `R$ ${value.toFixed(2)}`;
+    };
+
+    const message = `📋 *NOVO PEDIDO - ${laboratory.lab_name}*
+
+👤 *Paciente:* ${orderData.patient_name}
+🏥 *Clínica:* ${orderData.clinic_name}
+👨‍⚕️ *Dentista:* Dr(a). ${orderData.dentist_name}
+
+🦷 *Tipo de Trabalho:* ${orderData.work_type.replace("_", " ")}
+${orderData.work_name ? `📝 *Nome do Trabalho:* ${orderData.work_name}` : ""}
+🔢 *Dentes:* ${orderData.teeth_numbers}
+${orderData.custom_color ? `🎨 *Cor:* ${orderData.custom_color}` : ""}
+
+💰 *Valor:* ${formatCurrency(orderData.amount)}
+📅 *Data de Criação:* ${formatDate(new Date().toISOString())}
+📦 *Previsão de Entrega:* ${formatDate(orderData.delivery_date)}
+
+${orderData.observations ? `📌 *Observações:* ${orderData.observations}` : ""}
+
+---
+_Enviado automaticamente via DentLab Connect_`;
+
+    // Save to message history
+    try {
+      await supabase.from("order_message_history").insert({
+        order_id: orderId,
+        user_id: userId,
+        message_type: "whatsapp",
+        message_content: message,
+        recipient: laboratory.whatsapp,
+      });
+    } catch (error) {
+      console.error("Error saving message history:", error);
+    }
+
+    // Open WhatsApp with the laboratory's number
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappNumber = laboratory.whatsapp.replace(/\D/g, '');
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -109,7 +163,7 @@ const NewOrder = () => {
         delivery_date: (formData.get('delivery_date') as string) || null,
       };
 
-      const laboratoryId = formData.get('laboratory_id') as string || null;
+      const laboratoryId = selectedLaboratoryId || null;
 
       const validationResult = orderFormSchema.safeParse(validationData);
 
@@ -153,15 +207,32 @@ const NewOrder = () => {
         status: 'pending'
       };
 
-      const { error } = await supabase
+      const { data: insertedOrder, error } = await supabase
         .from('orders')
-        .insert([orderData]);
+        .insert([orderData])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success("Ordem criada com sucesso!", {
-        description: "A ordem de trabalho foi registrada no sistema.",
-      });
+      // Send automatically to selected laboratory via WhatsApp
+      if (laboratoryId && insertedOrder) {
+        const selectedLab = laboratories.find(lab => lab.id === laboratoryId);
+        if (selectedLab && selectedLab.whatsapp) {
+          await sendOrderToLaboratory(insertedOrder.id, orderData, selectedLab, user.id);
+          toast.success("Ordem criada e enviada!", {
+            description: `O pedido foi enviado automaticamente para ${selectedLab.lab_name} via WhatsApp.`,
+          });
+        } else {
+          toast.success("Ordem criada com sucesso!", {
+            description: "A ordem de trabalho foi registrada no sistema.",
+          });
+        }
+      } else {
+        toast.success("Ordem criada com sucesso!", {
+          description: "A ordem de trabalho foi registrada no sistema.",
+        });
+      }
 
       navigate('/orders');
     } catch (error) {
@@ -252,7 +323,11 @@ const NewOrder = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="laboratory_id">Laboratório</Label>
-                <Select name="laboratory_id">
+                <Select 
+                  name="laboratory_id" 
+                  value={selectedLaboratoryId || undefined}
+                  onValueChange={(value) => setSelectedLaboratoryId(value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um laboratório (opcional)" />
                   </SelectTrigger>
@@ -270,7 +345,9 @@ const NewOrder = () => {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione um laboratório parceiro para este pedido
+                  {selectedLaboratoryId 
+                    ? "✅ O pedido será enviado automaticamente via WhatsApp" 
+                    : "Selecione um laboratório parceiro para envio automático"}
                 </p>
               </div>
 
