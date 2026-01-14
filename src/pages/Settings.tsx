@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send, BarChart3, FileSignature } from "lucide-react";
+import { Loader2, User, Mail, CreditCard, AlertTriangle, HeadphonesIcon, Send, BarChart3, FileSignature, Building2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NotificationManager } from "@/components/NotificationManager";
 import { FreemiumUsageDashboard } from "@/components/FreemiumUsageDashboard";
 import { PDFSignatureSettings } from "@/components/billing/PDFSignatureSettings";
+import { FavoriteLaboratorySettings } from "@/components/FavoriteLaboratorySettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,18 +123,22 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="account" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="account" className="gap-2">
             <User className="h-4 w-4" />
-            Conta
+            <span className="hidden sm:inline">Conta</span>
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Preferências</span>
           </TabsTrigger>
           <TabsTrigger value="pdfs" className="gap-2">
             <FileSignature className="h-4 w-4" />
-            PDFs
+            <span className="hidden sm:inline">PDFs</span>
           </TabsTrigger>
           <TabsTrigger value="usage" className="gap-2">
             <BarChart3 className="h-4 w-4" />
-            Uso e Limites
+            <span className="hidden sm:inline">Uso</span>
           </TabsTrigger>
         </TabsList>
 
@@ -359,6 +364,10 @@ const Settings = () => {
             </AlertDialog>
           </CardContent>
         </Card>
+        </TabsContent>
+
+        <TabsContent value="preferences" className="space-y-6">
+          <FavoriteLaboratorySettings />
         </TabsContent>
 
         <TabsContent value="pdfs" className="space-y-6">

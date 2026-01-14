@@ -39,6 +39,7 @@ const NewOrder = () => {
   useEffect(() => {
     checkAuth();
     loadLaboratories();
+    loadFavoriteLaboratory();
   }, []);
 
   const checkAuth = async () => {
@@ -67,6 +68,27 @@ const NewOrder = () => {
       setLaboratories(data || []);
     } catch (error) {
       console.error("Error loading laboratories:", error);
+    }
+  };
+
+  const loadFavoriteLaboratory = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("favorite_laboratory_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (profileData?.favorite_laboratory_id) {
+        setSelectedLaboratoryId(profileData.favorite_laboratory_id);
+      }
+    } catch (error) {
+      console.error("Error loading favorite laboratory:", error);
     }
   };
 
