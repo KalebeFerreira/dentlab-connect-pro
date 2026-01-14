@@ -271,7 +271,7 @@ export const ImageGenerator = ({ campaignId, userId, onImageGenerated, onBatchGe
         {/* Generated Image Preview */}
         {generatedImage && (
           <div className="space-y-3 pt-4 border-t">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <Label className="text-sm font-medium">Imagem Gerada</Label>
               <ExportOptions 
                 images={[{ url: generatedImage, caption: prompt }]} 
@@ -285,7 +285,7 @@ export const ImageGenerator = ({ campaignId, userId, onImageGenerated, onBatchGe
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
