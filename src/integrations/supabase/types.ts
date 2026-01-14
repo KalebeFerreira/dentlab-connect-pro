@@ -1187,10 +1187,15 @@ export type Database = {
       generate_tracking_code: { Args: never; Returns: string }
       get_monthly_image_usage: { Args: { p_user_id: string }; Returns: number }
       get_monthly_pdf_usage: { Args: { p_user_id: string }; Returns: number }
-      get_next_document_number: {
-        Args: { p_document_type: string; p_user_id: string }
-        Returns: string
-      }
+      get_next_document_number:
+        | {
+            Args: { p_document_type: string; p_user_id: string }
+            Returns: string
+          }
+        | {
+            Args: { p_document_type: string; p_user_id: string }
+            Returns: string
+          }
       has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
       has_role: {
         Args: {
