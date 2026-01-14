@@ -189,21 +189,21 @@ export const CarouselBuilder = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <span className="flex items-center gap-2 text-lg">
             <Layers className="h-5 w-5 text-primary" />
             Construtor de Carrossel
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            <span className="text-sm font-normal text-muted-foreground order-2 sm:order-1">
+              {slides.length}/{MAX_SLIDES} slides
+            </span>
             <ExportOptions 
               images={slides.map(s => ({ url: s.imageUrl, caption: s.caption }))}
               fileName="carrossel-campanha"
               disabled={slides.length === 0}
             />
-            <span className="text-sm font-normal text-muted-foreground">
-              {slides.length}/{MAX_SLIDES} slides
-            </span>
           </div>
         </CardTitle>
       </CardHeader>
