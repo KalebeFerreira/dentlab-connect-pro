@@ -37,6 +37,8 @@ import { ptBR } from "date-fns/locale";
 import { CampaignCarousel } from "@/components/marketing/CampaignCarousel";
 import { CampaignStats } from "@/components/marketing/CampaignStats";
 import { MediaUploader } from "@/components/marketing/MediaUploader";
+import { ImageGenerator } from "@/components/marketing/ImageGenerator";
+import { CarouselBuilder } from "@/components/marketing/CarouselBuilder";
 
 interface Campaign {
   id: string;
@@ -74,6 +76,7 @@ const Marketing = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<{ url: string; prompt: string }[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -554,16 +557,41 @@ const Marketing = () => {
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="media" className="mt-4 space-y-4">
-                    <MediaUploader 
-                      campaignId={selectedCampaign.id}
-                      userId={user?.id || ""}
-                      onUploadComplete={() => loadCampaignMedia(selectedCampaign.id)}
-                    />
+                  <TabsContent value="media" className="mt-4 space-y-6">
+                    {/* AI Image Generation Section */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <ImageGenerator
+                        campaignId={selectedCampaign.id}
+                        userId={user?.id || ""}
+                        onImageGenerated={(imageData) => {
+                          setGeneratedImages(prev => [...prev, imageData]);
+                        }}
+                      />
+                      <CarouselBuilder
+                        campaignId={selectedCampaign.id}
+                        userId={user?.id || ""}
+                        onSaveComplete={() => loadCampaignMedia(selectedCampaign.id)}
+                        generatedImages={generatedImages}
+                        onClearGeneratedImages={() => setGeneratedImages([])}
+                      />
+                    </div>
+
+                    {/* Traditional Upload */}
+                    <div className="border-t pt-6">
+                      <h3 className="font-medium mb-4 flex items-center gap-2">
+                        <FileUp className="h-4 w-4" />
+                        Upload de Arquivos
+                      </h3>
+                      <MediaUploader 
+                        campaignId={selectedCampaign.id}
+                        userId={user?.id || ""}
+                        onUploadComplete={() => loadCampaignMedia(selectedCampaign.id)}
+                      />
+                    </div>
                     
                     {campaignMedia.length > 0 && (
-                      <div className="mt-6">
-                        <h3 className="font-medium mb-4">Preview do Carrossel</h3>
+                      <div className="border-t pt-6">
+                        <h3 className="font-medium mb-4">Preview do Carrossel Salvo</h3>
                         <CampaignCarousel media={campaignMedia} />
                       </div>
                     )}
