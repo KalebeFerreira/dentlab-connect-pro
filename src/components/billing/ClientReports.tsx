@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { SignaturePad } from "./SignaturePad";
 import { toast } from "sonner";
 import {
@@ -155,41 +155,53 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
     setSignature("");
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (clientServices.length === 0) {
       toast.error("Nenhum serviço encontrado para este cliente");
       return;
     }
 
     try {
-      const worksheetData = [
-        ['Relatório de Cliente'],
-        [`Cliente: ${selectedClient}`],
-        [`Total: ${formatCurrency(totalClient)}`],
-        [],
-        ['Serviço', 'Valor', 'Data'],
-        ...clientServices.map(service => [
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Relatório Cliente');
+      
+      // Header info
+      worksheet.addRow(['Relatório de Cliente']);
+      worksheet.addRow([`Cliente: ${selectedClient}`]);
+      worksheet.addRow([`Total: ${formatCurrency(totalClient)}`]);
+      worksheet.addRow([]);
+      
+      // Column headers
+      worksheet.addRow(['Serviço', 'Valor', 'Data']);
+      
+      // Data rows
+      clientServices.forEach(service => {
+        worksheet.addRow([
           service.service_name,
           Number(service.service_value),
           new Date(service.service_date).toLocaleDateString('pt-BR')
-        ]),
-        [],
-        ['TOTAL', totalClient, '']
+        ]);
+      });
+      
+      worksheet.addRow([]);
+      worksheet.addRow(['TOTAL', totalClient, '']);
+      
+      // Set column widths
+      worksheet.columns = [
+        { width: 30 },
+        { width: 15 },
+        { width: 12 }
       ];
 
-      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio_cliente_${selectedClient.replace(/\s+/g, '_')}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
       
-      // Define largura das colunas
-      worksheet['!cols'] = [
-        { wch: 30 }, // Serviço
-        { wch: 15 }, // Valor
-        { wch: 12 }  // Data
-      ];
-
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Cliente');
-      
-      XLSX.writeFile(workbook, `relatorio_cliente_${selectedClient.replace(/\s+/g, '_')}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar Excel:', error);

@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { Badge } from "@/components/ui/badge";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
@@ -264,7 +264,7 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (monthlyServices.length === 0) {
       toast.error("Nenhum serviço encontrado para este mês");
       return;
@@ -281,12 +281,14 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
         return acc;
       }, {} as Record<string, typeof monthlyServices>);
 
-      const worksheetData: any[] = [
-        ['Relatório Mensal de Serviços'],
-        [`Mês: ${selectedMonth}`],
-        [`Total Geral: ${formatCurrency(totalMonth)}`],
-        []
-      ];
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Relatório Mensal');
+      
+      // Header info
+      worksheet.addRow(['Relatório Mensal de Serviços']);
+      worksheet.addRow([`Mês: ${selectedMonth}`]);
+      worksheet.addRow([`Total Geral: ${formatCurrency(totalMonth)}`]);
+      worksheet.addRow([]);
 
       // Adicionar cada clínica
       Object.keys(servicesByClinic).sort().forEach((clinicName) => {
@@ -296,35 +298,40 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           0
         );
 
-        worksheetData.push(
-          [`CLÍNICA: ${clinicName}`, '', '', `Subtotal: ${formatCurrency(clinicTotal)}`],
-          ['Serviço', 'Paciente', 'Valor', 'Data'],
-          ...clinicServices.map(service => [
+        worksheet.addRow([`CLÍNICA: ${clinicName}`, '', '', `Subtotal: ${formatCurrency(clinicTotal)}`]);
+        worksheet.addRow(['Serviço', 'Paciente', 'Valor', 'Data']);
+        
+        clinicServices.forEach(service => {
+          worksheet.addRow([
             service.service_name,
             service.patient_name || '-',
             Number(service.service_value),
             new Date(service.service_date).toLocaleDateString('pt-BR')
-          ]),
-          []
-        );
+          ]);
+        });
+        
+        worksheet.addRow([]);
       });
 
-      worksheetData.push(['TOTAL GERAL', '', totalMonth, '']);
-
-      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      worksheet.addRow(['TOTAL GERAL', '', totalMonth, '']);
       
-      // Define largura das colunas
-      worksheet['!cols'] = [
-        { wch: 30 }, // Serviço
-        { wch: 20 }, // Paciente
-        { wch: 15 }, // Valor
-        { wch: 12 }  // Data
+      // Set column widths
+      worksheet.columns = [
+        { width: 30 },
+        { width: 20 },
+        { width: 15 },
+        { width: 12 }
       ];
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório Mensal');
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio_mensal_${selectedMonth.replace(/\//g, '-')}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
       
-      XLSX.writeFile(workbook, `relatorio_mensal_${selectedMonth.replace(/\//g, '-')}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar Excel:', error);
