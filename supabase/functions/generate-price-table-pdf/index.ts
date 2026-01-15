@@ -79,18 +79,19 @@ serve(async (req) => {
       await supabaseAdmin.rpc('increment_pdf_usage', { p_user_id: user.id });
     }
 
-    const { tableName, items, laboratoryName } = await req.json();
+    const { tableName, items, laboratoryName, showPrices = true } = await req.json();
 
     console.log('Generating PDF for:', tableName);
     console.log('Number of items:', items?.length);
     console.log('Laboratory Name:', laboratoryName);
+    console.log('Show Prices:', showPrices);
 
     if (!items || items.length === 0) {
       throw new Error('Nenhum item para gerar PDF');
     }
 
     // Generate HTML for PDF
-    const html = generatePDFHTML(tableName, items, laboratoryName || "", showFreemiumLogo, essenciaLogoSvg);
+    const html = generatePDFHTML(tableName, items, laboratoryName || "", showFreemiumLogo, essenciaLogoSvg, showPrices);
     
     // For now, we'll return the HTML that can be used with a client-side PDF library
     // In a production environment, you could use a service like Puppeteer
@@ -115,7 +116,7 @@ serve(async (req) => {
   }
 });
 
-function generatePDFHTML(tableName: string, items: any[], laboratoryName: string, showFreemiumLogo: boolean, essenciaLogo: string): string {
+function generatePDFHTML(tableName: string, items: any[], laboratoryName: string, showFreemiumLogo: boolean, essenciaLogo: string, showPrices: boolean = true): string {
   const date = new Date().toLocaleDateString('pt-BR');
   
   const itemsHTML = items
@@ -134,7 +135,7 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
         <tr style="border-bottom: 1px solid #e5e7eb;">
           <td style="padding: 16px;">${item.workType || '-'}</td>
           <td style="padding: 16px;">${item.description || '-'}</td>
-          <td style="padding: 16px; text-align: right; font-weight: 600;">R$ ${formattedPrice}</td>
+          ${showPrices ? `<td style="padding: 16px; text-align: right; font-weight: 600;">R$ ${formattedPrice}</td>` : ''}
           <td style="padding: 16px; text-align: center;">${imageHTML}</td>
         </tr>
       `;
@@ -325,7 +326,7 @@ function generatePDFHTML(tableName: string, items: any[], laboratoryName: string
             <tr>
               <th style="width: 200px;">Tipo de Trabalho</th>
               <th>Descrição</th>
-              <th style="width: 120px;">Preço</th>
+              ${showPrices ? '<th style="width: 120px;">Preço</th>' : ''}
               <th style="width: 120px;">Imagem</th>
             </tr>
           </thead>
