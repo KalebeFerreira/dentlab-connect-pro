@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Building2, FlaskConical, Eye, EyeOff, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { InstallAppDialog } from "@/components/InstallAppDialog";
 
 type UserType = "clinic" | "laboratory";
 
@@ -19,6 +20,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   // Redirect authenticated users
@@ -59,6 +61,9 @@ const Auth = () => {
           description: "Você já pode fazer login.",
         });
         setIsSignUp(false);
+        
+        // Show install dialog after successful signup
+        setShowInstallDialog(true);
       } else {
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email,
@@ -468,6 +473,11 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+      
+      <InstallAppDialog 
+        open={showInstallDialog} 
+        onOpenChange={setShowInstallDialog} 
+      />
     </div>
   );
 };
