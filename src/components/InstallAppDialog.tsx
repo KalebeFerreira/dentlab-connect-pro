@@ -67,14 +67,20 @@ export const InstallAppDialog = ({ open, onOpenChange }: InstallAppDialogProps) 
 
     if (outcome === "accepted") {
       setIsInstalled(true);
+      // Clear the skip flag since user installed
+      localStorage.removeItem("skipInstallReminder");
     }
     setDeferredPrompt(null);
   };
 
   const handleSkip = () => {
+    // Save that user skipped, so we can remind them later
+    localStorage.setItem("skipInstallReminder", "true");
+    localStorage.setItem("skipInstallReminderDate", new Date().toISOString());
     onOpenChange(false);
   };
 
+  // Check if app is already installed in standalone mode
   if (isInstalled) {
     return null;
   }

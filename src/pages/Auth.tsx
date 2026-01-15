@@ -74,6 +74,21 @@ const Auth = () => {
 
         toast.success("Login realizado com sucesso!");
         
+        // Check if user previously skipped install reminder
+        const skippedInstall = localStorage.getItem("skipInstallReminder");
+        const skipDate = localStorage.getItem("skipInstallReminderDate");
+        
+        // Show install reminder if skipped more than 24 hours ago
+        if (skippedInstall && skipDate) {
+          const hoursSinceSkip = (Date.now() - new Date(skipDate).getTime()) / (1000 * 60 * 60);
+          if (hoursSinceSkip >= 24) {
+            // Clear the old skip and show reminder
+            localStorage.removeItem("skipInstallReminder");
+            localStorage.removeItem("skipInstallReminderDate");
+            setShowInstallDialog(true);
+          }
+        }
+        
         // Check user role to redirect appropriately
         if (authData.user) {
           const { data: roleData } = await supabase
