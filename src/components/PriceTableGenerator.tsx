@@ -24,12 +24,12 @@ interface PriceItem {
 }
 
 const DEFAULT_DENTAL_WORKS = [
-  { workType: "Coroa de Porcelana", description: "Cerâmica pura, alta estética", price: "1200.00" },
-  { workType: "Implante Dentário", description: "Titânio com componente protético", price: "2500.00" },
-  { workType: "Protocolo Superior", description: "Prótese fixa sobre implantes", price: "8500.00" },
-  { workType: "Ponte Fixa 3 Elementos", description: "Metal-cerâmica", price: "2800.00" },
-  { workType: "Faceta de Porcelana", description: "Laminado ultra fino", price: "1500.00" },
-  { workType: "Prótese Total", description: "Resina acrílica completa", price: "1800.00" },
+  { workType: "Coroa de Porcelana", description: "Cerâmica pura, alta estética", price: "" },
+  { workType: "Implante Dentário", description: "Titânio com componente protético", price: "" },
+  { workType: "Protocolo Superior", description: "Prótese fixa sobre implantes", price: "" },
+  { workType: "Ponte Fixa 3 Elementos", description: "Metal-cerâmica", price: "" },
+  { workType: "Faceta de Porcelana", description: "Laminado ultra fino", price: "" },
+  { workType: "Prótese Total", description: "Resina acrílica completa", price: "" },
 ];
 
 export const PriceTableGenerator = () => {
