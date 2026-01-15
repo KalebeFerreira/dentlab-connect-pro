@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, Share2 } from "lucide-react";
@@ -41,6 +42,7 @@ export const PriceTableGenerator = () => {
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generatingTable, setGeneratingTable] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [showPrices, setShowPrices] = useState(true);
 
   useEffect(() => {
     const fetchLaboratoryInfo = async () => {
@@ -319,6 +321,7 @@ export const PriceTableGenerator = () => {
           tableName,
           items: validItems,
           laboratoryName,
+          showPrices,
         },
       });
 
@@ -532,6 +535,16 @@ export const PriceTableGenerator = () => {
               onChange={(e) => setTableName(e.target.value)}
               placeholder="Ex: Tabela de Preços - Laboratório DentTech"
             />
+          </div>
+          <div className="flex items-center space-x-3">
+            <Switch
+              id="showPrices"
+              checked={showPrices}
+              onCheckedChange={setShowPrices}
+            />
+            <Label htmlFor="showPrices" className="cursor-pointer">
+              Exibir valores no PDF
+            </Label>
           </div>
         </div>
 
