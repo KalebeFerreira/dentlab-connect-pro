@@ -87,10 +87,10 @@ export const PLANS = {
   super_premium: {
     name: "Plano Super Premium",
     price: "R$ 199,00",
-    price_id: "price_super_premium_monthly",
+    price_id: "price_1Sq1xDF2249riykhpt3dJbLS",
     annual_price: "R$ 1.790,00",
-    annual_price_id: "price_super_premium_annual",
-    product_id: "prod_super_premium",
+    annual_price_id: "price_1Sq1xZF2249riykhmTrDAtsF",
+    product_id: "prod_TndDQjAPGbShAC",
     features: [
       "Tudo do Premium +",
       "Assistente IA Multifuncional",
