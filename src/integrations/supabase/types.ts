@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_agent_settings: {
+        Row: {
+          agent_name: string
+          agent_personality: string | null
+          auto_reply_outside_hours: boolean | null
+          created_at: string
+          evolution_api_url: string | null
+          evolution_instance_name: string | null
+          id: string
+          is_whatsapp_enabled: boolean | null
+          outside_hours_message: string | null
+          updated_at: string
+          user_id: string
+          welcome_message: string | null
+          work_on_weekends: boolean | null
+          working_hours_end: string | null
+          working_hours_start: string | null
+        }
+        Insert: {
+          agent_name?: string
+          agent_personality?: string | null
+          auto_reply_outside_hours?: boolean | null
+          created_at?: string
+          evolution_api_url?: string | null
+          evolution_instance_name?: string | null
+          id?: string
+          is_whatsapp_enabled?: boolean | null
+          outside_hours_message?: string | null
+          updated_at?: string
+          user_id: string
+          welcome_message?: string | null
+          work_on_weekends?: boolean | null
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Update: {
+          agent_name?: string
+          agent_personality?: string | null
+          auto_reply_outside_hours?: boolean | null
+          created_at?: string
+          evolution_api_url?: string | null
+          evolution_instance_name?: string | null
+          id?: string
+          is_whatsapp_enabled?: boolean | null
+          outside_hours_message?: string | null
+          updated_at?: string
+          user_id?: string
+          welcome_message?: string | null
+          work_on_weekends?: boolean | null
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -1340,6 +1394,97 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      whatsapp_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_message_at: string
+          patient_id: string | null
+          patient_name: string | null
+          phone_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          phone_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          phone_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          direction: string
+          evolution_message_id: string | null
+          id: string
+          is_from_ai: boolean | null
+          message_type: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          direction: string
+          evolution_message_id?: string | null
+          id?: string
+          is_from_ai?: boolean | null
+          message_type?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          evolution_message_id?: string | null
+          id?: string
+          is_from_ai?: boolean | null
+          message_type?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
