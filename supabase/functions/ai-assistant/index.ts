@@ -40,8 +40,8 @@ serve(async (req) => {
     const premiumPriceIds = [
       'price_1SYVOjF2249riykhJmw4RoVM', // premium monthly
       'price_1SYVOjF2249riykhi2o98hEf', // premium annual
-      'price_super_premium_monthly',     // super premium monthly
-      'price_super_premium_annual',      // super premium annual
+      'price_1Sq1xDF2249riykhpt3dJbLS', // super premium monthly
+      'price_1Sq1xZF2249riykhmTrDAtsF', // super premium annual
     ];
 
     if (!subscription || !premiumPriceIds.includes(subscription.stripe_price_id || '')) {
