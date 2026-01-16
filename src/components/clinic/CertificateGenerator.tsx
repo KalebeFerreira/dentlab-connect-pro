@@ -11,7 +11,7 @@ import { FileText, Download, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import SignatureCanvas from "react-signature-canvas";
-import html2pdf from "html2pdf.js";
+import { generatePDF, createElementFromHTML, cleanupElement } from "@/lib/pdfGenerator";
 
 interface CertificateTemplate {
   id: string;
@@ -156,19 +156,20 @@ export const CertificateGenerator = () => {
 
       if (error) throw error;
 
-      // Convert HTML to PDF using html2pdf.js
-      const element = document.createElement("div");
-      element.innerHTML = data.html;
+      // Convert HTML to PDF using secure jsPDF + html2canvas
+      const element = createElementFromHTML(data.html);
       
-      const opt = {
-        margin: 1,
-        filename: `atestado-${formData.patientName.replace(/\s+/g, "-")}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const }
-      };
-
-      await html2pdf().set(opt).from(element).save();
+      try {
+        await generatePDF(element, {
+          filename: `atestado-${formData.patientName.replace(/\s+/g, "-")}.pdf`,
+          margin: 25,
+          format: "a4",
+          orientation: "portrait",
+          scale: 2,
+        });
+      } finally {
+        cleanupElement(element);
+      }
 
       toast.success("Atestado gerado com sucesso!");
       

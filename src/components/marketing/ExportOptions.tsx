@@ -18,7 +18,7 @@ import {
   Loader2,
   ChevronDown
 } from "lucide-react";
-import html2pdf from "html2pdf.js";
+import { generatePDF, cleanupElement } from "@/lib/pdfGenerator";
 import ExcelJS from "exceljs";
 
 interface ExportOptionsProps {
@@ -179,16 +179,21 @@ export const ExportOptions = ({ images, fileName = "carrossel", disabled = false
         container.appendChild(slideContainer);
       }
 
-      const options = {
-        margin: 10,
-        filename: `${fileName}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-      };
-
-      await html2pdf().from(container).set(options).save();
-      toast.success("PDF exportado com sucesso!");
+      // Generate PDF using secure jsPDF + html2canvas
+      document.body.appendChild(container);
+      
+      try {
+        await generatePDF(container, {
+          filename: `${fileName}.pdf`,
+          margin: 10,
+          format: "a4",
+          orientation: "portrait",
+          scale: 2,
+        });
+        toast.success("PDF exportado com sucesso!");
+      } finally {
+        cleanupElement(container);
+      }
     } catch (error) {
       console.error("Error exporting as PDF:", error);
       toast.error("Erro ao exportar como PDF");

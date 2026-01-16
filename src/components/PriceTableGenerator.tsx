@@ -9,8 +9,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, Share2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import html2pdf from "html2pdf.js";
-import DOMPurify from "dompurify";
+import { generatePDFBlob as createPDFBlob } from "@/lib/pdfGenerator";
 import { priceTableSchema } from "@/lib/validationSchemas";
 import { PriceTableShareDialog } from "./PriceTableShareDialog";
 
@@ -394,30 +393,13 @@ export const PriceTableGenerator = () => {
 
       console.log("Generating PDF from iframe body");
 
-      // Configure pdf options with better settings
-      const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`,
-        image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          logging: true,
-          letterRendering: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff"
-        },
-        jsPDF: { 
-          unit: "mm", 
-          format: "a4", 
-          orientation: "portrait" as const,
-          compress: true
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      // Generate PDF as blob from the iframe body
-      const pdfBlob = await html2pdf().set(opt).from(body).output("blob");
+      // Generate PDF as blob using secure jsPDF + html2canvas
+      const pdfBlob = await createPDFBlob(body, {
+        margin: [10, 10, 10, 10],
+        format: "a4",
+        orientation: "portrait",
+        scale: 2,
+      });
 
       console.log("PDF generated, blob size:", pdfBlob.size);
 
