@@ -4,13 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3 } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner";
 import { FinancialCharts } from "@/components/FinancialCharts";
+import { FinancialExportOptions } from "@/components/FinancialExportOptions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
 interface Transaction {
@@ -34,7 +34,7 @@ const Financial = () => {
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState("transactions");
-  const [isExporting, setIsExporting] = useState(false);
+  const [companyName, setCompanyName] = useState("Minha Empresa");
   const { isSubscribed } = useFreemiumLimits();
 
   useEffect(() => {
@@ -77,6 +77,17 @@ const Financial = () => {
       if (!user) {
         navigate("/auth");
         return;
+      }
+      
+      // Load company name for exports
+      const { data: companyInfo } = await supabase
+        .from("company_info")
+        .select("company_name")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (companyInfo?.company_name) {
+        setCompanyName(companyInfo.company_name);
       }
     } catch (error) {
       navigate("/auth");
@@ -155,49 +166,7 @@ const Financial = () => {
     loadTransactions();
   };
 
-  const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      // Get company info
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: companyInfo } = await supabase
-        .from("company_info")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      const { data, error } = await supabase.functions.invoke('generate-financial-pdf', {
-        body: {
-          transactions,
-          month: filterMonth,
-          year: filterYear,
-          companyInfo: companyInfo || undefined,
-          isSubscribed
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.html) {
-        // Open HTML in new window for printing/saving as PDF
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.html);
-          printWindow.document.close();
-          toast.success('Relatório gerado! Use Ctrl+P para salvar como PDF.');
-        } else {
-          toast.error('Popup bloqueado. Permita popups para exportar.');
-        }
-      }
-    } catch (error: any) {
-      console.error("Erro ao exportar PDF:", error);
-      toast.error("Erro ao exportar: " + error.message);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  // handleExportPDF removed - now using FinancialExportOptions component
 
   if (loading) {
     return (
@@ -222,20 +191,16 @@ const Financial = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                size="sm"
-              >
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileDown className="h-4 w-4 mr-2" />
-                )}
-                <span className="hidden sm:inline">Exportar PDF</span>
-                <span className="sm:hidden">PDF</span>
-              </Button>
+              <FinancialExportOptions
+                transactions={transactions}
+                month={filterMonth}
+                year={filterYear}
+                income={income}
+                expense={expense}
+                profit={profit}
+                pending={pending}
+                companyName={companyName}
+              />
               {!showForm && activeTab === "transactions" && (
                 <Button onClick={() => setShowForm(true)} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
