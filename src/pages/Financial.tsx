@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3 } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner";
 import { FinancialCharts } from "@/components/FinancialCharts";
 import { FinancialExportOptions } from "@/components/FinancialExportOptions";
+import { FinancialComparativeReport } from "@/components/FinancialComparativeReport";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
@@ -309,7 +310,7 @@ const Financial = () => {
 
         {/* Tabs for Transactions, Scanner, and Charts */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="transactions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Transações</span>
@@ -323,6 +324,11 @@ const Financial = () => {
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Gráficos</span>
               <span className="sm:hidden">Graf.</span>
+            </TabsTrigger>
+            <TabsTrigger value="comparative" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <GitCompare className="h-4 w-4" />
+              <span className="hidden sm:inline">Comparativo</span>
+              <span className="sm:hidden">Comp.</span>
             </TabsTrigger>
           </TabsList>
 
@@ -355,6 +361,13 @@ const Financial = () => {
 
           <TabsContent value="charts" className="space-y-6">
             <FinancialCharts 
+              transactions={allYearTransactions} 
+              filterYear={filterYear}
+            />
+          </TabsContent>
+
+          <TabsContent value="comparative" className="space-y-6">
+            <FinancialComparativeReport 
               transactions={allYearTransactions} 
               filterYear={filterYear}
             />
