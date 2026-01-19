@@ -27,11 +27,53 @@ serve(async (req) => {
       throw new Error('Configuração de IA não encontrada');
     }
 
-const systemPrompt = `Extraia dados de documento financeiro. Retorne JSON:
-{"transaction_type":"receipt|payment","amount":number|null,"description":"string|null","vendor_name":"string|null","document_number":"string|null","date":"YYYY-MM-DD|null"}
-receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
+    const systemPrompt = `Você é um especialista em classificação de documentos financeiros para laboratórios de prótese dentária e clínicas odontológicas.
 
-    // Usar Lovable AI Gateway
+TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA ou DESPESA.
+
+## CRITÉRIOS DE CLASSIFICAÇÃO:
+
+### RECEITA (transaction_type: "receipt") - Dinheiro ENTRANDO:
+- Cupons fiscais/notas de VENDA de produtos ou serviços
+- Recibos de pagamento RECEBIDO de clientes/pacientes
+- Comprovantes de PIX/transferência RECEBIDA
+- Notas fiscais onde o laboratório/clínica é o VENDEDOR/PRESTADOR
+- Ordens de serviço pagas por dentistas/clínicas
+- Documentos com "Recebemos de...", "Valor recebido", "Pagamento confirmado"
+- Faturas de serviços prestados (próteses, trabalhos odontológicos)
+
+### DESPESA (transaction_type: "payment") - Dinheiro SAINDO:
+- Notas fiscais de COMPRA de materiais/produtos
+- Boletos de pagamento (água, luz, aluguel, fornecedores)
+- Comprovantes de PIX/transferência ENVIADA
+- Notas onde o laboratório/clínica é o COMPRADOR/CLIENTE
+- Faturas de fornecedores de materiais odontológicos
+- Contas de consumo (energia, internet, telefone)
+- Recibos de pagamento EFETUADO a terceiros
+- Documentos com "Pague a...", "Pagamento de...", "Compra de..."
+
+## DICAS PARA IDENTIFICAÇÃO:
+1. Verifique QUEM está pagando e QUEM está recebendo
+2. Procure por termos como "venda", "compra", "pagamento", "recebimento"
+3. Identifique se é uma ENTRADA ou SAÍDA de dinheiro para o negócio
+4. Boletos são SEMPRE despesas
+5. Cupons fiscais de lojas/fornecedores são SEMPRE despesas
+
+## FORMATO DE RESPOSTA (JSON estrito):
+{
+  "transaction_type": "receipt" | "payment",
+  "amount": number | null,
+  "description": "descrição clara do que é o documento",
+  "vendor_name": "nome da empresa/pessoa envolvida",
+  "document_number": "número do documento/nota/recibo",
+  "date": "YYYY-MM-DD" | null,
+  "confidence": "high" | "medium" | "low",
+  "classification_reason": "breve explicação do porquê classificou assim"
+}
+
+IMPORTANTE: Seja PRECISO na classificação. Se for uma nota de compra de material, é DESPESA. Se for um recibo de serviço prestado, é RECEITA.`;
+
+    // Usar Lovable AI Gateway com modelo mais capaz
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -39,7 +81,7 @@ receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
@@ -50,7 +92,7 @@ receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
             content: [
               {
                 type: 'text',
-                text: 'Extraia dados deste documento:'
+                text: 'Analise este documento financeiro e classifique corretamente como RECEITA ou DESPESA:'
               },
               {
                 type: 'image_url',
@@ -61,8 +103,8 @@ receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
             ]
           }
         ],
-        max_tokens: 500,
-        temperature: 0
+        max_tokens: 800,
+        temperature: 0.1
       })
     });
 
@@ -85,7 +127,16 @@ receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
     
     const content = data.choices?.[0]?.message?.content || '';
     const extractedData = parseAIResponse(content);
-    const rawText = extractedData.raw_text || '';
+    
+    // Validar e normalizar transaction_type
+    if (extractedData.transaction_type) {
+      const type = String(extractedData.transaction_type).toLowerCase().trim();
+      if (type === 'receipt' || type === 'receita' || type === 'entrada' || type === 'venda') {
+        extractedData.transaction_type = 'receipt';
+      } else if (type === 'payment' || type === 'despesa' || type === 'saída' || type === 'saida' || type === 'compra') {
+        extractedData.transaction_type = 'payment';
+      }
+    }
 
     // Garantir que amount seja número
     if (extractedData.amount) {
@@ -93,13 +144,27 @@ receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
       extractedData.amount = parseFloat(cleanValue) || null;
     }
 
-    console.log('Dados financeiros extraídos:', extractedData);
+    // Log da classificação para debug
+    console.log('Classificação:', {
+      tipo: extractedData.transaction_type,
+      confianca: extractedData.confidence,
+      razao: extractedData.classification_reason
+    });
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: extractedData,
-        raw_text: rawText
+        data: {
+          transaction_type: extractedData.transaction_type,
+          amount: extractedData.amount,
+          description: extractedData.description,
+          vendor_name: extractedData.vendor_name,
+          document_number: extractedData.document_number,
+          date: extractedData.date
+        },
+        confidence: extractedData.confidence || 'medium',
+        classification_reason: extractedData.classification_reason || null,
+        raw_text: content
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -122,7 +187,7 @@ receipt=receita/venda, payment=despesa/compra. Seja rápido e direto.`;
         }
       }),
       { 
-        status: 200, // Retornar 200 para permitir preenchimento manual
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
