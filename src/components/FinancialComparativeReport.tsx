@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, ArrowDownRight, Minus, TrendingUp, FileDown, Loader2 } from "lucide-react";
 import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
-import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import * as ExcelJS from "exceljs";
 import { toast } from "sonner";
+import { generatePDFBlob } from "@/lib/pdfGenerator";
 
 interface Transaction {
   id: string;
@@ -219,32 +219,22 @@ export const FinancialComparativeReport = ({ transactions, filterYear }: Financi
         return;
       }
 
-      const canvas = await html2canvas(reportElement, {
+      const pdfBlob = await generatePDFBlob(reportElement, {
+        margin: 10,
+        format: "a4",
+        orientation: "portrait",
         scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff"
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `relatorio-comparativo-${filterYear}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      let heightLeft = pdfHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
-
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-      }
-
-      pdf.save(`relatorio-comparativo-${filterYear}.pdf`);
       toast.success("PDF exportado com sucesso!");
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
