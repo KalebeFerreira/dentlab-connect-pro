@@ -317,7 +317,7 @@ export const FinancialDocumentScanner = ({
         : vendorName;
 
       // Insert financial transaction
-      const { error: transactionError } = await supabase
+      const { data: transactionData, error: transactionError } = await supabase
         .from('financial_transactions')
         .insert({
           user_id: user.id,
@@ -327,9 +327,54 @@ export const FinancialDocumentScanner = ({
           status: formStatus,
           month: formMonth,
           year: formYear
-        });
+        })
+        .select('id')
+        .single();
 
       if (transactionError) throw transactionError;
+
+      // Save scanned document to history if we have image data
+      if (currentFileData && previewImage) {
+        try {
+          // Upload image to storage
+          const fileName = `${user.id}/${Date.now()}_financial.jpg`;
+          const base64Data = currentFileData.split(',')[1];
+          const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('scanned-documents')
+            .upload(fileName, byteArray, {
+              contentType: 'image/jpeg',
+              upsert: false
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrl } = supabase.storage
+              .from('scanned-documents')
+              .getPublicUrl(uploadData.path);
+
+            // Save to financial_scanned_documents history
+            await supabase
+              .from('financial_scanned_documents' as any)
+              .insert({
+                user_id: user.id,
+                image_url: publicUrl.publicUrl,
+                file_name: previewFile?.name || 'documento_escaneado.jpg',
+                file_type: previewFile?.type || 'image/jpeg',
+                transaction_type: extractedData.transaction_type || 'payment',
+                amount: extractedData.amount || 0,
+                description: finalDescription,
+                vendor_name: extractedData.vendor_name,
+                document_number: extractedData.document_number,
+                document_date: extractedData.date,
+                transaction_id: transactionData?.id
+              });
+          }
+        } catch (historyError) {
+          console.error('Erro ao salvar histórico:', historyError);
+          // Don't fail the whole operation if history save fails
+        }
+      }
 
       // Update batch count
       if (batchMode) {
