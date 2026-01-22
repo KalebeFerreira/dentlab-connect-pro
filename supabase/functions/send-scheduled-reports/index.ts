@@ -86,6 +86,18 @@ serve(async (req) => {
           continue;
         }
 
+        // Get financial transactions for insights
+        const { data: transactions } = await supabaseAdmin
+          .from('financial_transactions')
+          .select('*')
+          .eq('user_id', schedule.user_id)
+          .eq('month', lastMonth)
+          .eq('year', lastMonthYear)
+          .eq('status', 'completed');
+
+        // Calculate financial metrics for insights
+        const financialInsights = calculateFinancialInsights(transactions || []);
+
         if (!services || services.length === 0) {
           console.log(`[SCHEDULED-REPORTS] No services found for ${schedule.client_name} in ${monthYear}`);
           continue;
@@ -105,7 +117,8 @@ serve(async (req) => {
               monthYear,
               services,
               companyInfo,
-              totalValue
+              totalValue,
+              financialInsights
             );
 
             const fromEmail = companyInfo?.email 
@@ -115,7 +128,7 @@ serve(async (req) => {
             await resend.emails.send({
               from: fromEmail,
               to: [schedule.client_email],
-              subject: `Relatório Mensal - ${monthYear}`,
+              subject: `📊 Relatório Mensal com Insights - ${monthYear}`,
               html: emailHtml,
             });
 
@@ -176,12 +189,96 @@ serve(async (req) => {
   }
 });
 
+interface FinancialInsights {
+  totalIncome: number;
+  totalExpense: number;
+  profit: number;
+  profitMargin: number;
+  topCategories: { category: string; amount: number }[];
+  alerts: string[];
+  praise: string[];
+  tips: string[];
+}
+
+function calculateFinancialInsights(transactions: any[]): FinancialInsights {
+  const income = transactions
+    .filter(t => t.transaction_type === 'receipt')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  
+  const expense = transactions
+    .filter(t => t.transaction_type === 'payment')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  
+  const profit = income - expense;
+  const profitMargin = income > 0 ? (profit / income) * 100 : 0;
+
+  // Group expenses by category
+  const categoryExpenses: Record<string, number> = {};
+  transactions
+    .filter(t => t.transaction_type === 'payment')
+    .forEach(t => {
+      const category = t.category || 'Outros';
+      categoryExpenses[category] = (categoryExpenses[category] || 0) + Number(t.amount);
+    });
+
+  const topCategories = Object.entries(categoryExpenses)
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  const alerts: string[] = [];
+  const praise: string[] = [];
+  const tips: string[] = [];
+
+  // Generate insights
+  if (income > 0 && expense / income > 0.8) {
+    alerts.push('⚠️ Despesas representam mais de 80% da receita');
+    tips.push('💡 Revise despesas fixas e busque alternativas mais econômicas');
+  }
+
+  if (profit < 0) {
+    alerts.push('🔴 O mês fechou com prejuízo');
+    tips.push('💡 Avalie renegociar contratos com fornecedores');
+  }
+
+  if (profitMargin > 30) {
+    praise.push('🎉 Excelente margem de lucro! Acima de 30%');
+  } else if (profitMargin > 20) {
+    praise.push('✅ Boa margem de lucro! Entre 20-30%');
+  }
+
+  if (profit > 0 && expense < income * 0.5) {
+    praise.push('🌟 Ótimo controle de despesas! Menos de 50% da receita');
+  }
+
+  // Category-specific tips
+  if (categoryExpenses['Materiais'] && categoryExpenses['Materiais'] > income * 0.3) {
+    tips.push('💡 Materiais representam mais de 30% da receita - considere compras em atacado');
+  }
+
+  if (categoryExpenses['Contas Fixas'] && categoryExpenses['Contas Fixas'] > income * 0.2) {
+    tips.push('💡 Contas fixas estão elevadas - renegocie contratos');
+  }
+
+  return {
+    totalIncome: income,
+    totalExpense: expense,
+    profit,
+    profitMargin,
+    topCategories,
+    alerts,
+    praise,
+    tips
+  };
+}
+
 function generateEmailHTML(
   clientName: string,
   month: string,
   services: any[],
   companyInfo: any,
-  totalValue: number
+  totalValue: number,
+  insights: FinancialInsights
 ): string {
   const servicesRows = services.map((service) => `
     <tr>
@@ -195,14 +292,86 @@ function generateEmailHTML(
     </tr>
   `).join('');
 
+  const formatCurrency = (value: number) => 
+    `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+  const insightsSection = `
+    <div style="margin-top: 40px;">
+      <h2 style="color: #333; border-bottom: 2px solid #1c4587; padding-bottom: 10px; margin-bottom: 20px;">
+        📊 Insights Financeiros do Mês
+      </h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); padding: 20px; border-radius: 12px; text-align: center;">
+          <p style="color: #666; font-size: 12px; margin: 0; text-transform: uppercase;">Receitas</p>
+          <p style="color: #16a34a; font-size: 20px; font-weight: bold; margin: 8px 0 0 0;">${formatCurrency(insights.totalIncome)}</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); padding: 20px; border-radius: 12px; text-align: center;">
+          <p style="color: #666; font-size: 12px; margin: 0; text-transform: uppercase;">Despesas</p>
+          <p style="color: #dc2626; font-size: 20px; font-weight: bold; margin: 8px 0 0 0;">${formatCurrency(insights.totalExpense)}</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); padding: 20px; border-radius: 12px; text-align: center;">
+          <p style="color: #666; font-size: 12px; margin: 0; text-transform: uppercase;">Lucro</p>
+          <p style="color: ${insights.profit >= 0 ? '#2563eb' : '#dc2626'}; font-size: 20px; font-weight: bold; margin: 8px 0 0 0;">${formatCurrency(insights.profit)}</p>
+        </div>
+      </div>
+
+      ${insights.praise.length > 0 ? `
+        <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px 20px; margin-bottom: 15px; border-radius: 0 8px 8px 0;">
+          <h4 style="color: #16a34a; margin: 0 0 10px 0;">Parabéns!</h4>
+          ${insights.praise.map(p => `<p style="color: #333; margin: 5px 0;">${p}</p>`).join('')}
+        </div>
+      ` : ''}
+
+      ${insights.alerts.length > 0 ? `
+        <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px 20px; margin-bottom: 15px; border-radius: 0 8px 8px 0;">
+          <h4 style="color: #dc2626; margin: 0 0 10px 0;">Alertas</h4>
+          ${insights.alerts.map(a => `<p style="color: #333; margin: 5px 0;">${a}</p>`).join('')}
+        </div>
+      ` : ''}
+
+      ${insights.tips.length > 0 ? `
+        <div style="background: #fffbeb; border-left: 4px solid #d97706; padding: 15px 20px; margin-bottom: 15px; border-radius: 0 8px 8px 0;">
+          <h4 style="color: #d97706; margin: 0 0 10px 0;">Dicas de Economia</h4>
+          ${insights.tips.map(t => `<p style="color: #333; margin: 5px 0;">${t}</p>`).join('')}
+        </div>
+      ` : ''}
+
+      ${insights.topCategories.length > 0 ? `
+        <div style="margin-top: 20px;">
+          <h4 style="color: #333; margin-bottom: 15px;">Principais Categorias de Despesas</h4>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${insights.topCategories.map((cat, index) => `
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                  <span style="display: inline-block; width: 20px; height: 20px; background: ${['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index]}; border-radius: 4px; margin-right: 10px; vertical-align: middle;"></span>
+                  ${cat.category}
+                </td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: 600;">
+                  ${formatCurrency(cat.amount)}
+                </td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Relatório Mensal Automático</title>
+      <title>Relatório Mensal com Insights</title>
+      <style>
+        @media only screen and (max-width: 600px) {
+          .grid-3 { display: block !important; }
+          .grid-3 > div { margin-bottom: 15px !important; }
+        }
+      </style>
     </head>
-    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; margin: 0;">
       <div style="max-width: 800px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px;">
         ${companyInfo?.logo_url ? `
           <div style="text-align: center; margin-bottom: 30px;">
@@ -210,11 +379,11 @@ function generateEmailHTML(
           </div>
         ` : ''}
         
-        <h1 style="color: #333; text-align: center; margin-bottom: 10px;">Relatório Mensal</h1>
+        <h1 style="color: #1c4587; text-align: center; margin-bottom: 10px;">📈 Relatório Mensal com Insights</h1>
         <p style="text-align: center; color: #666; margin-bottom: 30px;">Período: ${month}</p>
         
         ${companyInfo ? `
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 30px;">
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
             <h3 style="color: #333; margin-top: 0;">Informações da Empresa</h3>
             <p style="margin: 5px 0; color: #666;"><strong>Nome:</strong> ${companyInfo.company_name}</p>
             <p style="margin: 5px 0; color: #666;"><strong>Email:</strong> ${companyInfo.email}</p>
@@ -222,11 +391,12 @@ function generateEmailHTML(
           </div>
         ` : ''}
         
-        <div style="background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 30px; text-align: center;">
-          <h2 style="color: #333; margin: 0;">Cliente: ${clientName}</h2>
-          <p style="color: #666; margin: 10px 0 0 0;">Total de Serviços: ${services.length}</p>
+        <div style="background: linear-gradient(135deg, #1c4587 0%, #2563eb 100%); padding: 25px; border-radius: 12px; margin-bottom: 30px; text-align: center; color: white;">
+          <h2 style="margin: 0; color: white;">Cliente: ${clientName}</h2>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Total de Serviços: ${services.length}</p>
         </div>
         
+        <h3 style="color: #333; border-bottom: 2px solid #1c4587; padding-bottom: 10px;">📋 Serviços Realizados</h3>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
           <thead>
             <tr style="background-color: #333; color: white;">
@@ -240,14 +410,19 @@ function generateEmailHTML(
           </tbody>
         </table>
         
-        <div style="text-align: right; padding: 20px; background-color: #f8f9fa; border-radius: 5px; border-top: 3px solid #333;">
-          <p style="font-size: 24px; font-weight: bold; color: #333; margin: 0;">
+        <div style="text-align: right; padding: 25px; background: linear-gradient(135deg, #f8f9fa 0%, #e5e7eb 100%); border-radius: 12px; border-top: 4px solid #1c4587;">
+          <p style="font-size: 28px; font-weight: bold; color: #1c4587; margin: 0;">
             Total: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
         
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
-          <p>Este é um relatório automático gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
+        ${insightsSection}
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; text-align: center; color: #999; font-size: 12px;">
+          <p>📧 Este é um relatório automático gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+          <p style="margin-top: 10px;">
+            <a href="#" style="color: #1c4587; text-decoration: none;">Gerenciar preferências de email</a>
+          </p>
         </div>
       </div>
     </body>
