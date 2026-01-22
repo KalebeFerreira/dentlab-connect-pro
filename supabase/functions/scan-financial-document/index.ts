@@ -67,9 +67,19 @@ TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA o
   "vendor_name": "nome da empresa/pessoa envolvida",
   "document_number": "número do documento/nota/recibo",
   "date": "YYYY-MM-DD" | null,
+  "category": "materials" | "fixed_costs" | "suppliers" | "services" | "salaries" | "taxes" | "other" | null,
   "confidence": "high" | "medium" | "low",
   "classification_reason": "breve explicação do porquê classificou assim"
 }
+
+## CATEGORIAS DE DESPESA (apenas se transaction_type = "payment"):
+- "materials": Materiais de consumo, insumos, produtos odontológicos
+- "fixed_costs": Contas fixas (água, luz, aluguel, internet, telefone)
+- "suppliers": Fornecedores de equipamentos e materiais
+- "services": Serviços contratados (manutenção, limpeza, etc)
+- "salaries": Salários, pró-labore, funcionários
+- "taxes": Impostos, taxas, contribuições
+- "other": Outros gastos não classificados
 
 IMPORTANTE: Seja PRECISO na classificação. Se for uma nota de compra de material, é DESPESA. Se for um recibo de serviço prestado, é RECEITA.`;
 
