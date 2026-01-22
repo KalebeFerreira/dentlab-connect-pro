@@ -8,10 +8,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FileDown, Loader2, FileText, FileSpreadsheet, Image } from "lucide-react";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import * as ExcelJS from "exceljs";
-
+import { generatePDF, createElementFromHTML, cleanupElement } from "@/lib/pdfGenerator";
 interface Transaction {
   id: string;
   transaction_type: string;
@@ -182,41 +181,21 @@ export const FinancialExportOptions = ({
     try {
       setExporting("pdf");
       
-      const container = document.createElement("div");
-      container.innerHTML = createReportHTML();
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
+      const container = createElementFromHTML(createReportHTML());
       container.style.width = "800px";
-      document.body.appendChild(container);
-
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-
-      document.body.removeChild(container);
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      let heightLeft = pdfHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
-
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
+      
+      try {
+        await generatePDF(container, {
+          filename: `relatorio-financeiro-${monthNames[month - 1]}-${year}.pdf`,
+          margin: 10,
+          format: "a4",
+          orientation: "portrait",
+          scale: 2,
+        });
+        toast.success("PDF exportado com sucesso!");
+      } finally {
+        cleanupElement(container);
       }
-
-      pdf.save(`relatorio-financeiro-${monthNames[month - 1]}-${year}.pdf`);
-      toast.success("PDF exportado com sucesso!");
     } catch (error) {
       console.error("Error exporting PDF:", error);
       toast.error("Erro ao exportar PDF");
