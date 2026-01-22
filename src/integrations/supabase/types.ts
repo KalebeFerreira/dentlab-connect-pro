@@ -555,6 +555,62 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_scanned_documents: {
+        Row: {
+          amount: number | null
+          created_at: string
+          description: string | null
+          document_date: string | null
+          document_number: string | null
+          file_name: string | null
+          file_type: string | null
+          id: string
+          image_url: string
+          transaction_id: string | null
+          transaction_type: string | null
+          user_id: string
+          vendor_name: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          document_date?: string | null
+          document_number?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          id?: string
+          image_url: string
+          transaction_id?: string | null
+          transaction_type?: string | null
+          user_id: string
+          vendor_name?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          document_date?: string | null
+          document_number?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          id?: string
+          image_url?: string
+          transaction_id?: string | null
+          transaction_type?: string | null
+          user_id?: string
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_scanned_documents_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
