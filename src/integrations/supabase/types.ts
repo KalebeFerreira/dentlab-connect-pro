@@ -558,6 +558,7 @@ export type Database = {
       financial_scanned_documents: {
         Row: {
           amount: number | null
+          category: string | null
           created_at: string
           description: string | null
           document_date: string | null
@@ -573,6 +574,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          category?: string | null
           created_at?: string
           description?: string | null
           document_date?: string | null
@@ -588,6 +590,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          category?: string | null
           created_at?: string
           description?: string | null
           document_date?: string | null
@@ -614,6 +617,7 @@ export type Database = {
       financial_transactions: {
         Row: {
           amount: number
+          category: string | null
           created_at: string
           description: string | null
           id: string
@@ -628,6 +632,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -642,6 +647,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string

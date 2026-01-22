@@ -361,14 +361,57 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       // Upload file to storage
       const fileUrl = await uploadFileToStorage(user.id, currentFileData, previewFile.type, previewFile.name);
 
-      // Insert service - goes automatically to monthly report
+      // Check if client already exists with similar name to avoid duplicates
+      let finalClientName = extractedData.clinic_name;
+      
+      if (extractedData.clinic_name) {
+        // Search for existing clients with similar name (case-insensitive)
+        const searchName = extractedData.clinic_name.trim();
+        const firstWord = searchName.split(' ')[0];
+        
+        const { data: existingClients } = await supabase
+          .from('services')
+          .select('client_name')
+          .eq('user_id', user.id)
+          .not('client_name', 'is', null)
+          .ilike('client_name', `%${firstWord}%`)
+          .limit(10);
+
+        if (existingClients && existingClients.length > 0) {
+          // Find exact or closest match
+          const normalizedInput = searchName.toLowerCase().trim();
+          
+          // First try exact match
+          const exactMatch = existingClients.find(
+            c => c.client_name?.toLowerCase().trim() === normalizedInput
+          );
+          
+          if (exactMatch) {
+            finalClientName = exactMatch.client_name;
+            console.log(`Cliente existente encontrado (match exato): ${finalClientName}`);
+          } else {
+            // Try to find a very similar match (contains full name or vice versa)
+            const similarMatch = existingClients.find(c => {
+              const existingName = c.client_name?.toLowerCase().trim() || '';
+              return existingName.includes(normalizedInput) || normalizedInput.includes(existingName);
+            });
+            
+            if (similarMatch) {
+              finalClientName = similarMatch.client_name;
+              console.log(`Cliente existente encontrado (match similar): ${finalClientName}`);
+            }
+          }
+        }
+      }
+
+      // Insert service with deduplicated client name
       const { data: serviceData, error: serviceError } = await supabase
         .from('services')
         .insert({
           user_id: user.id,
           service_name: extractedData.service_name || 'Serviço escaneado',
           service_value: extractedData.service_value || 0,
-          client_name: extractedData.clinic_name,
+          client_name: finalClientName,
           patient_name: extractedData.patient_name,
           color: extractedData.color || null,
           work_type: extractedData.work_type || extractedData.service_name || null,
@@ -380,14 +423,14 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
       if (serviceError) throw serviceError;
 
-      // Save scan history with file
+      // Save scan history with file and deduplicated client name
       if (fileUrl) {
         const { error: historyError } = await supabase
           .from('scanned_documents')
           .insert({
             user_id: user.id,
             image_url: fileUrl,
-            clinic_name: extractedData.clinic_name,
+            clinic_name: finalClientName,
             patient_name: extractedData.patient_name,
             service_name: extractedData.service_name,
             service_value: extractedData.service_value,

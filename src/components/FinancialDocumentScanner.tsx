@@ -36,8 +36,20 @@ interface ExtractedFinancialData {
   vendor_name: string | null;
   document_number: string | null;
   date: string | null;
+  category: string | null;
   raw_text?: string | null;
 }
+
+// Expense categories
+const EXPENSE_CATEGORIES = [
+  { value: 'materials', label: 'Materiais' },
+  { value: 'fixed_costs', label: 'Contas Fixas' },
+  { value: 'suppliers', label: 'Fornecedores' },
+  { value: 'services', label: 'Serviços' },
+  { value: 'salaries', label: 'Salários' },
+  { value: 'taxes', label: 'Impostos' },
+  { value: 'other', label: 'Outros' },
+];
 
 interface FinancialDocumentScannerProps {
   onTransactionAdd: () => void;
@@ -71,6 +83,7 @@ export const FinancialDocumentScanner = ({
   const [formMonth, setFormMonth] = useState(defaultMonth);
   const [formYear, setFormYear] = useState(defaultYear);
   const [formStatus, setFormStatus] = useState<'pending' | 'completed'>('completed');
+  const [formCategory, setFormCategory] = useState<string>('');
   
   // Batch mode states
   const [batchMode, setBatchMode] = useState(false);
@@ -274,7 +287,8 @@ export const FinancialDocumentScanner = ({
           description: null,
           vendor_name: null,
           document_number: null,
-          date: null
+          date: null,
+          category: null
         });
         setShowConfirmDialog(true);
         toast.info('Documento carregado. Preencha os dados manualmente.');
@@ -326,7 +340,8 @@ export const FinancialDocumentScanner = ({
           description: finalDescription,
           status: formStatus,
           month: formMonth,
-          year: formYear
+          year: formYear,
+          category: extractedData.transaction_type === 'payment' ? (formCategory || extractedData.category) : null
         })
         .select('id')
         .single();
@@ -367,7 +382,8 @@ export const FinancialDocumentScanner = ({
                 vendor_name: extractedData.vendor_name,
                 document_number: extractedData.document_number,
                 document_date: extractedData.date,
-                transaction_id: transactionData?.id
+                transaction_id: transactionData?.id,
+                category: extractedData.transaction_type === 'payment' ? (formCategory || extractedData.category) : null
               });
           }
         } catch (historyError) {
@@ -844,6 +860,27 @@ export const FinancialDocumentScanner = ({
                   </SelectContent>
                 </Select>
               </div>
+
+              {extractedData?.transaction_type === 'payment' && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Categoria da Despesa</Label>
+                  <Select
+                    value={formCategory || extractedData?.category || ''}
+                    onValueChange={(value) => setFormCategory(value)}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPENSE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
 
