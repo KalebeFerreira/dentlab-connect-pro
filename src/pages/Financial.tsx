@@ -12,6 +12,7 @@ import { FinancialCharts } from "@/components/FinancialCharts";
 import { FinancialExportOptions } from "@/components/FinancialExportOptions";
 import { FinancialComparativeReport } from "@/components/FinancialComparativeReport";
 import { FinancialScanHistory } from "@/components/FinancialScanHistory";
+import { FinancialInsights } from "@/components/FinancialInsights";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
@@ -310,6 +311,14 @@ const Financial = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Financial Insights */}
+        <FinancialInsights
+          transactions={transactions}
+          allYearTransactions={allYearTransactions}
+          currentMonth={filterMonth}
+          currentYear={filterYear}
+        />
 
         {/* Tabs for Transactions, Scanner, and Charts */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

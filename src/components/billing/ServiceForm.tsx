@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { serviceFormSchema } from "@/lib/validationSchemas";
+import { ClientAutocomplete } from "@/components/ClientAutocomplete";
 
 interface ServiceFormProps {
   onServiceAdd: () => Promise<void>;
@@ -122,10 +123,10 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="client_name">Nome da Clínica (Cliente)</Label>
-              <Input
+              <ClientAutocomplete
                 id="client_name"
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                onChange={setClientName}
                 placeholder="Nome da clínica"
               />
             </div>
