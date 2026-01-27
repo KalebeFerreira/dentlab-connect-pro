@@ -5,7 +5,6 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
@@ -14,7 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, Building2 } from "lucide-react";
+import { Check, Building2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ClientAutocompleteProps {
@@ -72,6 +71,12 @@ export const ClientAutocomplete = ({
     client.toLowerCase().includes(value.toLowerCase())
   );
 
+  const hasExactMatch = clients.some(
+    (client) => client.toLowerCase() === value.toLowerCase()
+  );
+
+  const showCreateOption = value.trim().length > 0 && !hasExactMatch;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -86,7 +91,7 @@ export const ClientAutocomplete = ({
               }
             }}
             onFocus={() => {
-              if (clients.length > 0) {
+              if (clients.length > 0 || value.length > 0) {
                 setOpen(true);
               }
             }}
@@ -98,37 +103,51 @@ export const ClientAutocomplete = ({
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
         <Command>
-          <CommandInput
-            placeholder="Buscar cliente..."
-            value={value}
-            onValueChange={onChange}
-          />
           <CommandList>
             <CommandEmpty>
               {loading ? "Carregando..." : "Nenhum cliente encontrado"}
             </CommandEmpty>
-            <CommandGroup heading="Clientes cadastrados">
-              {filteredClients.slice(0, 10).map((client) => (
+            
+            {showCreateOption && (
+              <CommandGroup heading="Novo cliente">
                 <CommandItem
-                  key={client}
-                  value={client}
-                  onSelect={(selectedValue) => {
-                    onChange(selectedValue);
+                  value={`create-${value}`}
+                  onSelect={() => {
+                    onChange(value.trim());
                     setOpen(false);
                   }}
+                  className="text-primary"
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value.toLowerCase() === client.toLowerCase()
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                  {client}
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar "{value.trim()}"
                 </CommandItem>
-              ))}
-            </CommandGroup>
+              </CommandGroup>
+            )}
+
+            {filteredClients.length > 0 && (
+              <CommandGroup heading="Clientes cadastrados">
+                {filteredClients.slice(0, 10).map((client) => (
+                  <CommandItem
+                    key={client}
+                    value={client}
+                    onSelect={(selectedValue) => {
+                      onChange(selectedValue);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value.toLowerCase() === client.toLowerCase()
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                    {client}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
