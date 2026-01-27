@@ -28,6 +28,7 @@ import {
   Copy
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ClientAutocomplete } from "@/components/ClientAutocomplete";
 
 interface ExtractedData {
   clinic_name: string | null;
@@ -819,12 +820,11 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="clinic_name" className="text-sm">Nome da Clínica/Cliente</Label>
-                <Input
+                <ClientAutocomplete
                   id="clinic_name"
                   value={extractedData?.clinic_name || ''}
-                  onChange={(e) => handleEditField('clinic_name', e.target.value)}
-                  placeholder="Nome da clínica"
-                  className="h-11"
+                  onChange={(value) => handleEditField('clinic_name', value)}
+                  placeholder="Digite ou selecione um cliente"
                 />
               </div>
 
