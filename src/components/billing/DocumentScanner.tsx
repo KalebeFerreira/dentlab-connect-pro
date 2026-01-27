@@ -269,13 +269,25 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   const processFile = async (fileData: string, fileType: string) => {
     setIsScanning(true);
     try {
+      // Detect if it's an image (check both type and data URL)
+      const isImageType = SUPPORTED_IMAGE_TYPES.includes(fileType) || 
+                          fileType.startsWith('image/') ||
+                          fileData.startsWith('data:image/');
+      
       // For images, use the AI scanner
-      if (SUPPORTED_IMAGE_TYPES.includes(fileType)) {
+      if (isImageType) {
+        console.log('Enviando imagem para scan-document...', { fileType, dataLength: fileData.length });
+        
         const { data, error } = await supabase.functions.invoke('scan-document', {
           body: { imageBase64: fileData }
         });
 
-        if (error) throw error;
+        console.log('Resposta do scan-document:', { data, error });
+
+        if (error) {
+          console.error('Erro da edge function:', error);
+          throw new Error(error.message || 'Erro ao processar imagem');
+        }
 
         if (data?.data) {
           setExtractedData({
@@ -288,8 +300,21 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
           } else {
             toast.info('Preencha ou corrija os dados manualmente');
           }
+        } else if (data?.error) {
+          // API returned an error but with status 200
+          console.error('Erro retornado pela API:', data.error);
+          toast.error('Erro: ' + data.error);
+          // Still show dialog for manual entry
+          setExtractedData({
+            clinic_name: null,
+            patient_name: null,
+            service_name: null,
+            service_value: null,
+            raw_text: 'Erro ao processar - preencha manualmente'
+          });
+          setShowConfirmDialog(true);
         } else {
-          throw new Error(data?.error || 'Erro ao processar imagem');
+          throw new Error('Resposta inválida do servidor');
         }
       } else {
         // For documents (PDF, Word, Excel), show form for manual entry
@@ -304,7 +329,16 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       }
     } catch (error: any) {
       console.error('Erro ao processar documento:', error);
-      toast.error('Erro ao processar documento: ' + (error.message || 'Tente novamente'));
+      toast.error('Erro ao processar: ' + (error.message || 'Tente novamente'));
+      // Show dialog for manual entry even on error
+      setExtractedData({
+        clinic_name: null,
+        patient_name: null,
+        service_name: null,
+        service_value: null,
+        raw_text: 'Erro ao processar - preencha manualmente'
+      });
+      setShowConfirmDialog(true);
     } finally {
       setIsScanning(false);
     }
