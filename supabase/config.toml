@@ -24,6 +24,18 @@ verify_jwt = true
 [functions.generate-receipt-pdf]
 verify_jwt = true
 
+[functions.generate-certificate-pdf]
+verify_jwt = true
+
+[functions.generate-invoice-pdf]
+verify_jwt = true
+
+[functions.generate-financial-pdf]
+verify_jwt = true
+
+[functions.generate-campaign-image]
+verify_jwt = true
+
 [functions.analyze-schedule]
 verify_jwt = true
 
@@ -33,5 +45,35 @@ verify_jwt = true
 [functions.scan-financial-document]
 verify_jwt = true
 
-[functions.generate-financial-pdf]
+[functions.ai-assistant]
+verify_jwt = true
+
+[functions.ai-assistant-tts]
+verify_jwt = true
+
+[functions.calculate-delivery-fee]
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.create-dentist-access]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.send-document-email]
+verify_jwt = true
+
+[functions.send-monthly-report-email]
+verify_jwt = true
+
+[functions.send-price-table-email]
+verify_jwt = true
+
+[functions.send-scheduled-reports]
 verify_jwt = true
