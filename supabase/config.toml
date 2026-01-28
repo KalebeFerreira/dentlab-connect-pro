@@ -45,6 +45,9 @@ verify_jwt = true
 [functions.scan-financial-document]
 verify_jwt = true
 
+[functions.scan-price-table]
+verify_jwt = false
+
 [functions.ai-assistant]
 verify_jwt = true
 

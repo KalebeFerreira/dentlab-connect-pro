@@ -11,8 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { generatePDFBlob as createPDFBlob } from "@/lib/pdfGenerator";
 import { PriceTableShareDialog } from "./PriceTableShareDialog";
+import { PriceTableScanner } from "./price-table/PriceTableScanner";
+import { SavedPriceTables } from "./price-table/SavedPriceTables";
 
-interface PriceItem {
+export interface PriceItem {
   id: string;
   workType: string;
   description: string;
@@ -488,19 +490,60 @@ export const PriceTableGenerator = () => {
     }
   };
 
+  const handleScannedItems = (scannedItems: { workType: string; description: string; price: string }[]) => {
+    const newItems: PriceItem[] = scannedItems.map((item, index) => ({
+      id: `scanned_${Date.now()}_${index}`,
+      workType: item.workType,
+      description: item.description,
+      price: item.price,
+      imageUrl: null,
+      generating: false,
+    }));
+
+    // Replace empty items or add to existing
+    if (items.length === 1 && !items[0].workType) {
+      setItems(newItems);
+    } else {
+      setItems([...items, ...newItems]);
+    }
+  };
+
+  const handleLoadSavedTable = (
+    loadedTableName: string, 
+    loadedItems: { workType: string; description: string; price: string; imageUrl: string | null }[]
+  ) => {
+    setTableName(loadedTableName);
+    setItems(loadedItems.map((item, index) => ({
+      id: `loaded_${Date.now()}_${index}`,
+      workType: item.workType,
+      description: item.description,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      generating: false,
+    })));
+  };
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Gerador de Tabela de Preços</CardTitle>
-        <CardDescription>
-          Crie tabelas de preços profissionais com imagens geradas por IA
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="tableName">Nome da Tabela</Label>
-            <Input
+    <div className="space-y-6">
+      {/* Scanner and Saved Tables Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <PriceTableScanner onItemsScanned={handleScannedItems} />
+        <SavedPriceTables onLoadTable={handleLoadSavedTable} />
+      </div>
+
+      {/* Main Generator Card */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Gerador de Tabela de Preços</CardTitle>
+          <CardDescription>
+            Crie tabelas de preços profissionais com imagens geradas por IA
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tableName">Nome da Tabela</Label>
+              <Input
               id="tableName"
               value={tableName}
               onChange={(e) => setTableName(e.target.value)}
@@ -661,13 +704,14 @@ export const PriceTableGenerator = () => {
         </div>
       </CardContent>
 
-      <PriceTableShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        tableName={tableName}
-        items={items}
-        laboratoryName={laboratoryName}
-      />
-    </Card>
+        <PriceTableShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          tableName={tableName}
+          items={items}
+          laboratoryName={laboratoryName}
+        />
+      </Card>
+    </div>
   );
 };
