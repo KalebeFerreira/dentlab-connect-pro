@@ -10,7 +10,6 @@ import { Loader2, Plus, Trash2, FileDown, Image as ImageIcon, Sparkles, Wand2, S
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { generatePDFBlob as createPDFBlob } from "@/lib/pdfGenerator";
-import { priceTableSchema } from "@/lib/validationSchemas";
 import { PriceTableShareDialog } from "./PriceTableShareDialog";
 
 interface PriceItem {
@@ -303,98 +302,93 @@ export const PriceTableGenerator = () => {
   };
 
   const generatePDFBlob = async () => {
-    // Validate items
+    // Validate items - allow items without price if showPrices is false
     const validItems = items.filter(
-      (item) => item.workType && item.price
+      (item) => item.workType && (showPrices ? item.price : true)
     );
 
     if (validItems.length === 0) {
-      toast.error("Adicione pelo menos um item válido");
+      toast.error("Adicione pelo menos um item com tipo de trabalho");
       return null;
     }
 
     try {
+      console.log("Generating PDF with items:", validItems.length);
+      
       // Call edge function to get formatted HTML
       const { data, error } = await supabase.functions.invoke("generate-price-table-pdf", {
         body: {
           tableName,
-          items: validItems,
+          items: validItems.map(item => ({
+            workType: item.workType,
+            description: item.description || "",
+            price: item.price || "0",
+            imageUrl: item.imageUrl,
+          })),
           laboratoryName,
           showPrices,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erro ao chamar o servidor");
+      }
+
+      if (data?.error) {
+        console.error("Edge function returned error:", data.error);
+        throw new Error(data.error);
+      }
 
       if (!data?.html) {
-        throw new Error("Erro ao gerar HTML do PDF");
+        throw new Error("Erro ao gerar HTML do PDF - resposta vazia");
       }
 
       console.log("HTML received from edge function, length:", data.html.length);
 
-      // Create a temporary iframe to render the HTML properly
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "absolute";
-      iframe.style.left = "-9999px";
-      iframe.style.width = "210mm";
-      iframe.style.height = "297mm";
-      document.body.appendChild(iframe);
-
-      // Write the complete HTML to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        throw new Error("Could not access iframe document");
-      }
-
-      iframeDoc.open();
-      iframeDoc.write(data.html);
-      iframeDoc.close();
-
-      // Wait for iframe content to load
-      await new Promise((resolve) => {
-        if (iframe.contentWindow) {
-          iframe.contentWindow.onload = resolve;
-          // Fallback timeout
-          setTimeout(resolve, 1000);
-        } else {
-          setTimeout(resolve, 1000);
-        }
-      });
+      // Create a temporary div to render the HTML (more reliable than iframe)
+      const container = document.createElement("div");
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      container.style.top = "0";
+      container.style.width = "210mm";
+      container.style.background = "white";
+      container.innerHTML = data.html;
+      document.body.appendChild(container);
 
       // Wait for images to load
-      const images = iframeDoc.querySelectorAll("img");
+      const images = container.querySelectorAll("img");
       if (images.length > 0) {
         console.log("Waiting for", images.length, "images to load");
         await Promise.all(
           Array.from(images).map(
             (img) =>
-              new Promise((resolve) => {
-                if (img.complete) {
-                  resolve(null);
+              new Promise<void>((resolve) => {
+                if (img.complete && img.naturalHeight !== 0) {
+                  resolve();
                 } else {
-                  img.onload = () => resolve(null);
+                  img.onload = () => resolve();
                   img.onerror = () => {
-                    console.warn("Image failed to load:", img.src);
-                    resolve(null);
+                    console.warn("Image failed to load:", img.src?.substring(0, 100));
+                    // Hide broken images
+                    img.style.display = "none";
+                    resolve();
                   };
                   // Timeout for each image
-                  setTimeout(() => resolve(null), 5000);
+                  setTimeout(() => resolve(), 3000);
                 }
               })
           )
         );
       }
 
-      // Get the body element from iframe
-      const body = iframeDoc.body;
-      if (!body) {
-        throw new Error("No body content found in generated HTML");
-      }
+      // Give a moment for any final rendering
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      console.log("Generating PDF from iframe body");
+      console.log("Generating PDF from container");
 
       // Generate PDF as blob using secure jsPDF + html2canvas
-      const pdfBlob = await createPDFBlob(body, {
+      const pdfBlob = await createPDFBlob(container, {
         margin: [10, 10, 10, 10],
         format: "a4",
         orientation: "portrait",
@@ -404,9 +398,9 @@ export const PriceTableGenerator = () => {
       console.log("PDF generated, blob size:", pdfBlob.size);
 
       // Clean up
-      document.body.removeChild(iframe);
+      document.body.removeChild(container);
 
-      if (pdfBlob.size < 1000) {
+      if (pdfBlob.size < 500) {
         throw new Error("PDF gerado está muito pequeno, pode estar vazio");
       }
 
@@ -414,65 +408,61 @@ export const PriceTableGenerator = () => {
     } catch (error: any) {
       console.error("Error generating PDF:", error);
       toast.error("Erro ao gerar PDF", {
-        description: error.message,
+        description: error.message || "Erro desconhecido",
       });
       return null;
     }
   };
 
   const downloadPDF = async () => {
-    // Validate inputs
-    const validationResult = priceTableSchema.safeParse({
-      tableName,
-      items: items.filter(item => item.workType && item.price).map(item => ({
-        workType: item.workType,
-        description: item.description,
-        price: item.price,
-      })),
-    });
+    // Validate items - allow items without price if showPrices is false
+    const validItems = items.filter(item => item.workType && (showPrices ? item.price : true));
+    
+    if (validItems.length === 0) {
+      toast.error("Adicione pelo menos um item com tipo de trabalho");
+      return;
+    }
 
-    if (!validationResult.success) {
-      const errors = validationResult.error.errors.map(err => err.message).join(", ");
-      toast.error("Erro de validação", { description: errors });
+    if (!tableName.trim()) {
+      toast.error("Digite um nome para a tabela");
       return;
     }
 
     setExporting(true);
 
-    const blob = await generatePDFBlob();
-    
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success("PDF baixado com sucesso!");
+    try {
+      const blob = await generatePDFBlob();
+      
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${tableName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_${Date.now()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success("PDF baixado com sucesso!");
+      }
+    } catch (error: any) {
+      console.error("Download error:", error);
+      toast.error("Erro ao baixar PDF");
+    } finally {
+      setExporting(false);
     }
-
-    setExporting(false);
   };
 
   const saveTable = async () => {
-    // Validate inputs
-    const validationResult = priceTableSchema.safeParse({
-      tableName,
-      items: items.filter(item => item.workType && item.price).map(item => ({
-        workType: item.workType,
-        description: item.description,
-        price: item.price,
-      })),
-    });
-
-    if (!validationResult.success) {
-      const errors = validationResult.error.errors.map(err => err.message).join(", ");
-      toast.error("Erro de validação", { description: errors });
+    // Validate items - allow items without price if showPrices is false
+    const validItems = items.filter(item => item.workType && (showPrices ? item.price : true));
+    
+    if (validItems.length === 0) {
+      toast.error("Adicione pelo menos um item com tipo de trabalho");
       return;
     }
 
-    if (!items.some((item) => item.workType && item.price)) {
-      toast.error("Adicione pelo menos um item com tipo de trabalho e preço");
+    if (!tableName.trim()) {
+      toast.error("Digite um nome para a tabela");
       return;
     }
 
@@ -481,9 +471,7 @@ export const PriceTableGenerator = () => {
       if (!user) throw new Error("Usuário não autenticado");
 
       // Convert items to plain JSON format (remove id and generating fields)
-      const itemsToSave = items
-        .filter((item) => item.workType && item.price)
-        .map(({ id, generating, ...item }) => item);
+      const itemsToSave = validItems.map(({ id, generating, ...item }) => item);
 
       const { error } = await supabase.from("price_tables").insert([{
         user_id: user.id,
@@ -495,6 +483,7 @@ export const PriceTableGenerator = () => {
       if (error) throw error;
       toast.success("Tabela salva no banco de dados com sucesso!");
     } catch (error: any) {
+      console.error("Error saving table:", error);
       toast.error("Erro ao salvar tabela", { description: error.message });
     }
   };
