@@ -231,6 +231,7 @@ const Billing = () => {
             <ServicesList
               services={services}
               onDelete={handleServiceDelete}
+              onServiceUpdate={loadServices}
               companyInfo={companyInfo}
             />
           </Suspense>

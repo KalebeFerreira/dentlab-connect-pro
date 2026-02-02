@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,20 +9,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import ExcelJS from 'exceljs';
+import { EditServiceDialog } from "./EditServiceDialog";
 
 interface ServicesListProps {
   services: Service[];
   onDelete: (id: string) => Promise<void>;
+  onServiceUpdate: () => Promise<void>;
   companyInfo: CompanyInfo | null;
 }
 
-export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListProps) => {
+export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo }: ServicesListProps) => {
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -224,6 +229,17 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => {
+                        setEditingService(service);
+                        setEditDialogOpen(true);
+                      }}
+                      title="Editar"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleGenerateReceipt(service)}
                       title="Gerar Recibo"
                     >
@@ -260,6 +276,13 @@ export const ServicesList = ({ services, onDelete, companyInfo }: ServicesListPr
           </TableBody>
         </Table>
       </CardContent>
+
+      <EditServiceDialog
+        service={editingService}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onServiceUpdate={onServiceUpdate}
+      />
     </Card>
   );
 };
