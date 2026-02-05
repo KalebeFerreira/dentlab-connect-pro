@@ -331,151 +331,152 @@ export interface WorkRecord {
          </CardContent>
        </Card>
  
-       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-         <DialogContent className="max-w-lg">
-           <DialogHeader>
-             <DialogTitle>
-               {editingRecord ? "Editar Trabalho" : "Lançar Novo Trabalho"}
-             </DialogTitle>
-           </DialogHeader>
-           <div className="space-y-4 py-4">
-             <div className="space-y-2">
-               <Label>Funcionário *</Label>
-               <Select value={formData.employee_id} onValueChange={(v) => setFormData({ ...formData, employee_id: v })}>
-                 <SelectTrigger>
-                   <SelectValue placeholder="Selecione o funcionário" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {activeEmployees.map(emp => (
-                     <SelectItem key={emp.id} value={emp.id}>
-                       {emp.name}
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
-             </div>
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label>Tipo de Trabalho</Label>
-                 <Select value={formData.work_type} onValueChange={(v) => setFormData({ ...formData, work_type: v })}>
-                   <SelectTrigger>
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent>
-                     {WORK_TYPES.map(t => (
-                       <SelectItem key={t.value} value={t.value}>
-                         {t.label}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
-               </div>
-               <div className="space-y-2">
-                 <Label htmlFor="work_code">Código/Número</Label>
-                 <Input
-                   id="work_code"
-                   value={formData.work_code}
-                   onChange={(e) => setFormData({ ...formData, work_code: e.target.value })}
-                   placeholder="Ex: OS-001"
-                 />
-               </div>
-             </div>
-            <div className="grid grid-cols-2 gap-4">
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingRecord ? "Editar Trabalho" : "Lançar Novo Trabalho"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="patient_name">Nome do Paciente</Label>
-                <Input
-                  id="patient_name"
-                  value={formData.patient_name}
-                  onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
-                  placeholder="Nome do paciente"
-                />
+                <Label>Funcionário *</Label>
+                <Select value={formData.employee_id} onValueChange={(v) => setFormData({ ...formData, employee_id: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o funcionário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeEmployees.map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Trabalho</Label>
+                  <Select value={formData.work_type} onValueChange={(v) => setFormData({ ...formData, work_type: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WORK_TYPES.map(t => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="work_code">Código/Número</Label>
+                  <Input
+                    id="work_code"
+                    value={formData.work_code}
+                    onChange={(e) => setFormData({ ...formData, work_code: e.target.value })}
+                    placeholder="Ex: OS-001"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="patient_name">Nome do Paciente</Label>
+                  <Input
+                    id="patient_name"
+                    value={formData.patient_name}
+                    onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
+                    placeholder="Nome do paciente"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="color">Cor do Trabalho</Label>
+                  <Input
+                    id="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    placeholder="Ex: A2, B1, Bleach"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="value">Valor (R$) *</Label>
+                  <Input
+                    id="value"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.value}
+                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                    placeholder="0,00"
+                  />
+                  <p className="text-xs text-muted-foreground">Será registrado como despesa automaticamente</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deadline">Prazo de Entrega</Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Data de Início *</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">Data de Finalização</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="color">Cor do Trabalho</Label>
-                <Input
-                  id="color"
-                  value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  placeholder="Ex: A2, B1, Bleach"
+                <Label>Status</Label>
+                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in_progress">Em Andamento</SelectItem>
+                    <SelectItem value="finished">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Observações</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Observações sobre o trabalho..."
+                  rows={3}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="value">Valor (R$)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.value}
-                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                  placeholder="0,00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Prazo de Entrega</Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label htmlFor="start_date">Data de Início *</Label>
-                 <Input
-                   id="start_date"
-                   type="date"
-                   value={formData.start_date}
-                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label htmlFor="end_date">Data de Finalização</Label>
-                 <Input
-                   id="end_date"
-                   type="date"
-                   value={formData.end_date}
-                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                 />
-               </div>
-             </div>
-             <div className="space-y-2">
-               <Label>Status</Label>
-               <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                 <SelectTrigger>
-                   <SelectValue />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="in_progress">Em Andamento</SelectItem>
-                   <SelectItem value="finished">Finalizado</SelectItem>
-                 </SelectContent>
-               </Select>
-             </div>
-             <div className="space-y-2">
-               <Label htmlFor="notes">Observações</Label>
-               <Textarea
-                 id="notes"
-                 value={formData.notes}
-                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                 placeholder="Observações sobre o trabalho..."
-                 rows={3}
-               />
-             </div>
-           </div>
-           <DialogFooter>
-             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-               Cancelar
-             </Button>
-             <Button onClick={handleSave} disabled={saving}>
-               {saving ? "Salvando..." : "Salvar"}
-             </Button>
-           </DialogFooter>
-         </DialogContent>
-       </Dialog>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? "Salvando..." : "Salvar Trabalho"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
      </div>
    );
  };
