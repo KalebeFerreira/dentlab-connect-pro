@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare, History } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare, History, FileText } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner";
@@ -12,6 +12,7 @@ import { FinancialCharts } from "@/components/FinancialCharts";
 import { FinancialExportOptions } from "@/components/FinancialExportOptions";
 import { FinancialComparativeReport } from "@/components/FinancialComparativeReport";
 import { FinancialScanHistory } from "@/components/FinancialScanHistory";
+import { TransactionHistory } from "@/components/billing/TransactionHistory";
 import { FinancialInsights } from "@/components/FinancialInsights";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
@@ -322,11 +323,16 @@ const Financial = () => {
 
         {/* Tabs for Transactions, Scanner, and Charts */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="transactions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Transações</span>
               <span className="sm:hidden">Lista</span>
+            </TabsTrigger>
+            <TabsTrigger value="full-history" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Histórico</span>
+              <span className="sm:hidden">Hist.</span>
             </TabsTrigger>
             <TabsTrigger value="scanner" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <Scan className="h-4 w-4" />
@@ -334,8 +340,8 @@ const Financial = () => {
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <History className="h-4 w-4" />
-              <span className="hidden sm:inline">Histórico</span>
-              <span className="sm:hidden">Hist.</span>
+              <span className="hidden sm:inline">Scans</span>
+              <span className="sm:hidden">Scans</span>
             </TabsTrigger>
             <TabsTrigger value="charts" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <BarChart3 className="h-4 w-4" />
@@ -365,6 +371,10 @@ const Financial = () => {
               onEdit={handleEdit}
               onDelete={loadTransactions}
             />
+          </TabsContent>
+
+          <TabsContent value="full-history" className="space-y-6">
+            <TransactionHistory />
           </TabsContent>
 
           <TabsContent value="scanner" className="space-y-6">
