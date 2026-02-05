@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Keyboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { serviceFormSchema } from "@/lib/validationSchemas";
 import { ClientAutocomplete } from "@/components/ClientAutocomplete";
+import { Switch } from "@/components/ui/switch";
 
 interface ServiceFormProps {
   onServiceAdd: () => Promise<void>;
@@ -17,8 +18,10 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [serviceValue, setServiceValue] = useState("");
   const [clientName, setClientName] = useState("");
+  const [clinicName, setClinicName] = useState("");
   const [patientName, setPatientName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [useManualInput, setUseManualInput] = useState(false);
 
   const formatCurrency = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -49,11 +52,16 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         serviceValue.replace("R$", "").replace(/\./g, "").replace(",", ".")
       );
 
+      // Combine clinic name with client name if both are provided
+      const finalClientName = useManualInput 
+        ? (clinicName && clientName ? `${clinicName} - ${clientName}` : clinicName || clientName || null)
+        : (clientName || null);
+
       // Validate input
       const validationResult = serviceFormSchema.safeParse({
         service_name: serviceName,
         service_value: numericValue,
-        client_name: clientName || null,
+        client_name: finalClientName,
         patient_name: patientName || null,
       });
 
@@ -68,7 +76,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
           user_id: user.id,
           service_name: serviceName.trim(),
           service_value: numericValue,
-          client_name: clientName?.trim() || null,
+          client_name: finalClientName?.trim() || null,
           patient_name: patientName?.trim() || null,
           service_date: new Date().toISOString().split("T")[0],
           status: "active",
@@ -81,6 +89,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setServiceName("");
       setServiceValue("");
       setClientName("");
+      setClinicName("");
       setPatientName("");
       await onServiceAdd();
     } catch (error) {
@@ -94,11 +103,24 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Adicionar Serviço</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Adicionar Serviço</CardTitle>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="manual-input" className="text-sm text-muted-foreground">
+              Digitação manual
+            </Label>
+            <Switch
+              id="manual-input"
+              checked={useManualInput}
+              onCheckedChange={setUseManualInput}
+            />
+            <Keyboard className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="service_name">Serviço Prestado</Label>
               <Input
@@ -121,15 +143,38 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="client_name">Nome da Clínica (Cliente)</Label>
-              <ClientAutocomplete
-                id="client_name"
-                value={clientName}
-                onChange={setClientName}
-                placeholder="Nome da clínica"
-              />
-            </div>
+            {useManualInput ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="clinic_name">Nome da Clínica</Label>
+                  <Input
+                    id="clinic_name"
+                    value={clinicName}
+                    onChange={(e) => setClinicName(e.target.value)}
+                    placeholder="Digite o nome da clínica"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client_name_manual">Nome do Cliente</Label>
+                  <Input
+                    id="client_name_manual"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Digite o nome do cliente"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="client_name">Nome da Clínica (Cliente)</Label>
+                <ClientAutocomplete
+                  id="client_name"
+                  value={clientName}
+                  onChange={setClientName}
+                  placeholder="Nome da clínica"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="patient_name">Nome do Paciente (Opcional)</Label>
