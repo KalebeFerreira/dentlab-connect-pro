@@ -10,7 +10,7 @@
  import { Badge } from "@/components/ui/badge";
  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
  import { Textarea } from "@/components/ui/textarea";
- import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar } from "lucide-react";
+import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, AlertCircle } from "lucide-react";
  import { format } from "date-fns";
  import { ptBR } from "date-fns/locale";
  import type { Employee } from "./EmployeeManagement";
@@ -25,6 +25,8 @@
    end_date: string | null;
    status: string;
    notes: string | null;
+  value: number | null;
+  deadline: string | null;
    created_at: string;
    updated_at: string;
    employees?: { name: string };
@@ -67,6 +69,8 @@
      end_date: "",
      status: "in_progress",
      notes: "",
+    value: "",
+    deadline: "",
    });
  
    const filteredRecords = workRecords.filter(rec => {
@@ -86,6 +90,8 @@
          end_date: record.end_date || "",
          status: record.status,
          notes: record.notes || "",
+        value: record.value?.toString() || "",
+        deadline: record.deadline || "",
        });
      } else {
        setEditingRecord(null);
@@ -97,6 +103,8 @@
          end_date: "",
          status: "in_progress",
          notes: "",
+        value: "",
+        deadline: "",
        });
      }
      setDialogOpen(true);
@@ -121,6 +129,8 @@
          end_date: formData.end_date || null,
          status: formData.status,
          notes: formData.notes || null,
+      value: formData.value ? parseFloat(formData.value) : null,
+      deadline: formData.deadline || null,
        };
  
        if (editingRecord) {
@@ -174,6 +184,21 @@
      return employees.find(e => e.id === employeeId)?.name || "Desconhecido";
    };
  
+  const isDeadlineClose = (deadline: string | null) => {
+    if (!deadline) return false;
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    const diffDays = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 3;
+  };
+
+  const isDeadlineOverdue = (deadline: string | null, status: string) => {
+    if (!deadline || status === "finished") return false;
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    return deadlineDate < today;
+  };
+
    const activeEmployees = employees.filter(e => e.status === "active");
  
    return (
@@ -234,11 +259,11 @@
                    <Table>
                      <TableHeader>
                        <TableRow>
-                         <TableHead>Funcionário</TableHead>
+                      <TableHead className="max-w-[100px]">Func.</TableHead>
                          <TableHead>Tipo</TableHead>
-                         <TableHead>Código</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Prazo</TableHead>
                          <TableHead>Início</TableHead>
-                         <TableHead>Fim</TableHead>
                          <TableHead>Status</TableHead>
                          <TableHead className="text-right">Ações</TableHead>
                        </TableRow>
@@ -246,18 +271,29 @@
                      <TableBody>
                        {filteredRecords.map(record => (
                          <TableRow key={record.id}>
-                           <TableCell className="font-medium">
+                          <TableCell className="font-medium max-w-[100px] truncate" title={getEmployeeName(record.employee_id)}>
                              {getEmployeeName(record.employee_id)}
                            </TableCell>
                            <TableCell>{getWorkTypeLabel(record.work_type)}</TableCell>
-                           <TableCell>{record.work_code || "-"}</TableCell>
+                          <TableCell>
+                            {record.value ? (
+                              <span className="text-primary font-medium text-sm">
+                                {record.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {record.deadline ? (
+                              <span className={`flex items-center gap-1 text-sm ${isDeadlineOverdue(record.deadline, record.status) ? 'text-destructive font-medium' : isDeadlineClose(record.deadline) ? 'text-orange-500' : ''}`}>
+                                {(isDeadlineOverdue(record.deadline, record.status) || isDeadlineClose(record.deadline)) && (
+                                  <AlertCircle className="h-3 w-3" />
+                                )}
+                                {format(new Date(record.deadline), "dd/MM", { locale: ptBR })}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
                            <TableCell>
                              {format(new Date(record.start_date), "dd/MM/yyyy", { locale: ptBR })}
-                           </TableCell>
-                           <TableCell>
-                             {record.end_date
-                               ? format(new Date(record.end_date), "dd/MM/yyyy", { locale: ptBR })
-                               : "-"}
                            </TableCell>
                            <TableCell>
                              <Badge variant={record.status === "finished" ? "default" : "secondary"}>
@@ -333,6 +369,29 @@
                </div>
              </div>
              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="value">Valor (R$)</Label>
+                <Input
+                  id="value"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.value}
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                  placeholder="0,00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deadline">Prazo de Entrega</Label>
+                <Input
+                  id="deadline"
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
                <div className="space-y-2">
                  <Label htmlFor="start_date">Data de Início *</Label>
                  <Input
