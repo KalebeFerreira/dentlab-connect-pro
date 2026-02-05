@@ -555,6 +555,39 @@ export type Database = {
         }
         Relationships: []
       }
+      employees: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          role: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_scanned_documents: {
         Row: {
           amount: number | null
@@ -1544,6 +1577,56 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_records: {
+        Row: {
+          created_at: string
+          employee_id: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+          work_code: string | null
+          work_type: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          work_code?: string | null
+          work_type: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          work_code?: string | null
+          work_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
