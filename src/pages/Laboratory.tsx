@@ -30,6 +30,8 @@ interface Employee {
   role: string;
   status: string;
   notes: string | null;
+  phone: string | null;
+  email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +46,8 @@ interface WorkRecord {
   end_date: string | null;
   status: string;
   notes: string | null;
+  value: number | null;
+  deadline: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -483,18 +487,21 @@ const Laboratory = () => {
       </div>
 
       <Tabs defaultValue="my-lab" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-xl">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="my-lab" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Meu Laboratório
+            <span className="hidden sm:inline">Meu Lab</span>
+            <span className="sm:hidden">Lab</span>
           </TabsTrigger>
           <TabsTrigger value="production" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Funcionários & Produção
+            <span className="hidden sm:inline">Produção</span>
+            <span className="sm:hidden">Prod.</span>
           </TabsTrigger>
           <TabsTrigger value="available-labs" className="flex items-center gap-2">
             <ListChecks className="h-4 w-4" />
-            Laboratórios Disponíveis
+            <span className="hidden sm:inline">Labs</span>
+            <span className="sm:hidden">Labs</span>
           </TabsTrigger>
         </TabsList>
 
@@ -881,6 +888,7 @@ const Laboratory = () => {
                 workRecords={workRecords}
                 periodFilter={periodFilter}
                 onPeriodChange={setPeriodFilter}
+              labName={labData.lab_name}
               />
             </Suspense>
           </div>

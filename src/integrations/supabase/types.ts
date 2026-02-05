@@ -558,9 +558,11 @@ export type Database = {
       employees: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           name: string
           notes: string | null
+          phone: string | null
           role: string
           status: string
           updated_at: string
@@ -568,9 +570,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           name: string
           notes?: string | null
+          phone?: string | null
           role: string
           status?: string
           updated_at?: string
@@ -578,9 +582,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
           notes?: string | null
+          phone?: string | null
           role?: string
           status?: string
           updated_at?: string
@@ -1584,6 +1590,7 @@ export type Database = {
       work_records: {
         Row: {
           created_at: string
+          deadline: string | null
           employee_id: string
           end_date: string | null
           id: string
@@ -1592,11 +1599,13 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          value: number | null
           work_code: string | null
           work_type: string
         }
         Insert: {
           created_at?: string
+          deadline?: string | null
           employee_id: string
           end_date?: string | null
           id?: string
@@ -1605,11 +1614,13 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          value?: number | null
           work_code?: string | null
           work_type: string
         }
         Update: {
           created_at?: string
+          deadline?: string | null
           employee_id?: string
           end_date?: string | null
           id?: string
@@ -1618,6 +1629,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          value?: number | null
           work_code?: string | null
           work_type?: string
         }

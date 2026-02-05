@@ -10,7 +10,7 @@
  import { Badge } from "@/components/ui/badge";
  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
  import { Textarea } from "@/components/ui/textarea";
- import { Users, Plus, Pencil, Trash2, Filter, UserCheck } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail } from "lucide-react";
  import { format } from "date-fns";
  import { ptBR } from "date-fns/locale";
  
@@ -21,6 +21,8 @@
    role: string;
    status: string;
    notes: string | null;
+  phone: string | null;
+  email: string | null;
    created_at: string;
    updated_at: string;
  }
@@ -54,6 +56,8 @@
      role: "protetico",
      status: "active",
      notes: "",
+    phone: "",
+    email: "",
    });
  
    const filteredEmployees = employees.filter(emp => {
@@ -72,10 +76,12 @@
          role: employee.role,
          status: employee.status,
          notes: employee.notes || "",
+        phone: employee.phone || "",
+        email: employee.email || "",
        });
      } else {
        setEditingEmployee(null);
-       setFormData({ name: "", role: "protetico", status: "active", notes: "" });
+      setFormData({ name: "", role: "protetico", status: "active", notes: "", phone: "", email: "" });
      }
      setDialogOpen(true);
    };
@@ -99,6 +105,8 @@
              role: formData.role,
              status: formData.status,
              notes: formData.notes || null,
+            phone: formData.phone || null,
+            email: formData.email || null,
            })
            .eq("id", editingEmployee.id);
  
@@ -113,6 +121,8 @@
              role: formData.role,
              status: formData.status,
              notes: formData.notes || null,
+            phone: formData.phone || null,
+            email: formData.email || null,
            });
  
          if (error) throw error;
@@ -207,7 +217,8 @@
                <Table>
                  <TableHeader>
                    <TableRow>
-                     <TableHead>Nome</TableHead>
+                      <TableHead className="max-w-[120px]">Nome</TableHead>
+                      <TableHead>Contato</TableHead>
                      <TableHead>Função</TableHead>
                      <TableHead>Status</TableHead>
                      <TableHead>Cadastro</TableHead>
@@ -217,7 +228,24 @@
                  <TableBody>
                    {filteredEmployees.map(employee => (
                      <TableRow key={employee.id}>
-                       <TableCell className="font-medium">{employee.name}</TableCell>
+                        <TableCell className="font-medium max-w-[120px] truncate" title={employee.name}>{employee.name}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            {employee.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3 text-muted-foreground" />
+                                <span className="truncate max-w-[90px]">{employee.phone}</span>
+                              </span>
+                            )}
+                            {employee.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3 text-muted-foreground" />
+                                <span className="truncate max-w-[90px]">{employee.email}</span>
+                              </span>
+                            )}
+                            {!employee.phone && !employee.email && <span className="text-muted-foreground">-</span>}
+                          </div>
+                        </TableCell>
                        <TableCell>{getRoleLabel(employee.role)}</TableCell>
                        <TableCell>
                          <Badge variant={employee.status === "active" ? "default" : "secondary"}>
@@ -269,6 +297,27 @@
                  placeholder="Nome do funcionário"
                />
              </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">WhatsApp</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+            </div>
              <div className="grid grid-cols-2 gap-4">
                <div className="space-y-2">
                  <Label>Função</Label>
