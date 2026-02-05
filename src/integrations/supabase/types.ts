@@ -1589,12 +1589,14 @@ export type Database = {
       }
       work_records: {
         Row: {
+          color: string | null
           created_at: string
           deadline: string | null
           employee_id: string
           end_date: string | null
           id: string
           notes: string | null
+          patient_name: string | null
           start_date: string
           status: string
           updated_at: string
@@ -1604,12 +1606,14 @@ export type Database = {
           work_type: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           deadline?: string | null
           employee_id: string
           end_date?: string | null
           id?: string
           notes?: string | null
+          patient_name?: string | null
           start_date?: string
           status?: string
           updated_at?: string
@@ -1619,12 +1623,14 @@ export type Database = {
           work_type: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           deadline?: string | null
           employee_id?: string
           end_date?: string | null
           id?: string
           notes?: string | null
+          patient_name?: string | null
           start_date?: string
           status?: string
           updated_at?: string
