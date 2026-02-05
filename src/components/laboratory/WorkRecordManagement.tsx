@@ -15,22 +15,24 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
  import { ptBR } from "date-fns/locale";
  import type { Employee } from "./EmployeeManagement";
  
- export interface WorkRecord {
-   id: string;
-   user_id: string;
-   employee_id: string;
-   work_type: string;
-   work_code: string | null;
-   start_date: string;
-   end_date: string | null;
-   status: string;
-   notes: string | null;
-  value: number | null;
-  deadline: string | null;
-   created_at: string;
-   updated_at: string;
-   employees?: { name: string };
- }
+export interface WorkRecord {
+  id: string;
+  user_id: string;
+  employee_id: string;
+  work_type: string;
+  work_code: string | null;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  notes: string | null;
+  value?: number | null;
+  deadline?: string | null;
+  patient_name?: string | null;
+  color?: string | null;
+  created_at: string;
+  updated_at: string;
+  employees?: { name: string };
+}
  
  const WORK_TYPES = [
    { value: "coroa", label: "Coroa" },
@@ -61,17 +63,19 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
    const [filterStatus, setFilterStatus] = useState<string>("todos");
    const [saving, setSaving] = useState(false);
  
-   const [formData, setFormData] = useState({
-     employee_id: "",
-     work_type: "coroa",
-     work_code: "",
-     start_date: format(new Date(), "yyyy-MM-dd"),
-     end_date: "",
-     status: "in_progress",
-     notes: "",
+  const [formData, setFormData] = useState({
+    employee_id: "",
+    work_type: "coroa",
+    work_code: "",
+    start_date: format(new Date(), "yyyy-MM-dd"),
+    end_date: "",
+    status: "in_progress",
+    notes: "",
     value: "",
     deadline: "",
-   });
+    patient_name: "",
+    color: "",
+  });
  
    const filteredRecords = workRecords.filter(rec => {
      const employeeMatch = filterEmployee === "todos" || rec.employee_id === filterEmployee;
@@ -79,36 +83,40 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
      return employeeMatch && statusMatch;
    });
  
-   const handleOpenDialog = (record?: WorkRecord) => {
-     if (record) {
-       setEditingRecord(record);
-       setFormData({
-         employee_id: record.employee_id,
-         work_type: record.work_type,
-         work_code: record.work_code || "",
-         start_date: record.start_date,
-         end_date: record.end_date || "",
-         status: record.status,
-         notes: record.notes || "",
+  const handleOpenDialog = (record?: WorkRecord) => {
+    if (record) {
+      setEditingRecord(record);
+      setFormData({
+        employee_id: record.employee_id,
+        work_type: record.work_type,
+        work_code: record.work_code || "",
+        start_date: record.start_date,
+        end_date: record.end_date || "",
+        status: record.status,
+        notes: record.notes || "",
         value: record.value?.toString() || "",
         deadline: record.deadline || "",
-       });
-     } else {
-       setEditingRecord(null);
-       setFormData({
-         employee_id: employees[0]?.id || "",
-         work_type: "coroa",
-         work_code: "",
-         start_date: format(new Date(), "yyyy-MM-dd"),
-         end_date: "",
-         status: "in_progress",
-         notes: "",
+        patient_name: record.patient_name || "",
+        color: record.color || "",
+      });
+    } else {
+      setEditingRecord(null);
+      setFormData({
+        employee_id: employees[0]?.id || "",
+        work_type: "coroa",
+        work_code: "",
+        start_date: format(new Date(), "yyyy-MM-dd"),
+        end_date: "",
+        status: "in_progress",
+        notes: "",
         value: "",
         deadline: "",
-       });
-     }
-     setDialogOpen(true);
-   };
+        patient_name: "",
+        color: "",
+      });
+    }
+    setDialogOpen(true);
+  };
  
    const handleSave = async () => {
      if (!formData.employee_id) {
@@ -121,17 +129,19 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
        const { data: { user } } = await supabase.auth.getUser();
        if (!user) throw new Error("Usuário não autenticado");
  
-       const payload = {
-         employee_id: formData.employee_id,
-         work_type: formData.work_type,
-         work_code: formData.work_code || null,
-         start_date: formData.start_date,
-         end_date: formData.end_date || null,
-         status: formData.status,
-         notes: formData.notes || null,
-      value: formData.value ? parseFloat(formData.value) : null,
-      deadline: formData.deadline || null,
-       };
+      const payload = {
+        employee_id: formData.employee_id,
+        work_type: formData.work_type,
+        work_code: formData.work_code || null,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        status: formData.status,
+        notes: formData.notes || null,
+        value: formData.value ? parseFloat(formData.value) : null,
+        deadline: formData.deadline || null,
+        patient_name: formData.patient_name || null,
+        color: formData.color || null,
+      };
  
        if (editingRecord) {
          const { error } = await supabase
@@ -256,25 +266,30 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
                  </div>
                ) : (
                  <div className="overflow-x-auto">
-                   <Table>
-                     <TableHeader>
-                       <TableRow>
-                      <TableHead className="max-w-[100px]">Func.</TableHead>
-                         <TableHead>Tipo</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Prazo</TableHead>
-                         <TableHead>Início</TableHead>
-                         <TableHead>Status</TableHead>
-                         <TableHead className="text-right">Ações</TableHead>
-                       </TableRow>
-                     </TableHeader>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="max-w-[80px]">Func.</TableHead>
+                        <TableHead>Paciente</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Cor</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Prazo</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
                      <TableBody>
-                       {filteredRecords.map(record => (
-                         <TableRow key={record.id}>
-                          <TableCell className="font-medium max-w-[100px] truncate" title={getEmployeeName(record.employee_id)}>
-                             {getEmployeeName(record.employee_id)}
-                           </TableCell>
-                           <TableCell>{getWorkTypeLabel(record.work_type)}</TableCell>
+                      {filteredRecords.map(record => (
+                        <TableRow key={record.id}>
+                          <TableCell className="font-medium max-w-[80px] truncate" title={getEmployeeName(record.employee_id)}>
+                            {getEmployeeName(record.employee_id)}
+                          </TableCell>
+                          <TableCell className="max-w-[100px] truncate" title={record.patient_name || ""}>
+                            {record.patient_name || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs">{getWorkTypeLabel(record.work_type)}</TableCell>
+                          <TableCell>{record.color || "-"}</TableCell>
                           <TableCell>
                             {record.value ? (
                               <span className="text-primary font-medium text-sm">
@@ -292,9 +307,6 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
                               </span>
                             ) : "-"}
                           </TableCell>
-                           <TableCell>
-                             {format(new Date(record.start_date), "dd/MM/yyyy", { locale: ptBR })}
-                           </TableCell>
                            <TableCell>
                              <Badge variant={record.status === "finished" ? "default" : "secondary"}>
                                {record.status === "finished" ? "Finalizado" : "Em Andamento"}
@@ -368,7 +380,27 @@ import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, Aler
                  />
                </div>
              </div>
-             <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="patient_name">Nome do Paciente</Label>
+                <Input
+                  id="patient_name"
+                  value={formData.patient_name}
+                  onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
+                  placeholder="Nome do paciente"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="color">Cor do Trabalho</Label>
+                <Input
+                  id="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  placeholder="Ex: A2, B1, Bleach"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="value">Valor (R$)</Label>
                 <Input
