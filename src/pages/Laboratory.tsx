@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare, ListChecks } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, Save, Upload, MapPin, FileText, Trash2, Download, Filter, Eye, FileUp, FolderOpen, Settings, MessageSquare, ListChecks, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,36 @@ import { WhatsAppTemplateManager } from "@/components/WhatsAppTemplateManager";
 import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
 import { EmailSendDialog } from "@/components/EmailSendDialog";
 import { LaboratoryList } from "@/components/LaboratoryList";
+
+// Lazy load production components
+const EmployeeManagement = lazy(() => import("@/components/laboratory/EmployeeManagement").then(m => ({ default: m.EmployeeManagement })));
+const WorkRecordManagement = lazy(() => import("@/components/laboratory/WorkRecordManagement").then(m => ({ default: m.WorkRecordManagement })));
+const ProductionStats = lazy(() => import("@/components/laboratory/ProductionStats").then(m => ({ default: m.ProductionStats })));
+
+interface Employee {
+  id: string;
+  user_id: string;
+  name: string;
+  role: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface WorkRecord {
+  id: string;
+  user_id: string;
+  employee_id: string;
+  work_type: string;
+  work_code: string | null;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface LaboratoryData {
   id?: string;
@@ -84,6 +114,9 @@ const Laboratory = () => {
   const [documentToShare, setDocumentToShare] = useState<Document | null>(null);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [documentToEmail, setDocumentToEmail] = useState<Document | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [workRecords, setWorkRecords] = useState<WorkRecord[]>([]);
+  const [periodFilter, setPeriodFilter] = useState<string>("month");
 
   useEffect(() => {
     checkAuth();
@@ -97,6 +130,8 @@ const Laboratory = () => {
       setUserId(user.id);
       loadLaboratoryInfo();
       loadDocuments();
+      loadEmployees();
+      loadWorkRecords();
     }
   };
 
@@ -154,6 +189,47 @@ const Laboratory = () => {
     } catch (error: any) {
       toast.error("Erro ao carregar documentos", { description: error.message });
     }
+  };
+
+  const loadEmployees = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar funcionários:", error);
+    }
+  };
+
+  const loadWorkRecords = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("work_records")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("start_date", { ascending: false });
+
+      if (error) throw error;
+      setWorkRecords(data || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar trabalhos:", error);
+    }
+  };
+
+  const handleRefreshProduction = () => {
+    loadEmployees();
+    loadWorkRecords();
   };
 
   const handleFilterChange = (category: string) => {
@@ -407,10 +483,14 @@ const Laboratory = () => {
       </div>
 
       <Tabs defaultValue="my-lab" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-xl">
           <TabsTrigger value="my-lab" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Meu Laboratório
+          </TabsTrigger>
+          <TabsTrigger value="production" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Funcionários & Produção
           </TabsTrigger>
           <TabsTrigger value="available-labs" className="flex items-center gap-2">
             <ListChecks className="h-4 w-4" />
@@ -779,6 +859,31 @@ const Laboratory = () => {
 
         <TabsContent value="available-labs" className="mt-6">
           <LaboratoryList />
+        </TabsContent>
+
+        <TabsContent value="production" className="mt-6">
+          <div className="space-y-8">
+            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <EmployeeManagement employees={employees} onRefresh={handleRefreshProduction} />
+            </Suspense>
+            
+            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <WorkRecordManagement 
+                workRecords={workRecords} 
+                employees={employees} 
+                onRefresh={handleRefreshProduction} 
+              />
+            </Suspense>
+            
+            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <ProductionStats 
+                employees={employees} 
+                workRecords={workRecords}
+                periodFilter={periodFilter}
+                onPeriodChange={setPeriodFilter}
+              />
+            </Suspense>
+          </div>
         </TabsContent>
       </Tabs>
 
