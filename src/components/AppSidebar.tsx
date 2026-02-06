@@ -44,6 +44,7 @@ const toolsItems = [
 const dentistMenuItems = [
   { title: "Meus Agendamentos", url: "/dentist", icon: Calendar },
   { title: "Laboratório", url: "/laboratory", icon: Building },
+  { title: "Equipe", url: "/employees", icon: User },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
@@ -54,6 +55,9 @@ export function AppSidebar() {
   const { setOpen } = useSidebar();
   const { role, isDentist } = useUserRole();
   const { signOut } = useAuth();
+
+  // Debug: log user role for troubleshooting visibility issues
+  console.log('[AppSidebar] User role:', role, '| isDentist:', isDentist);
 
   const handleNavClick = () => {
     if (isMobile) {
