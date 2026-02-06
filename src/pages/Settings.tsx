@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -98,14 +99,7 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    try {
-      // Implementar lógica de exclusão de conta
-      toast.info("Entre em contato com o suporte para excluir sua conta");
-    } catch (error) {
-      console.error("Error deleting account:", error);
-    }
-  };
+  // Delete account is now handled by DeleteAccountDialog component
 
   if (loading) {
     return (
@@ -338,30 +332,7 @@ const Settings = () => {
             <CardDescription>Ações irreversíveis para sua conta</CardDescription>
           </CardHeader>
           <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full sm:w-auto">
-                  Excluir Conta
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir Conta Permanentemente?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação é irreversível. Todos os seus dados, pedidos, pacientes e informações serão permanentemente excluídos.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDeleteAccount}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Confirmar Exclusão
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <DeleteAccountDialog />
           </CardContent>
         </Card>
         </TabsContent>
