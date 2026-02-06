@@ -30,6 +30,7 @@ const menuItems = [
   { title: "Agendamentos", url: "/appointments", icon: Calendar },
   { title: "Clínica", url: "/clinic", icon: Stethoscope },
   { title: "Laboratório", url: "/laboratory", icon: Building },
+  { title: "Equipe", url: "/employees", icon: User },
   { title: "Planos", url: "/planos", icon: Crown },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
