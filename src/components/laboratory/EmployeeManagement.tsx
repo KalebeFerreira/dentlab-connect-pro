@@ -184,7 +184,61 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
     return EMPLOYEE_ROLES.find(r => r.value === role)?.label || role;
   };
 
-  const FormContent = () => (
+  // Mobile card view for employees
+  const MobileEmployeeList = () => (
+    <div className="space-y-3">
+      {filteredEmployees.map(employee => (
+        <Card key={employee.id} className="p-3">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">{employee.name}</p>
+              <p className="text-sm text-muted-foreground">{getRoleLabel(employee.role)}</p>
+              <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                {employee.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {employee.phone}
+                  </span>
+                )}
+                {employee.email && (
+                  <span className="flex items-center gap-1 truncate">
+                    <Mail className="h-3 w-3" />
+                    {employee.email}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <Badge variant={employee.status === "active" ? "default" : "secondary"} className="text-xs">
+                {employee.status === "active" ? "Ativo" : "Inativo"}
+              </Badge>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handleOpenDialog(employee)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handleDelete(employee)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+
+  // Conteúdo do formulário extraído para ser usado diretamente
+  const formContent = (
     <div className="space-y-4 py-4">
       <div className="space-y-2">
         <Label htmlFor="name">Nome *</Label>
@@ -255,59 +309,6 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
           rows={3}
         />
       </div>
-    </div>
-  );
-
-  // Mobile card view for employees
-  const MobileEmployeeList = () => (
-    <div className="space-y-3">
-      {filteredEmployees.map(employee => (
-        <Card key={employee.id} className="p-3">
-          <div className="flex justify-between items-start">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{employee.name}</p>
-              <p className="text-sm text-muted-foreground">{getRoleLabel(employee.role)}</p>
-              <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
-                {employee.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    {employee.phone}
-                  </span>
-                )}
-                {employee.email && (
-                  <span className="flex items-center gap-1 truncate">
-                    <Mail className="h-3 w-3" />
-                    {employee.email}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <Badge variant={employee.status === "active" ? "default" : "secondary"} className="text-xs">
-                {employee.status === "active" ? "Ativo" : "Inativo"}
-              </Badge>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleOpenDialog(employee)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleDelete(employee)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      ))}
     </div>
   );
 
@@ -444,7 +445,7 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
               </DrawerTitle>
             </DrawerHeader>
             <div className="px-4 max-h-[60vh] overflow-y-auto">
-              <FormContent />
+              {formContent}
             </div>
             <DrawerFooter className="flex-row gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
@@ -464,7 +465,7 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
                 {editingEmployee ? "Editar Funcionário" : "Novo Funcionário"}
               </DialogTitle>
             </DialogHeader>
-            <FormContent />
+            {formContent}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancelar
