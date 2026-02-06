@@ -870,9 +870,26 @@ const Laboratory = () => {
 
         <TabsContent value="production" className="mt-6">
           <div className="space-y-8">
-            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-              <EmployeeManagement employees={employees} onRefresh={handleRefreshProduction} />
-            </Suspense>
+            {/* Link para página de Equipe */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-8 w-8 text-primary" />
+                    <div>
+                      <h3 className="font-semibold">Gerenciar Equipe</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {employees.length} funcionário(s) cadastrado(s)
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={() => navigate("/employees")} className="w-full sm:w-auto">
+                    <Users className="h-4 w-4 mr-2" />
+                    Ir para Equipe
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
             
             <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
               <WorkRecordManagement 
