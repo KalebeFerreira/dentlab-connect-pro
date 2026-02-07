@@ -1258,6 +1258,50 @@ export type Database = {
         }
         Relationships: []
       }
+      production_goals: {
+        Row: {
+          created_at: string
+          employee_id: string | null
+          goal_type: string
+          id: string
+          is_active: boolean
+          target_quantity: number
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id?: string | null
+          goal_type: string
+          id?: string
+          is_active?: boolean
+          target_quantity?: number
+          target_value?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string | null
+          goal_type?: string
+          id?: string
+          is_active?: boolean
+          target_quantity?: number
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_goals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
