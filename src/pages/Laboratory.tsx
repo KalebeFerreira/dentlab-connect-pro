@@ -22,6 +22,7 @@ import { LaboratoryList } from "@/components/LaboratoryList";
 const EmployeeManagement = lazy(() => import("@/components/laboratory/EmployeeManagement").then(m => ({ default: m.EmployeeManagement })));
 const WorkRecordManagement = lazy(() => import("@/components/laboratory/WorkRecordManagement").then(m => ({ default: m.WorkRecordManagement })));
 const ProductionStats = lazy(() => import("@/components/laboratory/ProductionStats").then(m => ({ default: m.ProductionStats })));
+const ProductionGoals = lazy(() => import("@/components/laboratory/ProductionGoals").then(m => ({ default: m.ProductionGoals })));
 
 interface Employee {
   id: string;
@@ -899,6 +900,14 @@ const Laboratory = () => {
               />
             </Suspense>
             
+            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <ProductionGoals
+                employees={employees}
+                workRecords={workRecords}
+                userId={userId}
+              />
+            </Suspense>
+
             <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
               <ProductionStats 
                 employees={employees} 
