@@ -17,6 +17,7 @@ import { WhatsAppTemplateManager } from "@/components/WhatsAppTemplateManager";
 import { WhatsAppTemplateSelector } from "@/components/WhatsAppTemplateSelector";
 import { EmailSendDialog } from "@/components/EmailSendDialog";
 import { LaboratoryList } from "@/components/LaboratoryList";
+import { useUserRole } from "@/hooks/useUserRole";
 
 // Lazy load production components
 const EmployeeManagement = lazy(() => import("@/components/laboratory/EmployeeManagement").then(m => ({ default: m.EmployeeManagement })));
@@ -93,6 +94,8 @@ const DOCUMENT_CATEGORIES = [
 
 const Laboratory = () => {
   const navigate = useNavigate();
+  const { isClinic, isDentist } = useUserRole();
+  const showAvailableLabs = isClinic || isDentist;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -488,7 +491,7 @@ const Laboratory = () => {
       </div>
 
       <Tabs defaultValue="my-lab" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
+        <TabsList className={`grid w-full max-w-lg ${showAvailableLabs ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="my-lab" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Meu Lab</span>
@@ -499,11 +502,13 @@ const Laboratory = () => {
             <span className="hidden sm:inline">Produção</span>
             <span className="sm:hidden">Prod.</span>
           </TabsTrigger>
-          <TabsTrigger value="available-labs" className="flex items-center gap-2">
-            <ListChecks className="h-4 w-4" />
-            <span className="hidden sm:inline">Labs</span>
-            <span className="sm:hidden">Labs</span>
-          </TabsTrigger>
+          {showAvailableLabs && (
+            <TabsTrigger value="available-labs" className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              <span className="hidden sm:inline">Labs</span>
+              <span className="sm:hidden">Labs</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="my-lab" className="mt-6">
@@ -865,9 +870,11 @@ const Laboratory = () => {
       </div>
         </TabsContent>
 
-        <TabsContent value="available-labs" className="mt-6">
-          <LaboratoryList />
-        </TabsContent>
+        {showAvailableLabs && (
+          <TabsContent value="available-labs" className="mt-6">
+            <LaboratoryList />
+          </TabsContent>
+        )}
 
         <TabsContent value="production" className="mt-6">
           <div className="space-y-8">
