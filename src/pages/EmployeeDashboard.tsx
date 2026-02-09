@@ -11,6 +11,8 @@ import { LogOut, Loader2, Wrench, DollarSign, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmployeeServiceForm } from "@/components/employee/EmployeeServiceForm";
+import { EmployeeProductionExport } from "@/components/employee/EmployeeProductionExport";
+import { EmployeeGoals } from "@/components/employee/EmployeeGoals";
 
 interface WorkRecord {
   id: string;
@@ -176,6 +178,15 @@ export default function EmployeeDashboard() {
         </Card>
       </div>
 
+      {/* Employee Goals */}
+      {employeeInfo && (
+        <EmployeeGoals
+          employeeId={employeeInfo.id}
+          ownerUserId={employeeInfo.user_id}
+          workRecords={workRecords}
+        />
+      )}
+
       <Tabs defaultValue="production" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="production">Minha Produção</TabsTrigger>
@@ -183,6 +194,12 @@ export default function EmployeeDashboard() {
         </TabsList>
 
         <TabsContent value="production" className="space-y-4 mt-4">
+          <div className="flex justify-end">
+            <EmployeeProductionExport
+              workRecords={workRecords}
+              employeeName={employeeInfo?.name || "Funcionário"}
+            />
+          </div>
           {workRecords.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
