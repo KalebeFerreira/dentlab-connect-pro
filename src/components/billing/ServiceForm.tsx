@@ -3,12 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Keyboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { serviceFormSchema } from "@/lib/validationSchemas";
 import { ClientAutocomplete } from "@/components/ClientAutocomplete";
 import { Switch } from "@/components/ui/switch";
+
+const WORK_COLORS = [
+  { value: "A1", label: "A1" }, { value: "A2", label: "A2" },
+  { value: "A3", label: "A3" }, { value: "A3.5", label: "A3.5" },
+  { value: "A4", label: "A4" }, { value: "B1", label: "B1" },
+  { value: "B2", label: "B2" }, { value: "B3", label: "B3" },
+  { value: "B4", label: "B4" }, { value: "C1", label: "C1" },
+  { value: "C2", label: "C2" }, { value: "C3", label: "C3" },
+  { value: "C4", label: "C4" }, { value: "D2", label: "D2" },
+  { value: "D3", label: "D3" }, { value: "D4", label: "D4" },
+  { value: "BL1", label: "BL1" }, { value: "BL2", label: "BL2" },
+  { value: "BL3", label: "BL3" }, { value: "BL4", label: "BL4" },
+];
 
 interface ServiceFormProps {
   onServiceAdd: () => Promise<void>;
@@ -20,6 +34,8 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [clientName, setClientName] = useState("");
   const [clinicName, setClinicName] = useState("");
   const [patientName, setPatientName] = useState("");
+  const [dentistName, setDentistName] = useState("");
+  const [workColor, setWorkColor] = useState("");
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
 
@@ -78,6 +94,8 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
           service_value: numericValue,
           client_name: finalClientName?.trim() || null,
           patient_name: patientName?.trim() || null,
+          dentist_name: dentistName?.trim() || null,
+          color: workColor || null,
           service_date: new Date().toISOString().split("T")[0],
           status: "active",
         },
@@ -91,6 +109,8 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setClientName("");
       setClinicName("");
       setPatientName("");
+      setDentistName("");
+      setWorkColor("");
       await onServiceAdd();
     } catch (error) {
       console.error(error);
@@ -120,29 +140,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="service_name">Serviço Prestado</Label>
-              <Input
-                id="service_name"
-                value={serviceName}
-                onChange={(e) => setServiceName(e.target.value)}
-                placeholder="Descrição do serviço"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="service_value">Valor do Serviço</Label>
-              <Input
-                id="service_value"
-                value={serviceValue}
-                onChange={(e) => handleValueChange(e.target.value)}
-                placeholder="R$ 0,00"
-                required
-              />
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {useManualInput ? (
               <>
                 <div className="space-y-2">
@@ -177,12 +175,60 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="patient_name">Nome do Paciente (Opcional)</Label>
+              <Label htmlFor="service_name">Trabalho Realizado *</Label>
+              <Input
+                id="service_name"
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+                placeholder="Ex: Coroa, Prótese, Faceta..."
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="patient_name">Nome do Paciente</Label>
               <Input
                 id="patient_name"
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
                 placeholder="Nome do paciente"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dentist_name">Nome do Dentista</Label>
+              <Input
+                id="dentist_name"
+                value={dentistName}
+                onChange={(e) => setDentistName(e.target.value)}
+                placeholder="Nome do dentista"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cor do Trabalho</Label>
+              <Select value={workColor} onValueChange={setWorkColor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a cor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {WORK_COLORS.map((color) => (
+                    <SelectItem key={color.value} value={color.value}>
+                      {color.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="service_value">Valor do Serviço *</Label>
+              <Input
+                id="service_value"
+                value={serviceValue}
+                onChange={(e) => handleValueChange(e.target.value)}
+                placeholder="R$ 0,00"
+                required
               />
             </div>
           </div>
