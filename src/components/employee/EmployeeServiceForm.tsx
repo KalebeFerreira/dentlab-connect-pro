@@ -66,23 +66,17 @@ export const EmployeeServiceForm = ({ ownerUserId, employeeName, employeeId, onS
         return;
       }
 
-      // 1. Insert into services (billing sync)
-      const { error: serviceError } = await supabase.from("services").insert([{
+      console.log("[EmployeeServiceForm] Inserting work_record:", {
         user_id: ownerUserId,
-        service_name: serviceName.trim(),
-        service_value: numericValue,
-        client_name: clientName.trim() || null,
-        patient_name: patientName.trim() || null,
-        color: workColor || null,
-        work_type: workType.trim() || null,
-        service_date: startDate,
-        status: "active",
-      }]);
+        employee_id: employeeId,
+        work_type: workType.trim() || serviceName.trim(),
+        start_date: startDate,
+        end_date: endDate || null,
+        value: numericValue,
+      });
 
-      if (serviceError) throw serviceError;
-
-      // 2. Insert into work_records (production tracking - syncs with lab dashboard)
-      const { error: workError } = await supabase.from("work_records").insert([{
+      // 1. Insert into work_records FIRST (production tracking - syncs with lab dashboard)
+      const { data: workData, error: workError } = await supabase.from("work_records").insert([{
         user_id: ownerUserId,
         employee_id: employeeId,
         work_type: workType.trim() || serviceName.trim(),
@@ -93,13 +87,41 @@ export const EmployeeServiceForm = ({ ownerUserId, employeeName, employeeId, onS
         patient_name: patientName.trim() || null,
         color: workColor || null,
         notes: `Dentista: ${dentistName || "-"} | Cliente: ${clientName || "-"} | Registrado por ${employeeName}`,
-      }]);
+      }]).select();
 
-      if (workError) throw workError;
+      console.log("[EmployeeServiceForm] work_records result:", { workData, workError });
 
-      toast.success("Serviço adicionado com sucesso!", {
-        description: `Registrado por ${employeeName}. Dados sincronizados com o laboratório.`,
-      });
+      if (workError) {
+        console.error("[EmployeeServiceForm] work_records insert failed:", workError);
+        throw workError;
+      }
+
+      // 2. Insert into services (billing sync)
+      const { data: serviceData, error: serviceError } = await supabase.from("services").insert([{
+        user_id: ownerUserId,
+        service_name: serviceName.trim(),
+        service_value: numericValue,
+        client_name: clientName.trim() || null,
+        patient_name: patientName.trim() || null,
+        color: workColor || null,
+        work_type: workType.trim() || null,
+        service_date: startDate,
+        status: "active",
+      }]).select();
+
+      console.log("[EmployeeServiceForm] services result:", { serviceData, serviceError });
+
+      if (serviceError) {
+        console.error("[EmployeeServiceForm] services insert failed:", serviceError);
+        // Don't throw - work_records already saved successfully
+        toast.warning("Trabalho registrado, mas houve erro ao sincronizar faturamento", {
+          description: serviceError.message,
+        });
+      } else {
+        toast.success("Serviço adicionado com sucesso!", {
+          description: `Registrado por ${employeeName}. Dados sincronizados com o laboratório.`,
+        });
+      }
 
       // Reset form
       setServiceName("");
@@ -113,7 +135,7 @@ export const EmployeeServiceForm = ({ ownerUserId, employeeName, employeeId, onS
       setEndDate("");
       onServiceAdded?.();
     } catch (error: any) {
-      console.error(error);
+      console.error("[EmployeeServiceForm] Error:", error);
       toast.error("Erro ao adicionar serviço", { description: error.message });
     } finally {
       setLoading(false);
