@@ -58,7 +58,7 @@ serve(async (req) => {
         userId,
         { 
           password,
-          user_metadata: { name: name || employee.name }
+          user_metadata: { name: name || employee.name, role: 'employee' }
         }
       );
       
@@ -68,7 +68,7 @@ serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { name: name || employee.name }
+        user_metadata: { name: name || employee.name, role: 'employee' }
       });
 
       if (signUpError) throw signUpError;
@@ -85,13 +85,20 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Check if role already exists
+    // Remove any non-employee roles (e.g. default 'clinic' from trigger)
+    await supabase
+      .from("user_roles")
+      .delete()
+      .eq('user_id', userId)
+      .neq('role', 'employee');
+
+    // Ensure employee role exists
     const { data: existingRole } = await supabase
       .from("user_roles")
       .select('id')
       .eq('user_id', userId)
       .eq('role', 'employee')
-      .single();
+      .maybeSingle();
 
     if (!existingRole) {
       const { error: roleError } = await supabase
