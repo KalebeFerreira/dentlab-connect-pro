@@ -101,6 +101,10 @@ const Auth = () => {
             navigate("/dentist");
             return;
           }
+          if (roleData?.role === 'employee') {
+            navigate("/employee-dashboard");
+            return;
+          }
         }
 
         // For all other users, go to main dashboard

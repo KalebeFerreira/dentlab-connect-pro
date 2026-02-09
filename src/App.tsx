@@ -39,6 +39,8 @@ const Install = lazy(() => import("./pages/Install"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 const Employees = lazy(() => import("./pages/Employees"));
+const EmployeeLogin = lazy(() => import("./pages/EmployeeLogin"));
+const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
 
 // Lazy load heavy components
 const AppSidebar = lazy(() => import("@/components/AppSidebar").then(m => ({ default: m.AppSidebar })));
@@ -87,6 +89,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/employee-login" element={<Suspense fallback={<PageLoader />}><EmployeeLogin /></Suspense>} />
+              <Route path="/employee-dashboard" element={<ProtectedRoute><Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense></ProtectedRoute>} />
               <Route
                 path="/*"
                 element={

@@ -557,6 +557,8 @@ export type Database = {
       }
       employees: {
         Row: {
+          auth_enabled: boolean | null
+          auth_user_id: string | null
           created_at: string
           email: string | null
           id: string
@@ -569,6 +571,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auth_enabled?: boolean | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -581,6 +585,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auth_enabled?: boolean | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -1699,6 +1705,18 @@ export type Database = {
     }
     Functions: {
       generate_tracking_code: { Args: never; Returns: string }
+      get_employee_id: { Args: { _auth_user_id: string }; Returns: string }
+      get_employee_owner_id: {
+        Args: { _auth_user_id: string }
+        Returns: string
+      }
+      get_employee_record: {
+        Args: { _auth_user_id: string }
+        Returns: {
+          employee_id: string
+          owner_user_id: string
+        }[]
+      }
       get_monthly_image_usage: { Args: { p_user_id: string }; Returns: number }
       get_monthly_pdf_usage: { Args: { p_user_id: string }; Returns: number }
       get_next_document_number: {
@@ -1717,7 +1735,7 @@ export type Database = {
       increment_pdf_usage: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "clinic" | "laboratory" | "dentist"
+      app_role: "admin" | "clinic" | "laboratory" | "dentist" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1845,7 +1863,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "clinic", "laboratory", "dentist"],
+      app_role: ["admin", "clinic", "laboratory", "dentist", "employee"],
     },
   },
 } as const

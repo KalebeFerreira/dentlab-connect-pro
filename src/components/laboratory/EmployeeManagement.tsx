@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail, KeyRound, Loader2 } from "lucide-react";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,6 +26,8 @@ export interface Employee {
   notes: string | null;
   phone: string | null;
   email: string | null;
+  auth_enabled?: boolean;
+  auth_user_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +51,11 @@ interface EmployeeManagementProps {
 
 export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [accessDialogOpen, setAccessDialogOpen] = useState(false);
+  const [selectedEmployeeForAccess, setSelectedEmployeeForAccess] = useState<Employee | null>(null);
+  const [accessEmail, setAccessEmail] = useState("");
+  const [accessPassword, setAccessPassword] = useState("");
+  const [creatingAccess, setCreatingAccess] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [filterRole, setFilterRole] = useState<string>("todos");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
@@ -180,6 +188,50 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
     }
   };
 
+  const handleOpenAccessDialog = (employee: Employee) => {
+    setSelectedEmployeeForAccess(employee);
+    setAccessEmail(employee.email || "");
+    setAccessPassword("");
+    setAccessDialogOpen(true);
+  };
+
+  const handleCreateAccess = async () => {
+    if (!selectedEmployeeForAccess || !accessEmail || !accessPassword) {
+      toast.error("Preencha email e senha");
+      return;
+    }
+    if (accessPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+    setCreatingAccess(true);
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const response = await supabaseClient.functions.invoke("create-employee-access", {
+        body: {
+          employeeId: selectedEmployeeForAccess.id,
+          email: accessEmail,
+          password: accessPassword,
+          name: selectedEmployeeForAccess.name,
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      const result = response.data;
+      if (result.error) throw new Error(result.error);
+
+      toast.success(result.message || "Acesso criado com sucesso!");
+      setAccessDialogOpen(false);
+      onRefresh();
+    } catch (error: any) {
+      toast.error("Erro ao criar acesso", { description: error.message });
+    } finally {
+      setCreatingAccess(false);
+    }
+  };
+
   const getRoleLabel = (role: string) => {
     return EMPLOYEE_ROLES.find(r => r.value === role)?.label || role;
   };
@@ -213,6 +265,22 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
                 {employee.status === "active" ? "Ativo" : "Inativo"}
               </Badge>
               <div className="flex gap-1">
+                {!employee.auth_enabled && employee.email && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleOpenAccessDialog(employee)}
+                    title="Habilitar acesso"
+                  >
+                    <KeyRound className="h-4 w-4 text-primary" />
+                  </Button>
+                )}
+                {employee.auth_enabled && (
+                  <Badge variant="outline" className="text-xs h-8 flex items-center">
+                    <KeyRound className="h-3 w-3 mr-1" /> Acesso
+                  </Badge>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -411,20 +479,37 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
                         {format(new Date(employee.created_at), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenDialog(employee)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(employee)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {!employee.auth_enabled && employee.email && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenAccessDialog(employee)}
+                              title="Habilitar acesso"
+                            >
+                              <KeyRound className="h-4 w-4 text-primary" />
+                            </Button>
+                          )}
+                          {employee.auth_enabled && (
+                            <Badge variant="outline" className="text-xs mr-1">
+                              <KeyRound className="h-3 w-3 mr-1" /> Acesso
+                            </Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(employee)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(employee)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -477,6 +562,65 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Access Dialog */}
+      <Dialog open={accessDialogOpen} onOpenChange={setAccessDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              Habilitar Acesso - {selectedEmployeeForAccess?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Crie um login para o funcionário acessar o portal em <strong>/employee-login</strong>.
+              Ele poderá ver seus trabalhos, valores a receber e adicionar serviços.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="access-email">E-mail do Funcionário *</Label>
+              <Input
+                id="access-email"
+                type="email"
+                value={accessEmail}
+                onChange={(e) => setAccessEmail(e.target.value)}
+                placeholder="email@exemplo.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="access-password">Senha *</Label>
+              <Input
+                id="access-password"
+                type="password"
+                value={accessPassword}
+                onChange={(e) => setAccessPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateAccess} disabled={creatingAccess}>
+              {creatingAccess ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  Criar Acesso
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
