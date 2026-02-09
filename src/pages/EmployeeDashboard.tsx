@@ -6,10 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LogOut, Loader2, Wrench, DollarSign, Plus, TrendingUp } from "lucide-react";
+import { LogOut, Loader2, Wrench, DollarSign, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from "sonner";
 import { EmployeeServiceForm } from "@/components/employee/EmployeeServiceForm";
 
 interface WorkRecord {
@@ -29,7 +28,7 @@ interface EmployeeInfo {
   id: string;
   name: string;
   role: string;
-  user_id: string; // lab owner
+  user_id: string;
 }
 
 export default function EmployeeDashboard() {
@@ -45,7 +44,6 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     if (employeeInfo) {
       fetchWorkRecords();
-      // Realtime subscription
       const channel = supabase
         .channel('employee-work-records')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'work_records' }, () => {
@@ -61,6 +59,7 @@ export default function EmployeeDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/employee-login'); return; }
 
+      // Check if user has employee role
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
@@ -68,20 +67,31 @@ export default function EmployeeDashboard() {
         .eq('role', 'employee')
         .single();
 
-      if (!roles) { navigate('/dashboard'); return; }
+      if (!roles) {
+        // Not an employee - redirect to main dashboard
+        navigate('/dashboard');
+        return;
+      }
 
+      // Get employee record linked to this auth user
       const { data: employees } = await supabase
         .from('employees')
         .select('id, name, role, user_id')
         .eq('auth_user_id', user.id)
         .limit(1);
 
-      if (!employees || employees.length === 0) { navigate('/employee-login'); return; }
+      if (!employees || employees.length === 0) {
+        // Has employee role but no employee record - something is wrong
+        await supabase.auth.signOut();
+        navigate('/employee-login');
+        return;
+      }
 
       setEmployeeInfo(employees[0]);
-      setLoading(false);
     } catch (error) {
       console.error('Error checking employee auth:', error);
+      navigate('/employee-login');
+    } finally {
       setLoading(false);
     }
   };
@@ -126,7 +136,6 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Portal do Funcionário</h1>
@@ -138,7 +147,6 @@ export default function EmployeeDashboard() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -179,7 +187,6 @@ export default function EmployeeDashboard() {
         </Card>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="production" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="production">Minha Produção</TabsTrigger>
@@ -205,6 +212,7 @@ export default function EmployeeDashboard() {
                       <TableRow>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Paciente</TableHead>
+                        <TableHead>Cor</TableHead>
                         <TableHead>Valor</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Data</TableHead>
@@ -215,6 +223,7 @@ export default function EmployeeDashboard() {
                         <TableRow key={record.id}>
                           <TableCell className="font-medium">{record.work_type}</TableCell>
                           <TableCell>{record.patient_name || "-"}</TableCell>
+                          <TableCell>{record.color || "-"}</TableCell>
                           <TableCell>
                             {record.value
                               ? record.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
