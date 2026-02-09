@@ -96,32 +96,9 @@ export const EmployeeServiceForm = ({ ownerUserId, employeeName, employeeId, onS
         throw workError;
       }
 
-      // 2. Insert into services (billing sync)
-      const { data: serviceData, error: serviceError } = await supabase.from("services").insert([{
-        user_id: ownerUserId,
-        service_name: serviceName.trim(),
-        service_value: numericValue,
-        client_name: clientName.trim() || null,
-        patient_name: patientName.trim() || null,
-        color: workColor || null,
-        work_type: workType.trim() || null,
-        service_date: startDate,
-        status: "active",
-      }]).select();
-
-      console.log("[EmployeeServiceForm] services result:", { serviceData, serviceError });
-
-      if (serviceError) {
-        console.error("[EmployeeServiceForm] services insert failed:", serviceError);
-        // Don't throw - work_records already saved successfully
-        toast.warning("Trabalho registrado, mas houve erro ao sincronizar faturamento", {
-          description: serviceError.message,
-        });
-      } else {
-        toast.success("Serviço adicionado com sucesso!", {
-          description: `Registrado por ${employeeName}. Dados sincronizados com o laboratório.`,
-        });
-      }
+      toast.success("Trabalho registrado com sucesso!", {
+        description: `Registrado por ${employeeName}. Dados sincronizados com o laboratório.`,
+      });
 
       // Reset form
       setServiceName("");
