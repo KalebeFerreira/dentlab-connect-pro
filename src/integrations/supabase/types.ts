@@ -1437,6 +1437,7 @@ export type Database = {
           client_name: string | null
           color: string | null
           created_at: string
+          dentist_name: string | null
           id: string
           patient_name: string | null
           service_date: string
@@ -1451,6 +1452,7 @@ export type Database = {
           client_name?: string | null
           color?: string | null
           created_at?: string
+          dentist_name?: string | null
           id?: string
           patient_name?: string | null
           service_date?: string
@@ -1465,6 +1467,7 @@ export type Database = {
           client_name?: string | null
           color?: string | null
           created_at?: string
+          dentist_name?: string | null
           id?: string
           patient_name?: string | null
           service_date?: string
