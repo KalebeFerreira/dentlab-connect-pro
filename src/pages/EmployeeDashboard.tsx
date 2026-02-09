@@ -221,7 +221,8 @@ export default function EmployeeDashboard() {
                         <TableHead>Cor</TableHead>
                         <TableHead>Valor</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Data</TableHead>
+                        <TableHead>Entrada</TableHead>
+                        <TableHead>Finalização</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -239,6 +240,11 @@ export default function EmployeeDashboard() {
                           <TableCell>
                             {format(new Date(record.start_date), "dd/MM/yyyy", { locale: ptBR })}
                           </TableCell>
+                          <TableCell>
+                            {record.end_date
+                              ? format(new Date(record.end_date), "dd/MM/yyyy", { locale: ptBR })
+                              : "-"}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -254,6 +260,8 @@ export default function EmployeeDashboard() {
             <EmployeeServiceForm
               ownerUserId={employeeInfo.user_id}
               employeeName={employeeInfo.name}
+              employeeId={employeeInfo.id}
+              onServiceAdded={fetchWorkRecords}
             />
           )}
         </TabsContent>
