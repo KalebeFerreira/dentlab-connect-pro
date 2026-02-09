@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,63 +34,51 @@ interface EmployeeInfo {
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo | null>(null);
   const [workRecords, setWorkRecords] = useState<WorkRecord[]>([]);
 
   useEffect(() => {
-    checkEmployeeAuth();
-  }, []);
+    if (authLoading) return;
+    if (!user) {
+      navigate('/employee-login');
+      return;
+    }
+    fetchEmployeeInfo();
+  }, [user, authLoading]);
 
   useEffect(() => {
-    if (employeeInfo) {
-      fetchWorkRecords();
-      const channel = supabase
-        .channel('employee-work-records')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'work_records' }, () => {
-          fetchWorkRecords();
-        })
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
+    if (!employeeInfo) return;
+    fetchWorkRecords();
+    const channel = supabase
+      .channel('employee-work-records')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_records' }, () => {
+        fetchWorkRecords();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [employeeInfo]);
 
-  const checkEmployeeAuth = async () => {
+  const fetchEmployeeInfo = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/employee-login'); return; }
-
-      // Check if user has employee role
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'employee')
-        .single();
-
-      if (!roles) {
-        // Not an employee - redirect to main dashboard
-        navigate('/dashboard');
-        return;
-      }
-
       // Get employee record linked to this auth user
       const { data: employees } = await supabase
         .from('employees')
         .select('id, name, role, user_id')
-        .eq('auth_user_id', user.id)
+        .eq('auth_user_id', user!.id)
         .limit(1);
 
       if (!employees || employees.length === 0) {
-        // Has employee role but no employee record - something is wrong
-        await supabase.auth.signOut();
+        // No employee record found - not a valid employee
+        await signOut();
         navigate('/employee-login');
         return;
       }
 
       setEmployeeInfo(employees[0]);
     } catch (error) {
-      console.error('Error checking employee auth:', error);
+      console.error('Error fetching employee info:', error);
       navigate('/employee-login');
     } finally {
       setLoading(false);
@@ -108,7 +97,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/employee-login');
   };
 
@@ -126,7 +115,7 @@ export default function EmployeeDashboard() {
   const pendingValue = workRecords.filter(r => r.status !== 'finished').reduce((sum, r) => sum + (r.value || 0), 0);
   const finishedCount = workRecords.filter(r => r.status === 'finished').length;
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
