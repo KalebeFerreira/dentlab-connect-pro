@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useScannerLimits } from "@/hooks/useScannerLimits";
+import { FreemiumBanner } from "@/components/FreemiumBanner";
 import { 
   Camera, 
   Upload, 
@@ -70,6 +72,7 @@ export const FinancialDocumentScanner = ({
   defaultYear = new Date().getFullYear()
 }: FinancialDocumentScannerProps) => {
   const isMobile = useIsMobile();
+  const scannerLimits = useScannerLimits();
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -256,6 +259,9 @@ export const FinancialDocumentScanner = ({
   };
 
   const processFile = async (fileData: string, fileType: string) => {
+    // Check scanner limits before processing
+    if (!scannerLimits.checkAndWarn()) return;
+    
     setIsScanning(true);
     try {
       if (SUPPORTED_IMAGE_TYPES.includes(fileType)) {
@@ -266,6 +272,7 @@ export const FinancialDocumentScanner = ({
         if (error) throw error;
 
         if (data?.data) {
+          await scannerLimits.incrementUsage();
           setExtractedData({
             ...data.data,
             raw_text: data.raw_text || data.data.raw_text || null
@@ -480,6 +487,9 @@ export const FinancialDocumentScanner = ({
 
   return (
     <>
+      {scannerLimits.limit !== -1 && (
+        <FreemiumBanner feature="scans" currentUsage={scannerLimits.currentUsage} limit={scannerLimits.limit} percentage={scannerLimits.percentage} />
+      )}
       <Card className="w-full">
         <CardHeader className="pb-3">
           <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

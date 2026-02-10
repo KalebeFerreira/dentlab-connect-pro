@@ -12,7 +12,8 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
-  Lock
+  Lock,
+  Scan
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -123,7 +124,8 @@ export const FreemiumUsageDashboard = () => {
     !limits.canCreateOrder || 
     !limits.canCreatePatient || 
     !limits.canGenerateImage ||
-    !limits.canGeneratePdf
+    !limits.canGeneratePdf ||
+    !limits.canUseScan
   );
 
   return (
@@ -175,7 +177,7 @@ export const FreemiumUsageDashboard = () => {
       )}
 
       {/* Usage Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <UsageCard
           title="Pedidos"
           icon={<ShoppingCart className="h-5 w-5" />}
@@ -184,7 +186,7 @@ export const FreemiumUsageDashboard = () => {
           percentage={limits.orders?.percentage || 0}
           unit="por mês"
           description="Ordens de trabalho criadas"
-          isUnlimited={limits.isSubscribed}
+          isUnlimited={limits.orders?.limit === -1}
         />
 
         <UsageCard
@@ -195,7 +197,7 @@ export const FreemiumUsageDashboard = () => {
           percentage={limits.patients?.percentage || 0}
           unit="cadastros"
           description="Pacientes no sistema"
-          isUnlimited={limits.isSubscribed}
+          isUnlimited={limits.patients?.limit === -1}
         />
 
         <UsageCard
@@ -206,7 +208,7 @@ export const FreemiumUsageDashboard = () => {
           percentage={limits.imageGenerations?.percentage || 0}
           unit="por mês"
           description="Imagens geradas com IA"
-          isUnlimited={limits.isSubscribed}
+          isUnlimited={limits.imageGenerations?.limit === -1}
         />
 
         <UsageCard
@@ -217,7 +219,18 @@ export const FreemiumUsageDashboard = () => {
           percentage={limits.pdfGenerations?.percentage || 0}
           unit="por mês"
           description="PDFs gerados no mês"
-          isUnlimited={limits.isSubscribed}
+          isUnlimited={limits.pdfGenerations?.limit === -1}
+        />
+
+        <UsageCard
+          title="Scanner"
+          icon={<Scan className="h-5 w-5" />}
+          current={limits.scanners?.current || 0}
+          limit={limits.scanners?.limit || 15}
+          percentage={limits.scanners?.percentage || 0}
+          unit="por mês"
+          description="Documentos escaneados"
+          isUnlimited={limits.scanners?.limit === -1}
         />
       </div>
 

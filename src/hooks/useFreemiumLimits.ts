@@ -10,12 +10,14 @@ export interface FreemiumLimits {
   pdfGenerations: { current: number; limit: number; percentage: number };
   priceTables: { current: number; limit: number; percentage: number };
   monthlyReports: { current: number; limit: number; percentage: number };
+  scanners: { current: number; limit: number; percentage: number };
   canCreateOrder: boolean;
   canCreatePatient: boolean;
   canGenerateImage: boolean;
   canGeneratePdf: boolean;
   canCreatePriceTable: boolean;
   canGenerateMonthlyReport: boolean;
+  canUseScan: boolean;
   isSubscribed: boolean;
   loading: boolean;
 }
@@ -28,30 +30,34 @@ const PLAN_LIMITS = {
     PDF_GENERATIONS: 30,
     PRICE_TABLES: 1,
     MONTHLY_REPORTS: 3,
+    SCANNERS: 15,
   },
   basic: {
     ORDERS_PER_MONTH: 120,
     PATIENTS: 120,
     IMAGE_GENERATIONS: 70,
     PDF_GENERATIONS: 150,
-    PRICE_TABLES: -1, // unlimited
+    PRICE_TABLES: -1,
     MONTHLY_REPORTS: 40,
+    SCANNERS: 70,
   },
   professional: {
-    ORDERS_PER_MONTH: -1, // unlimited
-    PATIENTS: -1, // unlimited
+    ORDERS_PER_MONTH: -1,
+    PATIENTS: -1,
     IMAGE_GENERATIONS: 140,
     PDF_GENERATIONS: 300,
-    PRICE_TABLES: -1, // unlimited
-    MONTHLY_REPORTS: -1, // unlimited
+    PRICE_TABLES: -1,
+    MONTHLY_REPORTS: -1,
+    SCANNERS: 140,
   },
   premium: {
-    ORDERS_PER_MONTH: -1, // unlimited
-    PATIENTS: -1, // unlimited
-    IMAGE_GENERATIONS: -1, // unlimited
-    PDF_GENERATIONS: -1, // unlimited
-    PRICE_TABLES: -1, // unlimited
-    MONTHLY_REPORTS: -1, // unlimited
+    ORDERS_PER_MONTH: -1,
+    PATIENTS: -1,
+    IMAGE_GENERATIONS: -1,
+    PDF_GENERATIONS: -1,
+    PRICE_TABLES: -1,
+    MONTHLY_REPORTS: -1,
+    SCANNERS: -1,
   },
 };
 
@@ -83,12 +89,14 @@ export const useFreemiumLimits = () => {
           pdfGenerations: { current: 0, limit: -1, percentage: 0 },
           priceTables: { current: 0, limit: -1, percentage: 0 },
           monthlyReports: { current: 0, limit: -1, percentage: 0 },
+          scanners: { current: 0, limit: -1, percentage: 0 },
           canCreateOrder: true,
           canCreatePatient: true,
           canGenerateImage: true,
           canGeneratePdf: true,
           canCreatePriceTable: true,
           canGenerateMonthlyReport: true,
+          canUseScan: true,
           isSubscribed: true,
           loading: false,
         };
@@ -173,6 +181,17 @@ export const useFreemiumLimits = () => {
         .eq('user_id', userId)
         .eq('month', `${currentYear}-${String(currentMonth).padStart(2, '0')}`);
 
+      // Get scanner usage for current month
+      const { data: scannerUsage } = await supabase
+        .from('scanner_usage')
+        .select('count')
+        .eq('user_id', userId)
+        .eq('month', currentMonth)
+        .eq('year', currentYear)
+        .single();
+
+      const scannerCount = scannerUsage?.count || 0;
+
       // Calculate percentages (handle unlimited plans)
       const ordersPercentage = limits.ORDERS_PER_MONTH === -1 ? 0 : ((ordersCount || 0) / limits.ORDERS_PER_MONTH) * 100;
       const patientsPercentage = limits.PATIENTS === -1 ? 0 : ((patientsCount || 0) / limits.PATIENTS) * 100;
@@ -180,6 +199,7 @@ export const useFreemiumLimits = () => {
       const pdfsPercentage = limits.PDF_GENERATIONS === -1 ? 0 : (pdfCount / limits.PDF_GENERATIONS) * 100;
       const priceTablesPercentage = limits.PRICE_TABLES === -1 ? 0 : ((priceTablesCount || 0) / limits.PRICE_TABLES) * 100;
       const monthlyReportsPercentage = limits.MONTHLY_REPORTS === -1 ? 0 : ((monthlyReportsCount || 0) / limits.MONTHLY_REPORTS) * 100;
+      const scannersPercentage = limits.SCANNERS === -1 ? 0 : (scannerCount / limits.SCANNERS) * 100;
 
       return {
         orders: {
@@ -212,12 +232,18 @@ export const useFreemiumLimits = () => {
           limit: limits.MONTHLY_REPORTS,
           percentage: Math.min(monthlyReportsPercentage, 100),
         },
+        scanners: {
+          current: scannerCount,
+          limit: limits.SCANNERS,
+          percentage: Math.min(scannersPercentage, 100),
+        },
         canCreateOrder: limits.ORDERS_PER_MONTH === -1 || (ordersCount || 0) < limits.ORDERS_PER_MONTH,
         canCreatePatient: limits.PATIENTS === -1 || (patientsCount || 0) < limits.PATIENTS,
         canGenerateImage: limits.IMAGE_GENERATIONS === -1 || imageCount < limits.IMAGE_GENERATIONS,
         canGeneratePdf: limits.PDF_GENERATIONS === -1 || pdfCount < limits.PDF_GENERATIONS,
         canCreatePriceTable: limits.PRICE_TABLES === -1 || (priceTablesCount || 0) < limits.PRICE_TABLES,
         canGenerateMonthlyReport: limits.MONTHLY_REPORTS === -1 || (monthlyReportsCount || 0) < limits.MONTHLY_REPORTS,
+        canUseScan: limits.SCANNERS === -1 || scannerCount < limits.SCANNERS,
         isSubscribed,
         loading: false,
       };
