@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Camera, Upload, FileImage } from "lucide-react";
+import { useScannerLimits } from "@/hooks/useScannerLimits";
+import { FreemiumBanner } from "@/components/FreemiumBanner";
 
 interface ScannedItem {
   workType: string;
@@ -20,8 +22,12 @@ export const PriceTableScanner = ({ onItemsScanned }: PriceTableScannerProps) =>
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const scannerLimits = useScannerLimits();
 
   const processImage = async (file: File) => {
+    // Check scanner limits before processing
+    if (!scannerLimits.checkAndWarn()) return;
+    
     setScanning(true);
     
     try {
@@ -43,6 +49,7 @@ export const PriceTableScanner = ({ onItemsScanned }: PriceTableScannerProps) =>
       if (error) throw error;
 
       if (data?.items && data.items.length > 0) {
+        await scannerLimits.incrementUsage();
         onItemsScanned(data.items);
         toast.success(`${data.items.length} item(ns) extraído(s) com sucesso!`);
         setPreview(null);
@@ -80,7 +87,11 @@ export const PriceTableScanner = ({ onItemsScanned }: PriceTableScannerProps) =>
   };
 
   return (
-    <Card>
+    <>
+      {scannerLimits.limit !== -1 && (
+        <FreemiumBanner feature="scans" currentUsage={scannerLimits.currentUsage} limit={scannerLimits.limit} percentage={scannerLimits.percentage} />
+      )}
+      <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <FileImage className="h-5 w-5" />
@@ -160,5 +171,6 @@ export const PriceTableScanner = ({ onItemsScanned }: PriceTableScannerProps) =>
         />
       </CardContent>
     </Card>
+    </>
   );
 };

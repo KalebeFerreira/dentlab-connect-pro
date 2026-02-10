@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useScannerLimits } from "@/hooks/useScannerLimits";
+import { FreemiumBanner } from "@/components/FreemiumBanner";
 import { 
   Camera, 
   Upload, 
@@ -52,6 +54,7 @@ const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
 
 export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScannerProps) => {
   const isMobile = useIsMobile();
+  const scannerLimits = useScannerLimits();
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -267,6 +270,9 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   };
 
   const processFile = async (fileData: string, fileType: string) => {
+    // Check scanner limits before processing
+    if (!scannerLimits.checkAndWarn()) return;
+    
     setIsScanning(true);
     try {
       // Detect if it's an image (check both type and data URL)
@@ -290,6 +296,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         }
 
         if (data?.data) {
+          await scannerLimits.incrementUsage();
           setExtractedData({
             ...data.data,
             raw_text: data.raw_text || data.data.raw_text || null
@@ -569,6 +576,9 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
   return (
     <>
+      {scannerLimits.limit !== -1 && (
+        <FreemiumBanner feature="scans" currentUsage={scannerLimits.currentUsage} limit={scannerLimits.limit} percentage={scannerLimits.percentage} />
+      )}
       <Card className="w-full">
         <CardHeader className="pb-3">
           <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

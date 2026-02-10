@@ -16,6 +16,8 @@ interface NotificationState {
   priceTables90: boolean;
   monthlyReports70: boolean;
   monthlyReports90: boolean;
+  scanners70: boolean;
+  scanners90: boolean;
 }
 
 const STORAGE_KEY = 'freemium-notifications';
@@ -37,34 +39,24 @@ export const useFreemiumNotifications = () => {
           hasShownNotifications.current = JSON.parse(stored);
         } catch {
           hasShownNotifications.current = {
-            orders70: false,
-            orders90: false,
-            patients70: false,
-            patients90: false,
-            images70: false,
-            images90: false,
-            pdfs70: false,
-            pdfs90: false,
-            priceTables70: false,
-            priceTables90: false,
-            monthlyReports70: false,
-            monthlyReports90: false,
+            orders70: false, orders90: false,
+            patients70: false, patients90: false,
+            images70: false, images90: false,
+            pdfs70: false, pdfs90: false,
+            priceTables70: false, priceTables90: false,
+            monthlyReports70: false, monthlyReports90: false,
+            scanners70: false, scanners90: false,
           };
         }
       } else {
         hasShownNotifications.current = {
-          orders70: false,
-          orders90: false,
-          patients70: false,
-          patients90: false,
-          images70: false,
-          images90: false,
-          pdfs70: false,
-          pdfs90: false,
-          priceTables70: false,
-          priceTables90: false,
-          monthlyReports70: false,
-          monthlyReports90: false,
+          orders70: false, orders90: false,
+          patients70: false, patients90: false,
+          images70: false, images90: false,
+          pdfs70: false, pdfs90: false,
+          priceTables70: false, priceTables90: false,
+          monthlyReports70: false, monthlyReports90: false,
+          scanners70: false, scanners90: false,
         };
       }
     }
@@ -213,6 +205,30 @@ export const useFreemiumNotifications = () => {
           duration: 6000,
         });
         newState.monthlyReports70 = true;
+        shouldSave = true;
+      }
+    }
+
+    // Check scanner limit
+    if (limits.scanners && limits.scanners.limit !== -1) {
+      const percentage = limits.scanners.percentage;
+      
+      if (percentage >= 90 && !state.scanners90) {
+        toast({
+          title: "⚠️ Limite Crítico: Scanner",
+          description: `Você usou ${limits.scanners.current} de ${limits.scanners.limit} scans este mês. Faça upgrade!`,
+          variant: "destructive",
+          duration: 8000,
+        });
+        newState.scanners90 = true;
+        shouldSave = true;
+      } else if (percentage >= 70 && percentage < 90 && !state.scanners70) {
+        toast({
+          title: "⚠️ Alerta: Scanner",
+          description: `Você usou ${limits.scanners.current} de ${limits.scanners.limit} scans este mês. Considere fazer upgrade.`,
+          duration: 6000,
+        });
+        newState.scanners70 = true;
         shouldSave = true;
       }
     }
