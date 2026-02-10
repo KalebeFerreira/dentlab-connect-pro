@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmployeeServiceForm } from "@/components/employee/EmployeeServiceForm";
 import { EmployeeProductionExport } from "@/components/employee/EmployeeProductionExport";
-import { EmployeeGoals } from "@/components/employee/EmployeeGoals";
+import { EmployeeGoals, type GoalProgressItem } from "@/components/employee/EmployeeGoals";
+import { EmployeeGoalAlerts } from "@/components/employee/EmployeeGoalAlerts";
+import { EmployeeWorkActions } from "@/components/employee/EmployeeWorkActions";
+import { useGoalNotifications } from "@/hooks/useGoalNotifications";
 
 interface WorkRecord {
   id: string;
@@ -40,6 +43,21 @@ export default function EmployeeDashboard() {
   const [loading, setLoading] = useState(true);
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo | null>(null);
   const [workRecords, setWorkRecords] = useState<WorkRecord[]>([]);
+  const [goalProgress, setGoalProgress] = useState<GoalProgressItem[]>([]);
+
+  const handleProgressChange = useCallback((list: GoalProgressItem[]) => {
+    setGoalProgress(list);
+  }, []);
+
+  // Goal toast notifications
+  useGoalNotifications(goalProgress.map(p => ({
+    goal: p.goal,
+    currentQuantity: p.currentQuantity,
+    currentValue: p.currentValue,
+    quantityPercent: p.quantityPercent,
+    valuePercent: p.valuePercent,
+    employeeName: employeeInfo?.name,
+  })));
 
   useEffect(() => {
     if (authLoading) return;
@@ -180,11 +198,15 @@ export default function EmployeeDashboard() {
 
       {/* Employee Goals */}
       {employeeInfo && (
-        <EmployeeGoals
-          employeeId={employeeInfo.id}
-          ownerUserId={employeeInfo.user_id}
-          workRecords={workRecords}
-        />
+        <>
+          <EmployeeGoalAlerts progressList={goalProgress} />
+          <EmployeeGoals
+            employeeId={employeeInfo.id}
+            ownerUserId={employeeInfo.user_id}
+            workRecords={workRecords}
+            onProgressChange={handleProgressChange}
+          />
+        </>
       )}
 
       <Tabs defaultValue="production" className="w-full">
@@ -223,6 +245,7 @@ export default function EmployeeDashboard() {
                         <TableHead>Status</TableHead>
                         <TableHead>Entrada</TableHead>
                         <TableHead>Finalização</TableHead>
+                        <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -244,6 +267,9 @@ export default function EmployeeDashboard() {
                             {record.end_date
                               ? format(new Date(record.end_date), "dd/MM/yyyy", { locale: ptBR })
                               : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <EmployeeWorkActions record={record} onUpdated={fetchWorkRecords} />
                           </TableCell>
                         </TableRow>
                       ))}
