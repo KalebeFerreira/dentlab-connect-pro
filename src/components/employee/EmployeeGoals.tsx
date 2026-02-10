@@ -30,10 +30,19 @@ interface ProductionGoal {
   employee_id: string | null;
 }
 
+export interface GoalProgressItem {
+  goal: ProductionGoal;
+  currentQuantity: number;
+  currentValue: number;
+  quantityPercent: number;
+  valuePercent: number;
+}
+
 interface EmployeeGoalsProps {
   employeeId: string;
   ownerUserId: string;
   workRecords: WorkRecord[];
+  onProgressChange?: (progressList: GoalProgressItem[]) => void;
 }
 
 const GOAL_TYPE_LABELS: Record<string, string> = {
@@ -42,7 +51,7 @@ const GOAL_TYPE_LABELS: Record<string, string> = {
   annual: "Anual",
 };
 
-export const EmployeeGoals = ({ employeeId, ownerUserId, workRecords }: EmployeeGoalsProps) => {
+export const EmployeeGoals = ({ employeeId, ownerUserId, workRecords, onProgressChange }: EmployeeGoalsProps) => {
   const [goals, setGoals] = useState<ProductionGoal[]>([]);
 
   const fetchGoals = useCallback(async () => {
@@ -102,6 +111,11 @@ export const EmployeeGoals = ({ employeeId, ownerUserId, workRecords }: Employee
       return { goal, currentQuantity, currentValue, quantityPercent, valuePercent };
     });
   }, [goals, workRecords]);
+
+  // Notify parent about progress changes
+  useEffect(() => {
+    onProgressChange?.(progressList);
+  }, [progressList, onProgressChange]);
 
   if (goals.length === 0) return null;
 

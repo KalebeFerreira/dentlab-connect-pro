@@ -1,8 +1,14 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import type { GoalProgress } from "./useProductionGoals";
 
-export const useGoalNotifications = (progressList: GoalProgress[]) => {
+interface GoalProgressInput {
+  goal: { id: string; goal_type: string };
+  quantityPercent: number;
+  valuePercent: number;
+  employeeName?: string;
+}
+
+export const useGoalNotifications = (progressList: GoalProgressInput[]) => {
   const notifiedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -54,7 +60,7 @@ export const useGoalNotifications = (progressList: GoalProgress[]) => {
   }, [progressList]);
 };
 
-function getGoalLabel(p: GoalProgress): string {
+function getGoalLabel(p: GoalProgressInput): string {
   return p.employeeName || "Laboratório";
 }
 
