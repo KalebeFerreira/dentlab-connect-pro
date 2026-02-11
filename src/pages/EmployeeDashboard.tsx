@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LogOut, Loader2, Wrench, DollarSign, TrendingUp } from "lucide-react";
+import { LogOut, Loader2, Wrench, DollarSign, TrendingUp, ScanLine } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmployeeServiceForm } from "@/components/employee/EmployeeServiceForm";
@@ -15,6 +15,7 @@ import { EmployeeProductionExport } from "@/components/employee/EmployeeProducti
 import { EmployeeGoals, type GoalProgressItem } from "@/components/employee/EmployeeGoals";
 import { EmployeeGoalAlerts } from "@/components/employee/EmployeeGoalAlerts";
 import { EmployeeWorkActions } from "@/components/employee/EmployeeWorkActions";
+import { EmployeeDocumentScanner } from "@/components/employee/EmployeeDocumentScanner";
 import { useGoalNotifications } from "@/hooks/useGoalNotifications";
 
 interface WorkRecord {
@@ -210,8 +211,12 @@ export default function EmployeeDashboard() {
       )}
 
       <Tabs defaultValue="production" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="production">Minha Produção</TabsTrigger>
+          <TabsTrigger value="scanner" className="flex items-center gap-1">
+            <ScanLine className="h-4 w-4" />
+            Scanner
+          </TabsTrigger>
           <TabsTrigger value="add-service">Adicionar Serviço</TabsTrigger>
         </TabsList>
 
@@ -278,6 +283,17 @@ export default function EmployeeDashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="scanner" className="mt-4">
+          {employeeInfo && (
+            <EmployeeDocumentScanner
+              ownerUserId={employeeInfo.user_id}
+              employeeId={employeeInfo.id}
+              employeeName={employeeInfo.name}
+              onScanComplete={fetchWorkRecords}
+            />
           )}
         </TabsContent>
 
