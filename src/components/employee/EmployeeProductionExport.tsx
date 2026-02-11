@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Download, FileText, FileSpreadsheet, Image } from "lucide-react";
+import { Download, FileText, FileSpreadsheet, Image, Presentation } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -157,6 +157,53 @@ export const EmployeeProductionExport = ({ workRecords, employeeName }: Employee
     toast.success("Word exportado!");
   };
 
+  const exportToPowerPoint = () => {
+    const slides = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:p="urn:schemas-microsoft-com:office:powerpoint">
+      <head><meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; }
+        .slide { page-break-after: always; padding: 40px; }
+        h1 { color: #333; font-size: 28px; text-align: center; }
+        h2 { color: #555; font-size: 20px; }
+        .stat { font-size: 36px; font-weight: bold; color: #2563eb; text-align: center; margin: 20px 0; }
+        .stat-label { font-size: 14px; color: #666; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11px; }
+        th { background: #f0f0f0; font-weight: bold; }
+      </style></head><body>
+      <div class="slide">
+        <h1>Relatório de Produção</h1>
+        <h2 style="text-align:center">${employeeName}</h2>
+        <p style="text-align:center;color:#666">${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}</p>
+        <div style="display:flex;justify-content:space-around;margin-top:40px;">
+          <div><div class="stat">${workRecords.length}</div><div class="stat-label">Total de Trabalhos</div></div>
+          <div><div class="stat">${finishedCount}</div><div class="stat-label">Finalizados</div></div>
+          <div><div class="stat">${totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div><div class="stat-label">Valor Total</div></div>
+        </div>
+      </div>
+      <div class="slide">
+        <h2>Detalhamento dos Trabalhos</h2>
+        <table><tr><th>Tipo</th><th>Paciente</th><th>Cor</th><th>Valor</th><th>Status</th><th>Data</th></tr>
+        ${workRecords.map(r => `<tr>
+          <td>${r.work_type}</td>
+          <td>${r.patient_name || "-"}</td>
+          <td>${r.color || "-"}</td>
+          <td>${r.value ? r.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}</td>
+          <td>${r.status === "finished" ? "Finalizado" : r.status === "in_progress" ? "Em Andamento" : "Pendente"}</td>
+          <td>${format(new Date(r.start_date), "dd/MM/yyyy")}</td>
+        </tr>`).join("")}
+        </table>
+      </div>
+      </body></html>`;
+    const blob = new Blob([slides], { type: "application/vnd.ms-powerpoint" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `producao-${employeeName.toLowerCase().replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.ppt`;
+    a.click();
+    toast.success("PowerPoint exportado!");
+  };
+
   const exportToImage = async (type: "jpg" | "png") => {
     try {
       setExporting(true);
@@ -197,6 +244,9 @@ export const EmployeeProductionExport = ({ workRecords, employeeName }: Employee
         </DropdownMenuItem>
         <DropdownMenuItem onClick={exportToExcel}>
           <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportToPowerPoint}>
+          <Presentation className="h-4 w-4 mr-2" /> PowerPoint
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => exportToImage("jpg")}>
           <Image className="h-4 w-4 mr-2" /> JPG
