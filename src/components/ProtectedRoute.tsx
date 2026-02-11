@@ -24,8 +24,8 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // If employee tries to access main app routes, redirect to employee dashboard
-  if (role === 'employee' && location.pathname !== '/employee-dashboard') {
+  // Employees can ONLY access the employee dashboard - block all other routes
+  if (role === 'employee' && !location.pathname.startsWith('/employee-dashboard')) {
     return <Navigate to="/employee-dashboard" replace />;
   }
 
