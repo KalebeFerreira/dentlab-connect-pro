@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const SCANNER_LIMITS = {
-  free: 15,
-  basic: 70,
-  professional: 140,
+  free: 30,
+  basic: 100,
+  professional: 200,
   premium: -1, // unlimited
 };
 
