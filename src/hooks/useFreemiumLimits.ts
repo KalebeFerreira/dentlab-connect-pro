@@ -30,7 +30,7 @@ const PLAN_LIMITS = {
     PDF_GENERATIONS: 30,
     PRICE_TABLES: 1,
     MONTHLY_REPORTS: 3,
-    SCANNERS: 15,
+    SCANNERS: 30,
   },
   basic: {
     ORDERS_PER_MONTH: 120,
@@ -39,7 +39,7 @@ const PLAN_LIMITS = {
     PDF_GENERATIONS: 150,
     PRICE_TABLES: -1,
     MONTHLY_REPORTS: 40,
-    SCANNERS: 70,
+    SCANNERS: 100,
   },
   professional: {
     ORDERS_PER_MONTH: -1,
@@ -48,7 +48,7 @@ const PLAN_LIMITS = {
     PDF_GENERATIONS: 300,
     PRICE_TABLES: -1,
     MONTHLY_REPORTS: -1,
-    SCANNERS: 140,
+    SCANNERS: 200,
   },
   premium: {
     ORDERS_PER_MONTH: -1,
