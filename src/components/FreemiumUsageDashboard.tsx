@@ -226,7 +226,7 @@ export const FreemiumUsageDashboard = () => {
           title="Scanner"
           icon={<Scan className="h-5 w-5" />}
           current={limits.scanners?.current || 0}
-          limit={limits.scanners?.limit || 15}
+          limit={limits.scanners?.limit || 30}
           percentage={limits.scanners?.percentage || 0}
           unit="por mês"
           description="Documentos escaneados"
