@@ -1100,9 +1100,11 @@ export type Database = {
           observations: string | null
           os_number: string | null
           patient_name: string
+          quantity: number
           signature_url: string | null
           status: string
           teeth_numbers: string
+          unit_price: number | null
           updated_at: string
           user_id: string
           work_name: string | null
@@ -1122,9 +1124,11 @@ export type Database = {
           observations?: string | null
           os_number?: string | null
           patient_name: string
+          quantity?: number
           signature_url?: string | null
           status?: string
           teeth_numbers: string
+          unit_price?: number | null
           updated_at?: string
           user_id: string
           work_name?: string | null
@@ -1144,9 +1148,11 @@ export type Database = {
           observations?: string | null
           os_number?: string | null
           patient_name?: string
+          quantity?: number
           signature_url?: string | null
           status?: string
           teeth_numbers?: string
+          unit_price?: number | null
           updated_at?: string
           user_id?: string
           work_name?: string | null

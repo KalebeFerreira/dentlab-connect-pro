@@ -34,6 +34,9 @@ const NewOrder = () => {
   const [workType, setWorkType] = useState("");
   const [customWorkType, setCustomWorkType] = useState("");
   const [selectedLaboratoryId, setSelectedLaboratoryId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [unitPrice, setUnitPrice] = useState("");
+  const [totalAmount, setTotalAmount] = useState(0);
   const limits = useFreemiumLimits();
 
   useEffect(() => {
@@ -41,6 +44,11 @@ const NewOrder = () => {
     loadLaboratories();
     loadFavoriteLaboratory();
   }, []);
+
+  useEffect(() => {
+    const price = parseFloat(unitPrice) || 0;
+    setTotalAmount(price * quantity);
+  }, [unitPrice, quantity]);
 
   const checkAuth = async () => {
     try {
@@ -181,9 +189,11 @@ _Enviado automaticamente via DentLab Connect_`;
         custom_color: (formData.get('custom_color') as string) || null,
         teeth_numbers: formData.get('teeth_numbers') as string,
         observations: (formData.get('observations') as string) || null,
-        amount: formData.get('amount') ? parseFloat(formData.get('amount') as string) : null,
+        amount: unitPrice ? parseFloat(unitPrice) * quantity : null,
         delivery_date: (formData.get('delivery_date') as string) || null,
       };
+
+      const finalUnitPrice = parseFloat(unitPrice) || null;
 
       const laboratoryId = selectedLaboratoryId || null;
 
@@ -222,7 +232,9 @@ _Enviado automaticamente via DentLab Connect_`;
         custom_color: validationData.custom_color?.trim() || null,
         teeth_numbers: validationData.teeth_numbers.trim(),
         observations: validationData.observations?.trim() || null,
-        amount: validationData.amount,
+        unit_price: finalUnitPrice,
+        quantity: quantity,
+        amount: finalUnitPrice ? finalUnitPrice * quantity : null,
         delivery_date: validationData.delivery_date,
         laboratory_id: laboratoryId,
         signature_url: signatureUrl,
@@ -450,15 +462,38 @@ _Enviado automaticamente via DentLab Connect_`;
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="amount">Valor (R$)</Label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0,00"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="unit_price">Valor Unitário (R$)</Label>
+                  <Input
+                    id="unit_price"
+                    name="unit_price"
+                    type="number"
+                    step="0.01"
+                    value={unitPrice}
+                    onChange={(e) => setUnitPrice(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantidade</Label>
+                  <Input
+                    id="quantity"
+                    name="quantity"
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Valor Total</Label>
+                  <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm font-semibold">
+                    R$ {totalAmount.toFixed(2)}
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
