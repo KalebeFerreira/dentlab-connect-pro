@@ -461,39 +461,72 @@ _Enviado automaticamente via DentLab Connect_`;
                   />
                 </div>
               </div>
+              {/* Seção de Quantidade e Valor */}
+              <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                  🔢 Quantidade de Trabalhos e Valor
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="unit_price">Valor Unitário (R$)</Label>
+                    <Input
+                      id="unit_price"
+                      name="unit_price"
+                      type="number"
+                      step="0.01"
+                      value={unitPrice}
+                      onChange={(e) => setUnitPrice(e.target.value)}
+                      placeholder="0,00"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="unit_price">Valor Unitário (R$)</Label>
-                  <Input
-                    id="unit_price"
-                    name="unit_price"
-                    type="number"
-                    step="0.01"
-                    value={unitPrice}
-                    onChange={(e) => setUnitPrice(e.target.value)}
-                    placeholder="0,00"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Quantidade de Trabalhos</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      >
+                        -
+                      </Button>
+                      <Input
+                        id="quantity"
+                        name="quantity"
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="text-center font-bold text-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => setQuantity(quantity + 1)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantidade</Label>
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Valor Total</Label>
-                  <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm font-semibold">
-                    R$ {totalAmount.toFixed(2)}
+                  <div className="space-y-2">
+                    <Label>Valor Total</Label>
+                    <div className="flex h-10 w-full items-center justify-center rounded-md border-2 border-primary/30 bg-primary/10 px-3 text-lg font-bold text-primary">
+                      R$ {totalAmount.toFixed(2)}
+                    </div>
                   </div>
                 </div>
+
+                {quantity > 1 && unitPrice && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    {quantity}x R$ {(parseFloat(unitPrice) || 0).toFixed(2)} = <span className="font-semibold text-primary">R$ {totalAmount.toFixed(2)}</span>
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
