@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
-
+import { EditOrderDialog } from "@/components/EditOrderDialog";
 interface Laboratory {
   id: string;
   lab_name: string;
@@ -36,6 +36,8 @@ const Orders = () => {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [selectedLab, setSelectedLab] = useState<string>("all");
+  const [editOrder, setEditOrder] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Realtime subscription para ordens
   useRealtimeSubscription({
@@ -224,7 +226,22 @@ const Orders = () => {
                         </p>
                       )}
                     </div>
-                    <StatusBadge status={order.status} />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditOrder(order);
+                          setEditDialogOpen(true);
+                        }}
+                        title="Editar ordem"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <StatusBadge status={order.status} />
+                    </div>
                   </div>
 
                   <div className="space-y-2 text-sm">
@@ -274,6 +291,13 @@ const Orders = () => {
           </div>
         )}
       </main>
+
+      <EditOrderDialog
+        order={editOrder}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onOrderUpdate={checkAuthAndLoadOrders}
+      />
     </div>
   );
 };
