@@ -255,7 +255,12 @@ const Orders = () => {
                     {order.amount && (
                       <div className="flex items-center text-muted-foreground font-semibold">
                         <span className="mr-2">💰</span>
-                        <span>R$ {order.amount.toFixed(2)}</span>
+                        <span>
+                          {(order as any).quantity > 1 
+                            ? `${(order as any).quantity}x R$ ${((order as any).unit_price || order.amount).toFixed(2)} = R$ ${order.amount.toFixed(2)}`
+                            : `R$ ${order.amount.toFixed(2)}`
+                          }
+                        </span>
                       </div>
                     )}
                     <div className="flex items-center text-muted-foreground pt-2 border-t">

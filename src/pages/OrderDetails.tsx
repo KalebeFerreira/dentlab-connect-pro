@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye, Pencil } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { EditOrderDialog } from "@/components/EditOrderDialog";
 import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
 import { EmailSendDialog } from "@/components/EmailSendDialog";
@@ -35,6 +36,8 @@ interface Order {
   work_type: string;
   custom_color: string | null;
   amount: number | null;
+  unit_price: number | null;
+  quantity: number;
   status: string;
   teeth_numbers: string;
   observations: string | null;
@@ -67,6 +70,7 @@ const OrderDetails = () => {
   const [labInfo, setLabInfo] = useState<any>(null);
   const [sendingOrderWhatsApp, setSendingOrderWhatsApp] = useState(false);
   const [messageHistoryRefresh, setMessageHistoryRefresh] = useState(0);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoadOrder();
@@ -398,6 +402,14 @@ _Enviado via DentLab Connect_`;
             </div>
             <div className="flex items-center gap-2">
               <Button 
+                onClick={() => setEditDialogOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Editar</span>
+              </Button>
+              <Button 
                 onClick={handleSendOrderWhatsApp}
                 variant="outline"
                 size="sm"
@@ -494,7 +506,12 @@ _Enviado via DentLab Connect_`;
               {order.amount && (
                 <div>
                   <p className="text-xs text-muted-foreground">Valor</p>
-                  <p className="text-sm font-medium">R$ {order.amount.toFixed(2)}</p>
+                  <p className="text-sm font-medium">
+                    {(order.quantity || 1) > 1 
+                      ? `${order.quantity}x R$ ${(order.unit_price || order.amount).toFixed(2)} = R$ ${order.amount.toFixed(2)}`
+                      : `R$ ${order.amount.toFixed(2)}`
+                    }
+                  </p>
                 </div>
               )}
 
@@ -674,6 +691,13 @@ _Enviado via DentLab Connect_`;
           </Dialog>
         </>
       )}
+
+      <EditOrderDialog
+        order={order}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onOrderUpdate={checkAuthAndLoadOrder}
+      />
     </div>
   );
 };
