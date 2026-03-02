@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Pencil } from "lucide-react";
 
 interface Order {
   id: string;
@@ -152,7 +153,10 @@ export const EditOrderDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Ordem de Trabalho</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="h-5 w-5 text-primary" />
+            Editar Ordem de Trabalho
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,34 +247,68 @@ export const EditOrderDialog = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit_unit_price">Valor Unitário (R$)</Label>
-              <Input
-                id="edit_unit_price"
-                type="number"
-                step="0.01"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                placeholder="0,00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit_quantity">Quantidade</Label>
-              <Input
-                id="edit_quantity"
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Valor Total</Label>
-              <div className="flex h-9 md:h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm font-semibold">
-                R$ {totalAmount.toFixed(2)}
+          {/* Seção de Quantidade e Valor com destaque */}
+          <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+              🔢 Quantidade de Trabalhos e Valor
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_unit_price">Valor Unitário (R$)</Label>
+                <Input
+                  id="edit_unit_price"
+                  type="number"
+                  step="0.01"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_quantity">Quantidade de Trabalhos</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    id="edit_quantity"
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="text-center font-bold text-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor Total</Label>
+                <div className="flex h-10 w-full items-center justify-center rounded-md border-2 border-primary/30 bg-primary/10 px-3 text-lg font-bold text-primary">
+                  R$ {totalAmount.toFixed(2)}
+                </div>
               </div>
             </div>
+
+            {quantity > 1 && unitPrice && (
+              <p className="text-xs text-muted-foreground text-center">
+                {quantity}x R$ {(parseFloat(unitPrice) || 0).toFixed(2)} = <span className="font-semibold text-primary">R$ {totalAmount.toFixed(2)}</span>
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -293,6 +331,8 @@ export const EditOrderDialog = ({
                   <SelectItem value="pending">Pendente</SelectItem>
                   <SelectItem value="in_production">Em Produção</SelectItem>
                   <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="delivered">Entregue</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
