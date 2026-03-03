@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Pencil } from "lucide-react";
+import { Pencil, RotateCcw } from "lucide-react";
 
 interface Order {
   id: string;
@@ -69,6 +69,7 @@ export const EditOrderDialog = ({
   const [observations, setObservations] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRedo, setIsRedo] = useState(false);
 
   useEffect(() => {
     if (order) {
@@ -93,6 +94,7 @@ export const EditOrderDialog = ({
       setDeliveryDate(order.delivery_date ? order.delivery_date.split("T")[0] : "");
       setObservations(order.observations || "");
       setStatus(order.status);
+      setIsRedo(false);
     }
   }, [order]);
 
@@ -346,6 +348,44 @@ export const EditOrderDialog = ({
               onChange={(e) => setObservations(e.target.value)}
               rows={3}
             />
+          </div>
+
+          {/* Botão Refazer/Correção */}
+          <div className="rounded-lg border-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20 p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+              <RotateCcw className="h-4 w-4" />
+              Refazer / Correção
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Marque esta opção se o trabalho precisa ser refeito ou corrigido. O valor será zerado (R$ 0,00) e ficará registrado no histórico.
+            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant={isRedo ? "default" : "outline"}
+                className={isRedo ? "bg-orange-600 hover:bg-orange-700" : "border-orange-400 text-orange-700 hover:bg-orange-100"}
+                onClick={() => {
+                  setIsRedo(!isRedo);
+                  if (!isRedo) {
+                    setUnitPrice("0");
+                    setQuantity(1);
+                    const redoNote = `[REFAZER/CORREÇÃO - ${new Date().toLocaleDateString("pt-BR")}] `;
+                    if (!observations.includes("[REFAZER/CORREÇÃO")) {
+                      setObservations(redoNote + observations);
+                    }
+                    setStatus("pending");
+                  }
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                {isRedo ? "Marcado como Refazer" : "Marcar como Refazer"}
+              </Button>
+            </div>
+            {isRedo && (
+              <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                ⚠️ O valor será salvo como R$ 0,00 e o status voltará para Pendente.
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
