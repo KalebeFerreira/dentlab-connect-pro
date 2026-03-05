@@ -50,6 +50,8 @@ interface WorkRecord {
   notes: string | null;
   value: number | null;
   deadline: string | null;
+  patient_name: string | null;
+  color: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +131,31 @@ const Laboratory = () => {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Realtime: atualiza trabalhos e despesas quando funcionário registra algo
+  useEffect(() => {
+    if (!userId) return;
+
+    const workChannel = supabase
+      .channel('lab-work-records-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_records' }, () => {
+        loadWorkRecords();
+      })
+      .subscribe();
+
+    const finChannel = supabase
+      .channel('lab-financial-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_transactions' }, () => {
+        // Refresh work records too since expenses are tied to them
+        loadWorkRecords();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(workChannel);
+      supabase.removeChannel(finChannel);
+    };
+  }, [userId]);
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
