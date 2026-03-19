@@ -734,28 +734,67 @@ export const FinancialDocumentScanner = ({
               </div>
             )}
 
+            <Alert className={`border-2 ${
+              extractedData?.transaction_type === 'receipt' 
+                ? 'border-green-500 bg-green-50 dark:bg-green-950/30' 
+                : extractedData?.transaction_type === 'payment'
+                  ? 'border-red-500 bg-red-50 dark:bg-red-950/30'
+                  : 'border-amber-500 bg-amber-50 dark:bg-amber-950/30'
+            }`}>
+              <AlertDescription>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-foreground">
+                      ⚠️ Confira o tipo antes de salvar!
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    A IA sugeriu: <strong>{extractedData?.transaction_type === 'receipt' ? 'RECEITA' : extractedData?.transaction_type === 'payment' ? 'DESPESA' : 'NÃO IDENTIFICADO'}</strong>. 
+                    Se estiver errado, clique no botão correto abaixo.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={extractedData?.transaction_type === 'payment' ? 'default' : 'outline'}
+                      className={`h-12 text-sm font-bold ${
+                        extractedData?.transaction_type === 'payment' 
+                          ? 'bg-red-600 hover:bg-red-700 text-white' 
+                          : 'border-red-300 text-red-700 hover:bg-red-50'
+                      }`}
+                      onClick={() => handleEditField('transaction_type', 'payment')}
+                    >
+                      <TrendingDown className="mr-2 h-5 w-5" />
+                      DESPESA
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={extractedData?.transaction_type === 'receipt' ? 'default' : 'outline'}
+                      className={`h-12 text-sm font-bold ${
+                        extractedData?.transaction_type === 'receipt' 
+                          ? 'bg-green-600 hover:bg-green-700 text-white' 
+                          : 'border-green-300 text-green-700 hover:bg-green-50'
+                      }`}
+                      onClick={() => handleEditField('transaction_type', 'receipt')}
+                    >
+                      <TrendingUp className="mr-2 h-5 w-5" />
+                      RECEITA
+                    </Button>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2 mb-2">
                 <Scan className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Dados Identificados</span>
+                <span className="text-sm font-medium text-primary">Valor Identificado</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 bg-background rounded border">
-                  <span className="text-muted-foreground block">Tipo:</span>
-                  <span className={`font-medium flex items-center gap-1 ${extractedData?.transaction_type === 'receipt' ? 'text-green-600' : 'text-red-600'}`}>
-                    {extractedData?.transaction_type === 'receipt' ? (
-                      <><TrendingUp className="h-3 w-3" /> Receita</>
-                    ) : extractedData?.transaction_type === 'payment' ? (
-                      <><TrendingDown className="h-3 w-3" /> Despesa</>
-                    ) : '—'}
-                  </span>
-                </div>
-                <div className="p-2 bg-background rounded border">
-                  <span className="text-muted-foreground block">Valor:</span>
-                  <span className="font-medium text-green-600">
-                    {extractedData?.amount ? `R$ ${extractedData.amount.toFixed(2)}` : '—'}
-                  </span>
-                </div>
+              <div className="p-2 bg-background rounded border">
+                <span className="text-muted-foreground block text-xs">Valor:</span>
+                <span className="font-medium text-lg">
+                  {extractedData?.amount ? `R$ ${extractedData.amount.toFixed(2)}` : '—'}
+                </span>
               </div>
             </div>
 
@@ -764,31 +803,6 @@ export const FinancialDocumentScanner = ({
             </p>
             
             <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-sm">Tipo de Transação</Label>
-                <Select
-                  value={extractedData?.transaction_type || ''}
-                  onValueChange={(value) => handleEditField('transaction_type', value as 'receipt' | 'payment')}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receipt">
-                      <span className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        Receita
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="payment">
-                      <span className="flex items-center gap-2">
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                        Despesa
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="amount" className="text-sm">Valor (R$)</Label>
