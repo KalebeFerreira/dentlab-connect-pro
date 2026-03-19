@@ -40,6 +40,8 @@ interface ExtractedFinancialData {
   date: string | null;
   category: string | null;
   raw_text?: string | null;
+  confidence?: 'high' | 'medium' | 'low' | null;
+  classification_reason?: string | null;
 }
 
 // Expense categories
