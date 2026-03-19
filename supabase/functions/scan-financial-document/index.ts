@@ -31,33 +31,36 @@ serve(async (req) => {
 
 TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA ou DESPESA.
 
-## CRITÉRIOS DE CLASSIFICAÇÃO:
+## REGRA PRINCIPAL - LEIA COM ATENÇÃO:
+- Se o documento mostra que VOCÊ PAGOU algo (comprou material, pagou conta, pagou fornecedor, fez PIX para alguém, pagou boleto) = É **DESPESA** (payment)
+- Se o documento mostra que VOCÊ RECEBEU dinheiro (cliente pagou você, recebeu por serviço prestado) = É **RECEITA** (receipt)
 
-### RECEITA (transaction_type: "receipt") - Dinheiro ENTRANDO:
-- Cupons fiscais/notas de VENDA de produtos ou serviços
+## CLASSIFICAÇÃO DETALHADA:
+
+### DESPESA (transaction_type: "payment") - Dinheiro SAINDO do caixa:
+- **Comprovantes de PIX/transferência ENVIADA** (você mandou dinheiro para alguém)
+- **Boletos pagos** (SEMPRE é despesa, sem exceção)
+- **Notas fiscais de COMPRA** de materiais, produtos, insumos
+- **Cupons fiscais de lojas/farmácias/fornecedores** (você comprou algo)
+- **Recibos de pagamento EFETUADO** (você pagou alguém)
+- **Contas de consumo** (água, luz, aluguel, internet, telefone)
+- **Faturas de fornecedores**
+- **Comprovantes de depósito/transferência onde VOCÊ é o pagador**
+- Palavras-chave: "Pague a", "Pagamento de", "Compra de", "Débito", "Transferência enviada", "PIX enviado", "Boleto"
+
+### RECEITA (transaction_type: "receipt") - Dinheiro ENTRANDO no caixa:
 - Recibos de pagamento RECEBIDO de clientes/pacientes
-- Comprovantes de PIX/transferência RECEBIDA
-- Notas fiscais onde o laboratório/clínica é o VENDEDOR/PRESTADOR
+- Comprovantes de PIX/transferência RECEBIDA (alguém mandou dinheiro para você)
+- Notas fiscais onde você é o VENDEDOR/PRESTADOR de serviço
 - Ordens de serviço pagas por dentistas/clínicas
-- Documentos com "Recebemos de...", "Valor recebido", "Pagamento confirmado"
-- Faturas de serviços prestados (próteses, trabalhos odontológicos)
+- Palavras-chave: "Recebemos de", "Valor recebido", "Crédito", "Transferência recebida"
 
-### DESPESA (transaction_type: "payment") - Dinheiro SAINDO:
-- Notas fiscais de COMPRA de materiais/produtos
-- Boletos de pagamento (água, luz, aluguel, fornecedores)
-- Comprovantes de PIX/transferência ENVIADA
-- Notas onde o laboratório/clínica é o COMPRADOR/CLIENTE
-- Faturas de fornecedores de materiais odontológicos
-- Contas de consumo (energia, internet, telefone)
-- Recibos de pagamento EFETUADO a terceiros
-- Documentos com "Pague a...", "Pagamento de...", "Compra de..."
-
-## DICAS PARA IDENTIFICAÇÃO:
-1. Verifique QUEM está pagando e QUEM está recebendo
-2. Procure por termos como "venda", "compra", "pagamento", "recebimento"
-3. Identifique se é uma ENTRADA ou SAÍDA de dinheiro para o negócio
-4. Boletos são SEMPRE despesas
-5. Cupons fiscais de lojas/fornecedores são SEMPRE despesas
+## ATENÇÃO ESPECIAL:
+1. **Comprovante de PIX**: Verifique se VOCÊ ENVIOU ou RECEBEU. Se enviou = DESPESA. Se recebeu = RECEITA.
+2. **Boletos**: São SEMPRE DESPESA (você está pagando algo)
+3. **Cupom fiscal de loja**: SEMPRE DESPESA (você comprou algo)
+4. **Nota fiscal**: Verifique se você é COMPRADOR (despesa) ou VENDEDOR (receita)
+5. **Na dúvida entre receita e despesa, classifique como DESPESA** - é mais seguro para o controle financeiro
 
 ## FORMATO DE RESPOSTA (JSON estrito):
 {
@@ -81,7 +84,7 @@ TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA o
 - "taxes": Impostos, taxas, contribuições
 - "other": Outros gastos não classificados
 
-IMPORTANTE: Seja PRECISO na classificação. Se for uma nota de compra de material, é DESPESA. Se for um recibo de serviço prestado, é RECEITA.`;
+REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), classifique OBRIGATORIAMENTE como "payment" (DESPESA). NÃO classifique pagamentos feitos por você como receita.`;
 
     // Usar Lovable AI Gateway com modelo mais capaz
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
