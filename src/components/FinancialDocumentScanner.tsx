@@ -40,6 +40,8 @@ interface ExtractedFinancialData {
   date: string | null;
   category: string | null;
   raw_text?: string | null;
+  confidence?: 'high' | 'medium' | 'low' | null;
+  classification_reason?: string | null;
 }
 
 // Expense categories
@@ -273,12 +275,24 @@ export const FinancialDocumentScanner = ({
 
         if (data?.data) {
           await scannerLimits.incrementUsage();
+          const confidence = data.confidence || 'medium';
+          const isUnsure = confidence !== 'high';
+          
           setExtractedData({
             ...data.data,
-            raw_text: data.raw_text || data.data.raw_text || null
+            // Se a IA não tem certeza, não pré-selecionar o tipo
+            transaction_type: isUnsure ? null : data.data.transaction_type,
+            raw_text: data.raw_text || data.data.raw_text || null,
+            confidence: confidence,
+            classification_reason: data.classification_reason || null,
           });
           setShowConfirmDialog(true);
-          if (data.success) {
+          
+          if (isUnsure) {
+            toast.warning('⚠️ A IA não tem certeza! Escolha se é RECEITA ou DESPESA.', {
+              duration: 5000,
+            });
+          } else if (data.success) {
             toast.success('Dados extraídos com sucesso!');
           } else {
             toast.info('Preencha ou corrija os dados manualmente');
@@ -735,32 +749,59 @@ export const FinancialDocumentScanner = ({
             )}
 
             <Alert className={`border-2 ${
-              extractedData?.transaction_type === 'receipt' 
-                ? 'border-green-500 bg-green-50 dark:bg-green-950/30' 
-                : extractedData?.transaction_type === 'payment'
-                  ? 'border-red-500 bg-red-50 dark:bg-red-950/30'
-                  : 'border-amber-500 bg-amber-50 dark:bg-amber-950/30'
+              !extractedData?.transaction_type
+                ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30'
+                : extractedData?.transaction_type === 'receipt' 
+                  ? 'border-green-500 bg-green-50 dark:bg-green-950/30' 
+                  : 'border-red-500 bg-red-50 dark:bg-red-950/30'
             }`}>
               <AlertDescription>
                 <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-foreground">
-                      ⚠️ Confira o tipo antes de salvar!
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    A IA sugeriu: <strong>{extractedData?.transaction_type === 'receipt' ? 'RECEITA' : extractedData?.transaction_type === 'payment' ? 'DESPESA' : 'NÃO IDENTIFICADO'}</strong>. 
-                    Se estiver errado, clique no botão correto abaixo.
-                  </p>
+                  {!extractedData?.transaction_type ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <HelpCircle className="h-6 w-6 text-amber-600 flex-shrink-0" />
+                        <span className="text-base font-bold text-amber-800 dark:text-amber-200">
+                          🚨 Escolha o tipo da transação!
+                        </span>
+                      </div>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                        A IA não conseguiu identificar com certeza se é receita ou despesa.
+                        {extractedData?.classification_reason && (
+                          <span className="block mt-1 text-xs font-normal italic">
+                            Observação da IA: "{extractedData.classification_reason}"
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-foreground">
+                          Confira o tipo antes de salvar
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        A IA sugeriu: <strong>{extractedData.transaction_type === 'receipt' ? 'RECEITA' : 'DESPESA'}</strong>
+                        {extractedData.confidence && extractedData.confidence !== 'high' && ' (confiança baixa)'}. 
+                        Se estiver errado, clique no botão correto.
+                        {extractedData?.classification_reason && (
+                          <span className="block mt-1 italic">
+                            Motivo: "{extractedData.classification_reason}"
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       type="button"
                       variant={extractedData?.transaction_type === 'payment' ? 'default' : 'outline'}
-                      className={`h-12 text-sm font-bold ${
+                      className={`h-14 text-sm font-bold ${
                         extractedData?.transaction_type === 'payment' 
                           ? 'bg-red-600 hover:bg-red-700 text-white' 
-                          : 'border-red-300 text-red-700 hover:bg-red-50'
+                          : 'border-red-400 text-red-700 hover:bg-red-100 dark:hover:bg-red-950'
                       }`}
                       onClick={() => handleEditField('transaction_type', 'payment')}
                     >
@@ -770,10 +811,10 @@ export const FinancialDocumentScanner = ({
                     <Button
                       type="button"
                       variant={extractedData?.transaction_type === 'receipt' ? 'default' : 'outline'}
-                      className={`h-12 text-sm font-bold ${
+                      className={`h-14 text-sm font-bold ${
                         extractedData?.transaction_type === 'receipt' 
                           ? 'bg-green-600 hover:bg-green-700 text-white' 
-                          : 'border-green-300 text-green-700 hover:bg-green-50'
+                          : 'border-green-400 text-green-700 hover:bg-green-100 dark:hover:bg-green-950'
                       }`}
                       onClick={() => handleEditField('transaction_type', 'receipt')}
                     >
