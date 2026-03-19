@@ -275,12 +275,24 @@ export const FinancialDocumentScanner = ({
 
         if (data?.data) {
           await scannerLimits.incrementUsage();
+          const confidence = data.confidence || 'medium';
+          const isUnsure = confidence !== 'high';
+          
           setExtractedData({
             ...data.data,
-            raw_text: data.raw_text || data.data.raw_text || null
+            // Se a IA não tem certeza, não pré-selecionar o tipo
+            transaction_type: isUnsure ? null : data.data.transaction_type,
+            raw_text: data.raw_text || data.data.raw_text || null,
+            confidence: confidence,
+            classification_reason: data.classification_reason || null,
           });
           setShowConfirmDialog(true);
-          if (data.success) {
+          
+          if (isUnsure) {
+            toast.warning('⚠️ A IA não tem certeza! Escolha se é RECEITA ou DESPESA.', {
+              duration: 5000,
+            });
+          } else if (data.success) {
             toast.success('Dados extraídos com sucesso!');
           } else {
             toast.info('Preencha ou corrija os dados manualmente');
