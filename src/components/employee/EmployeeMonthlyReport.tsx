@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, DollarSign, CheckCircle, Clock, TrendingUp } from "lucide-react";
 import { EmployeeWorkActions } from "./EmployeeWorkActions";
+import { EmployeeMonthlyReportExport } from "./EmployeeMonthlyReportExport";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -90,18 +91,28 @@ export const EmployeeMonthlyReport = ({ workRecords, employeeName, onUpdated }: 
           <CalendarDays className="h-5 w-5" />
           Relatório Mensal
         </h3>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {monthOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <EmployeeMonthlyReportExport
+            records={reportData.records}
+            employeeName={employeeName}
+            monthLabel={reportData.monthLabel}
+            totalValue={reportData.totalValue}
+            finishedCount={reportData.finishedCount}
+            inProgressCount={reportData.inProgressCount}
+          />
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground capitalize">
