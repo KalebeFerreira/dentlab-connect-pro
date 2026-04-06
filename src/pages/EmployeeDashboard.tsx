@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LogOut, Loader2, Wrench, DollarSign, TrendingUp, ScanLine, BarChart3 } from "lucide-react";
+import { LogOut, Loader2, Wrench, DollarSign, TrendingUp, ScanLine, BarChart3, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmployeeServiceForm } from "@/components/employee/EmployeeServiceForm";
@@ -17,6 +17,7 @@ import { EmployeeGoalAlerts } from "@/components/employee/EmployeeGoalAlerts";
 import { EmployeeWorkActions } from "@/components/employee/EmployeeWorkActions";
 import { EmployeeDocumentScanner } from "@/components/employee/EmployeeDocumentScanner";
 import { EmployeeProductionCharts } from "@/components/employee/EmployeeProductionCharts";
+import { EmployeeMonthlyReport } from "@/components/employee/EmployeeMonthlyReport";
 import { useGoalNotifications } from "@/hooks/useGoalNotifications";
 
 interface WorkRecord {
@@ -212,8 +213,12 @@ export default function EmployeeDashboard() {
       )}
 
       <Tabs defaultValue="production" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
-          <TabsTrigger value="production">Minha Produção</TabsTrigger>
+        <TabsList className="grid w-full max-w-2xl grid-cols-5">
+          <TabsTrigger value="production">Produção</TabsTrigger>
+          <TabsTrigger value="monthly-report" className="flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            Relatório
+          </TabsTrigger>
           <TabsTrigger value="charts" className="flex items-center gap-1">
             <BarChart3 className="h-4 w-4" />
             Gráficos
@@ -222,7 +227,7 @@ export default function EmployeeDashboard() {
             <ScanLine className="h-4 w-4" />
             Scanner
           </TabsTrigger>
-          <TabsTrigger value="add-service">Adicionar Serviço</TabsTrigger>
+          <TabsTrigger value="add-service">Adicionar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="production" className="space-y-4 mt-4">
@@ -291,6 +296,13 @@ export default function EmployeeDashboard() {
           )}
         </TabsContent>
 
+
+        <TabsContent value="monthly-report" className="space-y-4 mt-4">
+          <EmployeeMonthlyReport
+            workRecords={workRecords}
+            employeeName={employeeInfo?.name || "Funcionário"}
+          />
+        </TabsContent>
 
         <TabsContent value="charts" className="space-y-4 mt-4">
           <EmployeeProductionCharts workRecords={workRecords} />
