@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, DollarSign, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { EmployeeWorkActions } from "./EmployeeWorkActions";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -23,9 +24,10 @@ interface WorkRecord {
 interface EmployeeMonthlyReportProps {
   workRecords: WorkRecord[];
   employeeName: string;
+  onUpdated: () => void;
 }
 
-export const EmployeeMonthlyReport = ({ workRecords, employeeName }: EmployeeMonthlyReportProps) => {
+export const EmployeeMonthlyReport = ({ workRecords, employeeName, onUpdated }: EmployeeMonthlyReportProps) => {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
@@ -172,6 +174,7 @@ export const EmployeeMonthlyReport = ({ workRecords, employeeName }: EmployeeMon
                     <TableHead>Status</TableHead>
                     <TableHead>Entrada</TableHead>
                     <TableHead>Finalização</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -193,6 +196,9 @@ export const EmployeeMonthlyReport = ({ workRecords, employeeName }: EmployeeMon
                         {record.end_date
                           ? format(new Date(record.end_date), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <EmployeeWorkActions record={record} onUpdated={onUpdated} />
                       </TableCell>
                     </TableRow>
                   ))}
