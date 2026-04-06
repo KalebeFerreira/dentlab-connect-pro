@@ -301,6 +301,7 @@ export default function EmployeeDashboard() {
           <EmployeeMonthlyReport
             workRecords={workRecords}
             employeeName={employeeInfo?.name || "Funcionário"}
+            onUpdated={fetchWorkRecords}
           />
         </TabsContent>
 
