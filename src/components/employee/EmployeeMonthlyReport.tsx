@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, DollarSign, CheckCircle, Clock, TrendingUp } from "lucide-react";
 import { EmployeeWorkActions } from "./EmployeeWorkActions";
 import { EmployeeMonthlyReportExport } from "./EmployeeMonthlyReportExport";
-import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface WorkRecord {
@@ -54,7 +54,7 @@ export const EmployeeMonthlyReport = ({ workRecords, employeeName, onUpdated }: 
 
     // Filter records by start_date within the selected month
     const monthRecords = workRecords.filter((r) => {
-      const recordDate = new Date(r.start_date);
+      const recordDate = parseISO(r.start_date);
       return isWithinInterval(recordDate, { start, end });
     });
 
@@ -201,11 +201,11 @@ export const EmployeeMonthlyReport = ({ workRecords, employeeName, onUpdated }: 
                       </TableCell>
                       <TableCell>{getStatusBadge(record.status)}</TableCell>
                       <TableCell>
-                        {format(new Date(record.start_date), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(parseISO(record.start_date), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell>
                         {record.end_date
-                          ? format(new Date(record.end_date), "dd/MM/yyyy", { locale: ptBR })
+                            ? format(parseISO(record.end_date), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
                       </TableCell>
                       <TableCell>

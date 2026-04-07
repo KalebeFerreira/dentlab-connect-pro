@@ -3,7 +3,7 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
  import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { BarChart3, CheckCircle, Clock, TrendingUp, Users, DollarSign } from "lucide-react";
- import { format, startOfMonth, endOfMonth, isWithinInterval, startOfYear, endOfYear } from "date-fns";
+ import { format, startOfMonth, endOfMonth, isWithinInterval, startOfYear, endOfYear, parseISO } from "date-fns";
  import { ptBR } from "date-fns/locale";
  import type { Employee } from "./EmployeeManagement";
  import type { WorkRecord } from "./WorkRecordManagement";
@@ -42,7 +42,7 @@ export const ProductionStats = ({ employees, workRecords, periodFilter, onPeriod
      }
  
      const filteredRecords = workRecords.filter(record => {
-       const recordDate = new Date(record.start_date);
+        const recordDate = parseISO(record.start_date);
        return isWithinInterval(recordDate, { start: startDate, end: endDate });
      });
  
