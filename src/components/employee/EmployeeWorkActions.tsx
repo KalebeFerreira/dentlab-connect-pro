@@ -42,6 +42,7 @@ export const EmployeeWorkActions = ({ record, onUpdated }: Props) => {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const canManageRecord = record.status !== "finished";
 
   const [workType, setWorkType] = useState(record.work_type);
   const [patientName, setPatientName] = useState(record.patient_name || "");
@@ -50,30 +51,41 @@ export const EmployeeWorkActions = ({ record, onUpdated }: Props) => {
   const [startDate, setStartDate] = useState(record.start_date.split("T")[0]);
   const [endDate, setEndDate] = useState(record.end_date?.split("T")[0] || "");
   const [value, setValue] = useState(
-    record.value ? record.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
+    record.value !== null && record.value !== undefined
+      ? record.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+      : ""
   );
 
   const handleEdit = async () => {
+    if (!canManageRecord) {
+      toast.error("Só é possível alterar trabalhos pendentes ou em andamento.");
+      return;
+    }
+
     setLoading(true);
     try {
       const numericValue = parseFloat(
         value.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()
       );
 
-      const { error } = await supabase
-        .from("work_records")
-        .update({
-          work_type: workType.trim(),
-          patient_name: patientName.trim() || null,
-          color: color || null,
-          status,
-          start_date: startDate,
-          end_date: endDate || null,
-          value: isNaN(numericValue) ? null : numericValue,
-        })
-        .eq("id", record.id);
+      const { data, error } = await supabase.functions.invoke("manage-employee-work-record", {
+        body: {
+          action: "update",
+          recordId: record.id,
+          updates: {
+            work_type: workType.trim(),
+            patient_name: patientName.trim() || null,
+            color: color || null,
+            status,
+            start_date: startDate,
+            end_date: endDate || null,
+            value: isNaN(numericValue) ? null : numericValue,
+          },
+        },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success("Trabalho atualizado!");
       setEditOpen(false);
       onUpdated();
@@ -85,10 +97,22 @@ export const EmployeeWorkActions = ({ record, onUpdated }: Props) => {
   };
 
   const handleDelete = async () => {
+    if (!canManageRecord) {
+      toast.error("Só é possível excluir trabalhos pendentes ou em andamento.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase.from("work_records").delete().eq("id", record.id);
+      const { data, error } = await supabase.functions.invoke("manage-employee-work-record", {
+        body: {
+          action: "delete",
+          recordId: record.id,
+        },
+      });
+
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success("Trabalho excluído!");
       setDeleteOpen(false);
       onUpdated();
@@ -108,10 +132,24 @@ export const EmployeeWorkActions = ({ record, onUpdated }: Props) => {
   return (
     <>
       <div className="flex gap-1">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditOpen(true)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => setEditOpen(true)}
+          disabled={!canManageRecord}
+          title={canManageRecord ? "Editar trabalho" : "Somente pendentes ou em andamento podem ser alterados"}
+        >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteOpen(true)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-destructive"
+          onClick={() => setDeleteOpen(true)}
+          disabled={!canManageRecord}
+          title={canManageRecord ? "Excluir trabalho" : "Somente pendentes ou em andamento podem ser excluídos"}
+        >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>

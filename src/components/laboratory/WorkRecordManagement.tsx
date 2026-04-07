@@ -1,4 +1,4 @@
- import { useState } from "react";
+ import { useMemo, useState } from "react";
  import { supabase } from "@/integrations/supabase/client";
  import { toast } from "sonner";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@
  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
  import { Textarea } from "@/components/ui/textarea";
 import { ClipboardList, Plus, Pencil, Trash2, Filter, Calendar, DollarSign, AlertCircle } from "lucide-react";
- import { format } from "date-fns";
+ import { endOfMonth, format, isWithinInterval, parseISO, startOfMonth } from "date-fns";
  import { ptBR } from "date-fns/locale";
  import type { Employee } from "./EmployeeManagement";
  
@@ -63,6 +63,22 @@ export interface WorkRecord {
    const [filterStatus, setFilterStatus] = useState<string>("todos");
    const [saving, setSaving] = useState(false);
  
+  const currentMonth = format(new Date(), "yyyy-MM");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  const monthOptions = useMemo(() => {
+    const baseDate = new Date();
+
+    return Array.from({ length: 12 }, (_, index) => {
+      const optionDate = new Date(baseDate.getFullYear(), baseDate.getMonth() - index, 1);
+
+      return {
+        value: format(optionDate, "yyyy-MM"),
+        label: format(optionDate, "MMMM 'de' yyyy", { locale: ptBR }),
+      };
+    });
+  }, []);
+
   const [formData, setFormData] = useState({
     employee_id: "",
     work_type: "coroa",
@@ -77,11 +93,22 @@ export interface WorkRecord {
     color: "",
   });
  
-   const filteredRecords = workRecords.filter(rec => {
-     const employeeMatch = filterEmployee === "todos" || rec.employee_id === filterEmployee;
-     const statusMatch = filterStatus === "todos" || rec.status === filterStatus;
-     return employeeMatch && statusMatch;
-   });
+   const filteredRecords = useMemo(() => {
+     const [selectedYear, selectedMonthNumber] = selectedMonth.split("-").map(Number);
+     const periodStart = startOfMonth(new Date(selectedYear, selectedMonthNumber - 1, 1));
+     const periodEnd = endOfMonth(periodStart);
+
+     return workRecords.filter(rec => {
+       const employeeMatch = filterEmployee === "todos" || rec.employee_id === filterEmployee;
+       const statusMatch = filterStatus === "todos" || rec.status === filterStatus;
+       const monthMatch = isWithinInterval(parseISO(rec.start_date), {
+         start: periodStart,
+         end: periodEnd,
+       });
+
+       return employeeMatch && statusMatch && monthMatch;
+     });
+   }, [filterEmployee, filterStatus, selectedMonth, workRecords]);
  
   const handleOpenDialog = (record?: WorkRecord) => {
     if (record) {
@@ -90,12 +117,12 @@ export interface WorkRecord {
         employee_id: record.employee_id,
         work_type: record.work_type,
         work_code: record.work_code || "",
-        start_date: record.start_date,
-        end_date: record.end_date || "",
+         start_date: record.start_date.split("T")[0],
+         end_date: record.end_date?.split("T")[0] || "",
         status: record.status,
         notes: record.notes || "",
         value: record.value?.toString() || "",
-        deadline: record.deadline || "",
+         deadline: record.deadline?.split("T")[0] || "",
         patient_name: record.patient_name || "",
         color: record.color || "",
       });
@@ -196,7 +223,7 @@ export interface WorkRecord {
  
   const isDeadlineClose = (deadline: string | null) => {
     if (!deadline) return false;
-    const deadlineDate = new Date(deadline);
+     const deadlineDate = parseISO(deadline);
     const today = new Date();
     const diffDays = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays >= 0 && diffDays <= 3;
@@ -204,7 +231,7 @@ export interface WorkRecord {
 
   const isDeadlineOverdue = (deadline: string | null, status: string) => {
     if (!deadline || status === "finished") return false;
-    const deadlineDate = new Date(deadline);
+     const deadlineDate = parseISO(deadline);
     const today = new Date();
     return deadlineDate < today;
   };
@@ -231,7 +258,22 @@ export interface WorkRecord {
              </div>
            ) : (
              <>
-               <div className="flex flex-wrap gap-3 mb-4">
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger className="w-[190px]">
+                        <SelectValue placeholder="Mês" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthOptions.map((month) => (
+                          <SelectItem key={month.value} value={month.value} className="capitalize">
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                  <div className="flex items-center gap-2">
                    <Filter className="h-4 w-4 text-muted-foreground" />
                    <Select value={filterEmployee} onValueChange={setFilterEmployee}>
@@ -260,9 +302,13 @@ export interface WorkRecord {
                  </Select>
                </div>
  
-               {filteredRecords.length === 0 ? (
+                <p className="text-sm text-muted-foreground capitalize mb-4">
+                  Mostrando trabalhos de {monthOptions.find((month) => month.value === selectedMonth)?.label || selectedMonth}
+                </p>
+
+                {filteredRecords.length === 0 ? (
                  <div className="text-center py-8 text-muted-foreground">
-                   Nenhum trabalho encontrado
+                    Nenhum trabalho encontrado no mês selecionado
                  </div>
                ) : (
                  <div className="overflow-x-auto">
@@ -303,7 +349,7 @@ export interface WorkRecord {
                                 {(isDeadlineOverdue(record.deadline, record.status) || isDeadlineClose(record.deadline)) && (
                                   <AlertCircle className="h-3 w-3" />
                                 )}
-                                {format(new Date(record.deadline), "dd/MM", { locale: ptBR })}
+                                 {format(parseISO(record.deadline), "dd/MM", { locale: ptBR })}
                               </span>
                             ) : "-"}
                           </TableCell>
