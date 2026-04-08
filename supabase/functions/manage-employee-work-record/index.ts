@@ -154,12 +154,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (record.status === "finished") {
-      return new Response(JSON.stringify({ error: "Trabalhos finalizados não podem ser alterados aqui" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Allow editing/deleting any record regardless of status
 
     if (action === "delete") {
       const { error: deleteRecordError } = await adminClient
