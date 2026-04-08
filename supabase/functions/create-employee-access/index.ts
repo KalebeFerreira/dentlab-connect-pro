@@ -54,6 +54,35 @@ serve(async (req) => {
       isExistingUser = true;
       userId = existingUser.id;
       
+      // SECURITY: Only allow linking if the existing user is already an employee of THIS owner
+      // or has no employee record yet
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('user_id')
+        .eq('auth_user_id', existingUser.id)
+        .maybeSingle();
+
+      if (existingEmployee && existingEmployee.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Este email já está vinculado a outro laboratório' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Also check if this user has non-employee roles (e.g. clinic owner) - prevent takeover
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', existingUser.id);
+
+      const hasProtectedRole = userRoles?.some(r => r.role === 'clinic' || r.role === 'laboratory' || r.role === 'admin');
+      if (hasProtectedRole && !existingEmployee) {
+        return new Response(
+          JSON.stringify({ error: 'Este email já está registrado como outro tipo de usuário' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { error: updatePasswordError } = await supabase.auth.admin.updateUserById(
         userId,
         { 
