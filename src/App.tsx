@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
+import { SupportChatWidget } from "@/components/SupportChatWidget";
 
 // Eager load critical pages
 import Index from "./pages/Index";
