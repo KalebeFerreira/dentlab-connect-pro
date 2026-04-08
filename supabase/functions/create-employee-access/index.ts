@@ -150,8 +150,12 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error:', error);
+    let message = error.message;
+    if (error.code === 'weak_password' || error.name === 'AuthWeakPasswordError') {
+      message = 'Senha fraca: use pelo menos 8 caracteres com letras maiúsculas, minúsculas e números.';
+    }
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
