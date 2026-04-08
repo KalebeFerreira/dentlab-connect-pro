@@ -42,7 +42,7 @@ export const EmployeeWorkActions = ({ record, onUpdated }: Props) => {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const canManageRecord = record.status !== "finished";
+  const canManageRecord = true;
 
   const [workType, setWorkType] = useState(record.work_type);
   const [patientName, setPatientName] = useState(record.patient_name || "");

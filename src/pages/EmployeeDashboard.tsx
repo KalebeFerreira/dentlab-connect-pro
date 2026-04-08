@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LogOut, Loader2, Wrench, DollarSign, TrendingUp, ScanLine, BarChart3, CalendarDays } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmployeeServiceForm } from "@/components/employee/EmployeeServiceForm";
 import { EmployeeProductionExport } from "@/components/employee/EmployeeProductionExport";
@@ -134,9 +134,21 @@ export default function EmployeeDashboard() {
     return <Badge variant={s.variant}>{s.label}</Badge>;
   };
 
-  const totalValue = workRecords.reduce((sum, r) => sum + (r.value || 0), 0);
-  const pendingValue = workRecords.filter(r => r.status !== 'finished').reduce((sum, r) => sum + (r.value || 0), 0);
-  const finishedCount = workRecords.filter(r => r.status === 'finished').length;
+  // Filter records for current month only
+  const currentMonthRecords = useMemo(() => {
+    const now = new Date();
+    const start = startOfMonth(now);
+    const end = endOfMonth(now);
+    return workRecords.filter((r) => {
+      const recordDate = parseISO(r.start_date);
+      return isWithinInterval(recordDate, { start, end });
+    });
+  }, [workRecords]);
+
+  const totalValue = currentMonthRecords.reduce((sum, r) => sum + (r.value || 0), 0);
+  const pendingValue = currentMonthRecords.filter(r => r.status !== 'finished').reduce((sum, r) => sum + (r.value || 0), 0);
+  const finishedCount = currentMonthRecords.filter(r => r.status === 'finished').length;
+  const currentMonthLabel = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
 
   if (authLoading || loading) {
     return (
@@ -159,13 +171,15 @@ export default function EmployeeDashboard() {
         </Button>
       </div>
 
+      <p className="text-sm text-muted-foreground capitalize">📅 Mês atual: {currentMonthLabel}</p>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <Wrench className="h-8 w-8 text-primary" />
               <div>
-                <p className="text-sm text-muted-foreground">Trabalhos Finalizados</p>
+                <p className="text-sm text-muted-foreground">Finalizados (mês)</p>
                 <p className="text-2xl font-bold">{finishedCount}</p>
               </div>
             </div>
@@ -176,7 +190,7 @@ export default function EmployeeDashboard() {
             <div className="flex items-center gap-3">
               <DollarSign className="h-8 w-8 text-primary" />
               <div>
-                <p className="text-sm text-muted-foreground">Total a Receber</p>
+                <p className="text-sm text-muted-foreground">Total do Mês</p>
                 <p className="text-2xl font-bold">
                   {totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </p>
@@ -189,7 +203,7 @@ export default function EmployeeDashboard() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-8 w-8 text-accent-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Pendente</p>
+                <p className="text-sm text-muted-foreground">Pendente (mês)</p>
                 <p className="text-2xl font-bold">
                   {pendingValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </p>
@@ -233,11 +247,11 @@ export default function EmployeeDashboard() {
         <TabsContent value="production" className="space-y-4 mt-4">
           <div className="flex justify-end">
             <EmployeeProductionExport
-              workRecords={workRecords}
+              workRecords={currentMonthRecords}
               employeeName={employeeInfo?.name || "Funcionário"}
             />
           </div>
-          {workRecords.length === 0 ? (
+          {currentMonthRecords.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 Nenhum trabalho registrado ainda.
@@ -264,7 +278,7 @@ export default function EmployeeDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {workRecords.map((record) => (
+                      {currentMonthRecords.map((record) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-medium">{record.work_type}</TableCell>
                           <TableCell>{record.patient_name || "-"}</TableCell>
