@@ -200,8 +200,12 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
       toast.error("Preencha email e senha");
       return;
     }
-    if (accessPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+    if (accessPassword.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+    if (!/[a-z]/.test(accessPassword) || !/[A-Z]/.test(accessPassword) || !/[0-9]/.test(accessPassword)) {
+      toast.error("A senha deve conter letras maiúsculas, minúsculas e números");
       return;
     }
     setCreatingAccess(true);
