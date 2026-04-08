@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircleQuestion, X, Send, Loader2, Trash2 } from 'lucide-react';
+import { MessageCircleQuestion, X, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,23 +11,43 @@ interface ChatMessage {
   content: string;
 }
 
-const WELCOME_MESSAGE: ChatMessage = {
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Bom dia';
+  if (hour >= 12 && hour < 18) return 'Boa tarde';
+  return 'Boa noite';
+};
+
+const getWelcomeMessage = (): ChatMessage => ({
   id: 'welcome',
   role: 'assistant',
-  content: '👋 Olá! Sou o atendente de suporte do DentLab Connect. Pergunte qualquer coisa sobre o sistema que eu te ajudo!',
-};
+  content: `👋 ${getGreeting()}! Sou o atendente de suporte do DentLab Connect. Estou aqui pra te ajudar com qualquer dúvida sobre o sistema. É só perguntar! 😊`,
+});
+
+// Typing indicator component
+const TypingIndicator = () => (
+  <div className="flex justify-start">
+    <div className="bg-muted rounded-xl px-4 py-3 rounded-bl-sm flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground mr-1">Digitando</span>
+      <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:0ms]" />
+      <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:150ms]" />
+      <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:300ms]" />
+    </div>
+  </div>
+);
 
 export const SupportChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>([getWelcomeMessage()]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
@@ -41,16 +61,24 @@ export const SupportChatWidget = () => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+    setIsTyping(true);
 
     try {
       const history = messages.filter(m => m.id !== 'welcome').map(m => ({ role: m.role, content: m.content }));
 
-      const { data, error } = await supabase.functions.invoke('support-chat', {
-        body: { message: text, conversationHistory: history },
-      });
+      // Fetch response and enforce minimum "typing" delay in parallel
+      const [result] = await Promise.all([
+        supabase.functions.invoke('support-chat', {
+          body: { message: text, conversationHistory: history },
+        }),
+        new Promise(resolve => setTimeout(resolve, 1500)), // min 1.5s typing
+      ]);
 
+      const { data, error } = result;
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
+
+      setIsTyping(false);
 
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
@@ -58,12 +86,13 @@ export const SupportChatWidget = () => {
         content: data.response,
       }]);
     } catch (err) {
+      setIsTyping(false);
       const msg = err instanceof Error ? err.message : 'Erro ao processar';
       toast.error(msg);
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: '❌ Desculpe, não consegui responder agora. Tente novamente.',
+        content: '😔 Desculpe, tive um probleminha aqui. Pode tentar de novo, por favor?',
       }]);
     } finally {
       setIsLoading(false);
@@ -78,7 +107,7 @@ export const SupportChatWidget = () => {
   };
 
   const clearChat = () => {
-    setMessages([WELCOME_MESSAGE]);
+    setMessages([getWelcomeMessage()]);
   };
 
   if (!isOpen) {
@@ -98,8 +127,14 @@ export const SupportChatWidget = () => {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground rounded-t-2xl">
         <div className="flex items-center gap-2">
-          <MessageCircleQuestion className="w-5 h-5" />
-          <span className="font-semibold text-sm">Suporte DentLab</span>
+          <div className="relative">
+            <MessageCircleQuestion className="w-5 h-5" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary" />
+          </div>
+          <div>
+            <span className="font-semibold text-sm block leading-tight">Suporte DentLab</span>
+            <span className="text-[10px] opacity-80">Online agora</span>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={clearChat} className="p-1.5 rounded-full hover:bg-primary-foreground/20 transition-colors" title="Limpar conversa">
@@ -130,13 +165,7 @@ export const SupportChatWidget = () => {
             </div>
           </div>
         ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-muted rounded-xl px-3 py-2 rounded-bl-sm">
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            </div>
-          </div>
-        )}
+        {isTyping && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
