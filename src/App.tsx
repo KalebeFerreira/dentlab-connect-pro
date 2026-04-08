@@ -146,6 +146,7 @@ const App = () => (
                 }
               />
             </Routes>
+            <SupportChatWidget />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
