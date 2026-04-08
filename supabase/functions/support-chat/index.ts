@@ -172,7 +172,7 @@ serve(async (req) => {
         model: 'google/gemini-3-flash-preview',
         messages,
         temperature: 0.5,
-        max_tokens: 1500,
+        max_tokens: 500,
       }),
     });
 
