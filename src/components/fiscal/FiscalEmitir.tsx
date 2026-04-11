@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, FileText } from "lucide-react";
+import { useInvoiceLimits } from "@/hooks/useInvoiceLimits";
+import { Loader2, FileText, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FiscalEmitirProps {
   onSuccess?: () => void;
@@ -22,6 +24,7 @@ interface FiscalEmitirProps {
 
 export function FiscalEmitir({ onSuccess, defaultValues }: FiscalEmitirProps) {
   const [loading, setLoading] = useState(false);
+  const { usage, limit, remaining, canEmit, isUnlimited, refreshUsage } = useInvoiceLimits();
   const [form, setForm] = useState({
     cliente_nome: defaultValues?.cliente_nome || "",
     cliente_documento: defaultValues?.cliente_documento || "",
@@ -30,6 +33,13 @@ export function FiscalEmitir({ onSuccess, defaultValues }: FiscalEmitirProps) {
   });
 
   const handleEmitir = async () => {
+    if (!canEmit) {
+      toast.error("Limite de notas fiscais atingido neste mês", {
+        description: "Faça upgrade do seu plano para emitir mais notas.",
+      });
+      return;
+    }
+
     if (!form.cliente_nome || !form.cliente_documento || !form.descricao_servico || !form.valor) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -66,6 +76,7 @@ export function FiscalEmitir({ onSuccess, defaultValues }: FiscalEmitirProps) {
       });
 
       setForm({ cliente_nome: "", cliente_documento: "", descricao_servico: "", valor: "" });
+      refreshUsage();
       onSuccess?.();
     } catch (err: any) {
       console.error("Erro ao emitir nota:", err);
@@ -86,9 +97,22 @@ export function FiscalEmitir({ onSuccess, defaultValues }: FiscalEmitirProps) {
           <FileText className="h-5 w-5" />
           Emitir NFS-e
         </CardTitle>
-        <CardDescription>Preencha os dados do cliente e serviço</CardDescription>
+        <CardDescription>
+          {isUnlimited
+            ? "Notas ilimitadas no seu plano"
+            : `${usage}/${limit} notas emitidas este mês — ${remaining} restante(s)`}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!canEmit && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Você atingiu o limite de {limit} notas fiscais neste mês. Faça upgrade para emitir mais.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nome do Cliente *</Label>
@@ -111,7 +135,7 @@ export function FiscalEmitir({ onSuccess, defaultValues }: FiscalEmitirProps) {
         </div>
 
         <div className="flex justify-end pt-2">
-          <Button onClick={handleEmitir} disabled={loading}>
+          <Button onClick={handleEmitir} disabled={loading || !canEmit}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
             Emitir Nota Fiscal
           </Button>
