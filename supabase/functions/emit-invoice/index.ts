@@ -52,6 +52,26 @@ Deno.serve(async (req) => {
     if (fiscalError || !fiscalSettings) {
       return new Response(JSON.stringify({ error: 'Configure seus dados fiscais antes de emitir notas' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    // Verificar limite de uso via admin client
+    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    
+    // Buscar plano do usuário
+    const { data: subData } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('plan_name, status, current_period_end')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const isActive = subData && (subData.status === 'active' || subData.status === 'trialing' || (subData.status === 'canceled' && new Date(subData.current_period_end) > new Date()));
+    const planKey = isActive ? (subData.plan_name || 'free').toLowerCase().replace(/\s+/g, '_') : 'free';
+    
+    const limits: Record<string, number> = { free: 5, basic: 5, professional: 15, premium: 30, super_premium: 999999 };
+    const planLimit = limits[planKey] ?? 5;
+
+    const { data: currentUsage } = await supabaseAdmin.rpc('get_monthly_invoice_usage', { p_user_id: userId });
+    if ((currentUsage || 0) >= planLimit) {
+      return new Response(JSON.stringify({ error: `Limite de ${planLimit} notas fiscais/mês atingido. Faça upgrade do plano.` }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // Criar registro da nota como "processando"
     const { data: invoice, error: insertError } = await supabase
