@@ -1,4 +1,4 @@
-import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope, User, Truck, Bike, Megaphone, Bot, FileCheck } from "lucide-react";
+import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope, User, Truck, Bike, MessageSquare, Bot, FileCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ const toolsItems = [
   { title: "Gerador de Imagens", url: "/image-generator", icon: Image },
   { title: "Tabela de Preços", url: "/price-table", icon: Table2 },
   { title: "Assistente IA", url: "/ai-assistant", icon: Bot },
+  { title: "Agente WhatsApp", url: "/ai-agent", icon: MessageSquare },
 ];
 
 const dentistMenuItems = [
