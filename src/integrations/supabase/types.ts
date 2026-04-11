@@ -809,6 +809,36 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_usage: {
+        Row: {
+          count: number
+          created_at: string | null
+          id: string
+          month: number
+          updated_at: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          count?: number
+          created_at?: string | null
+          id?: string
+          month: number
+          updated_at?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          count?: number
+          created_at?: string | null
+          id?: string
+          month?: number
+          updated_at?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           cliente_documento: string
@@ -1889,6 +1919,10 @@ export type Database = {
         }[]
       }
       get_monthly_image_usage: { Args: { p_user_id: string }; Returns: number }
+      get_monthly_invoice_usage: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       get_monthly_pdf_usage: { Args: { p_user_id: string }; Returns: number }
       get_monthly_scanner_usage: {
         Args: { p_user_id: string }
@@ -1907,6 +1941,7 @@ export type Database = {
         Returns: boolean
       }
       increment_image_usage: { Args: { p_user_id: string }; Returns: number }
+      increment_invoice_usage: { Args: { p_user_id: string }; Returns: number }
       increment_pdf_usage: { Args: { p_user_id: string }; Returns: number }
       increment_scanner_usage: { Args: { p_user_id: string }; Returns: number }
     }
