@@ -118,9 +118,23 @@ const Dashboard = () => {
       )
       .subscribe();
 
+    const invoicesChannel = supabase
+      .channel('dashboard-invoices-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoices' },
+        () => {
+          if (user?.id) {
+            loadInvoiceStats(user.id);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(servicesChannel);
+      supabase.removeChannel(invoicesChannel);
     };
   }, [user?.id]);
 
