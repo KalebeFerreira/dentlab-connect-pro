@@ -217,11 +217,32 @@ const Dashboard = () => {
         expense,
         profit: income - expense,
       });
+      
+      await loadInvoiceStats(userId);
     } catch (error) {
       console.error("Error loading financial stats:", error);
     }
   };
 
+  const loadInvoiceStats = async (userId: string) => {
+    try {
+      const { data: result, error } = await supabase.rpc('get_monthly_invoice_stats', {
+        p_user_id: userId,
+      });
+
+      if (error) throw error;
+
+      if (result) {
+        setInvoiceStats({
+          total: result.total || 0,
+          emitted: result.emitted || 0,
+          error: result.error || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading invoice stats:", error);
+    }
+  };
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
