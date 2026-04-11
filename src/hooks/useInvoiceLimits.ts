@@ -13,11 +13,12 @@ const INVOICE_LIMITS: Record<string, number> = {
 
 export function useInvoiceLimits() {
   const { user } = useAuth();
-  const { planName } = useSubscription();
+  const subscription = useSubscription();
   const [usage, setUsage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const normalizedPlan = (planName || 'free').toLowerCase().replace(/\s+/g, '_');
+  const currentPlan = subscription.currentPlan;
+  const normalizedPlan = currentPlan?.key || 'free';
   const limit = INVOICE_LIMITS[normalizedPlan] ?? INVOICE_LIMITS.free;
   const isUnlimited = limit === Infinity;
   const remaining = isUnlimited ? Infinity : Math.max(0, limit - usage);
