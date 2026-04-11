@@ -58,6 +58,12 @@ interface FinancialStats {
   profit: number;
 }
 
+interface InvoiceStats {
+  total: number;
+  emitted: number;
+  error: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -75,6 +81,11 @@ const Dashboard = () => {
     income: 0,
     expense: 0,
     profit: 0,
+  });
+  const [invoiceStats, setInvoiceStats] = useState<InvoiceStats>({
+    total: 0,
+    emitted: 0,
+    error: 0,
   });
 
   useEffect(() => {

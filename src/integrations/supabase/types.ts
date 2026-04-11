@@ -1919,6 +1919,7 @@ export type Database = {
         }[]
       }
       get_monthly_image_usage: { Args: { p_user_id: string }; Returns: number }
+      get_monthly_invoice_stats: { Args: { p_user_id: string }; Returns: Json }
       get_monthly_invoice_usage: {
         Args: { p_user_id: string }
         Returns: number
