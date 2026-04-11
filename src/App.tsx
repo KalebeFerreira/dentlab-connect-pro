@@ -42,6 +42,7 @@ const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 const Employees = lazy(() => import("./pages/Employees"));
 const EmployeeLogin = lazy(() => import("./pages/EmployeeLogin"));
 const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
+const Fiscal = lazy(() => import("./pages/Fiscal"));
 
 // Lazy load heavy components
 const AppSidebar = lazy(() => import("@/components/AppSidebar").then(m => ({ default: m.AppSidebar })));
@@ -135,6 +136,7 @@ const App = () => (
                                 <Route path="/marketing" element={<Marketing />} />
                                 <Route path="/ai-assistant" element={<AIAssistant />} />
                                 <Route path="/employees" element={<Employees />} />
+                                <Route path="/fiscal" element={<Fiscal />} />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
                             </Suspense>

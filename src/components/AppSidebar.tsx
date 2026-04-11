@@ -1,4 +1,4 @@
-import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope, User, Truck, Bike, Megaphone, Bot } from "lucide-react";
+import { Home, FileText, DollarSign, Users, Calendar, Image, Table2, Building, LogOut, Receipt, Settings, Crown, Stethoscope, User, Truck, Bike, Megaphone, Bot, FileCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,6 +31,7 @@ const menuItems = [
   { title: "Clínica", url: "/clinic", icon: Stethoscope },
   { title: "Laboratório", url: "/laboratory", icon: Building },
   { title: "Equipe", url: "/employees", icon: User },
+  { title: "Fiscal", url: "/fiscal", icon: FileCheck },
   { title: "Planos", url: "/planos", icon: Crown },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
