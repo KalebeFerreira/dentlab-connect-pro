@@ -26,7 +26,8 @@ import {
   FileUp,
   CreditCard,
   Settings,
-  Megaphone
+  Megaphone,
+  Receipt
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
