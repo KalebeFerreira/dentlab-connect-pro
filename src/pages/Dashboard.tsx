@@ -691,6 +691,8 @@ const Dashboard = () => {
                 Este mês • Clique para detalhes
               </p>
             </CardContent>
+          </Card>
+
           {/* Invoice Stats Card */}
           <Card 
             className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
