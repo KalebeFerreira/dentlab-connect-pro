@@ -16,6 +16,7 @@ const AutomaticReportSettings = lazy(() => import("@/components/billing/Automati
 const DocumentScanner = lazy(() => import("@/components/billing/DocumentScanner").then(m => ({ default: m.DocumentScanner })));
 const ScanHistory = lazy(() => import("@/components/billing/ScanHistory").then(m => ({ default: m.ScanHistory })));
 const TransactionHistory = lazy(() => import("@/components/billing/TransactionHistory").then(m => ({ default: m.TransactionHistory })));
+const BillingFiscalIntegration = lazy(() => import("@/components/billing/BillingFiscalIntegration").then(m => ({ default: m.BillingFiscalIntegration })));
 
 const ComponentLoader = memo(() => (
   <div className="flex items-center justify-center py-8">
@@ -200,9 +201,12 @@ const Billing = () => {
       </Suspense>
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto gap-1 p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1">
           <TabsTrigger value="services" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             Serviços
+          </TabsTrigger>
+          <TabsTrigger value="fiscal" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            NFS-e
           </TabsTrigger>
           <TabsTrigger value="history" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             Histórico
@@ -238,6 +242,12 @@ const Billing = () => {
               onServiceUpdate={loadServices}
               companyInfo={companyInfo}
             />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="fiscal" className="space-y-6">
+          <Suspense fallback={<ComponentLoader />}>
+            <BillingFiscalIntegration services={services} onSuccess={loadServices} />
           </Suspense>
         </TabsContent>
 

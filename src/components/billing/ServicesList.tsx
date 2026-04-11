@@ -9,13 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import ExcelJS from 'exceljs';
 import { EditServiceDialog } from "./EditServiceDialog";
+import { toast } from "sonner";
 
 interface ServicesListProps {
   services: Service[];
@@ -248,8 +249,31 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={async () => {
+                        try {
+                          const { data, error } = await supabase.functions.invoke('emit-invoice', {
+                            body: {
+                              cliente_nome: service.client_name || "Cliente não informado",
+                              cliente_documento: "00000000000",
+                              descricao_servico: `${service.service_name}${service.patient_name ? ` - Paciente: ${service.patient_name}` : ""}`,
+                              valor: service.service_value.toString(),
+                              service_id: service.id,
+                            },
+                          });
+                          if (error) throw error;
+                          if (data?.error) { toast.error(data.error); return; }
+                          toast.success(`NFS-e emitida: ${service.service_name}`);
+                        } catch { toast.error("Erro ao emitir NFS-e"); }
+                      }}
+                      title="Emitir NFS-e"
+                    >
+                      <FileCheck className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleGenerateInvoice(service)}
-                      title="Gerar Nota Fiscal"
+                      title="Gerar Nota Fiscal PDF"
                     >
                       <FileText className="h-4 w-4" />
                     </Button>
