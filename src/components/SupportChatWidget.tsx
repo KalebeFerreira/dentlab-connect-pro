@@ -24,6 +24,13 @@ const getWelcomeMessage = (): ChatMessage => ({
   content: `👋 ${getGreeting()}! Sou o atendente de suporte do DentLab Connect. Estou aqui pra te ajudar com qualquer dúvida sobre o sistema. É só perguntar! 😊`,
 });
 
+// Generate fresh welcome message with current time greeting
+const getFreshWelcomeMessage = (): ChatMessage => ({
+  id: 'welcome-' + Date.now(),
+  role: 'assistant',
+  content: `👋 ${getGreeting()}! Sou o atendente de suporte do DentLab Connect. Estou aqui pra te ajudar com qualquer dúvida sobre o sistema. É só perguntar! 😊`,
+});
+
 // Typing indicator component
 const TypingIndicator = () => (
   <div className="flex justify-start">
@@ -44,6 +51,13 @@ export const SupportChatWidget = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Update greeting when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      setMessages([getFreshWelcomeMessage()]);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -107,7 +121,7 @@ export const SupportChatWidget = () => {
   };
 
   const clearChat = () => {
-    setMessages([getWelcomeMessage()]);
+    setMessages([getFreshWelcomeMessage()]);
   };
 
   if (!isOpen) {

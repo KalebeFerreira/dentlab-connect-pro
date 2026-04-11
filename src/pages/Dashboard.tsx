@@ -26,7 +26,8 @@ import {
   FileUp,
   CreditCard,
   Settings,
-  Megaphone
+  Megaphone,
+  Receipt
 } from "lucide-react";
 import { LaboratoryInfo } from "@/components/LaboratoryInfo";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -58,6 +59,12 @@ interface FinancialStats {
   profit: number;
 }
 
+interface InvoiceStats {
+  total: number;
+  emitted: number;
+  error: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -75,6 +82,11 @@ const Dashboard = () => {
     income: 0,
     expense: 0,
     profit: 0,
+  });
+  const [invoiceStats, setInvoiceStats] = useState<InvoiceStats>({
+    total: 0,
+    emitted: 0,
+    error: 0,
   });
 
   useEffect(() => {
@@ -107,9 +119,23 @@ const Dashboard = () => {
       )
       .subscribe();
 
+    const invoicesChannel = supabase
+      .channel('dashboard-invoices-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoices' },
+        () => {
+          if (user?.id) {
+            loadInvoiceStats(user.id);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(servicesChannel);
+      supabase.removeChannel(invoicesChannel);
     };
   }, [user?.id]);
 
@@ -206,11 +232,33 @@ const Dashboard = () => {
         expense,
         profit: income - expense,
       });
+      
+      await loadInvoiceStats(userId);
     } catch (error) {
       console.error("Error loading financial stats:", error);
     }
   };
 
+  const loadInvoiceStats = async (userId: string) => {
+    try {
+      const { data: result, error } = await supabase.rpc('get_monthly_invoice_stats', {
+        p_user_id: userId,
+      });
+
+      if (error) throw error;
+
+      if (result && typeof result === 'object' && !Array.isArray(result)) {
+        const stats = result as { total?: number; emitted?: number; error?: number };
+        setInvoiceStats({
+          total: stats.total || 0,
+          emitted: stats.emitted || 0,
+          error: stats.error || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading invoice stats:", error);
+    }
+  };
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -656,6 +704,27 @@ const Dashboard = () => {
               </div>
               <p className="text-xs text-muted-foreground">
                 Este mês • Clique para detalhes
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Invoice Stats Card */}
+          <Card 
+            className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+            onClick={() => navigate("/fiscal")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Notas Fiscais
+              </CardTitle>
+              <FileText className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {invoiceStats.emitted}/{invoiceStats.total}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Emitidas este mês • Clique para gerenciar
               </p>
             </CardContent>
           </Card>
