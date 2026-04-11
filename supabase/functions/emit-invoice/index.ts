@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
         }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Sucesso - atualizar invoice
+      // Sucesso - atualizar invoice e incrementar uso
       await supabase
         .from('invoices')
         .update({
@@ -166,6 +166,9 @@ Deno.serve(async (req) => {
           xml_url: nuvemData?.linkXml || '',
         })
         .eq('id', invoice.id);
+
+      // Incrementar contagem de uso
+      await supabaseAdmin.rpc('increment_invoice_usage', { p_user_id: userId });
 
       return new Response(JSON.stringify({
         success: true,
