@@ -232,11 +232,12 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      if (result) {
+      if (result && typeof result === 'object' && !Array.isArray(result)) {
+        const stats = result as { total?: number; emitted?: number; error?: number };
         setInvoiceStats({
-          total: result.total || 0,
-          emitted: result.emitted || 0,
-          error: result.error || 0,
+          total: stats.total || 0,
+          emitted: stats.emitted || 0,
+          error: stats.error || 0,
         });
       }
     } catch (error) {
@@ -688,6 +689,25 @@ const Dashboard = () => {
               </div>
               <p className="text-xs text-muted-foreground">
                 Este mês • Clique para detalhes
+              </p>
+            </CardContent>
+          {/* Invoice Stats Card */}
+          <Card 
+            className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+            onClick={() => navigate("/fiscal")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Notas Fiscais
+              </CardTitle>
+              <FileText className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {invoiceStats.emitted}/{invoiceStats.total}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Emitidas este mês • Clique para gerenciar
               </p>
             </CardContent>
           </Card>
