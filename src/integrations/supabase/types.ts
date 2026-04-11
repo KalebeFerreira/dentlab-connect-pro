@@ -722,6 +722,63 @@ export type Database = {
           },
         ]
       }
+      fiscal_settings: {
+        Row: {
+          certificado_base64: string | null
+          certificado_senha_encrypted: string | null
+          cnpj: string
+          created_at: string
+          endereco_bairro: string | null
+          endereco_cep: string | null
+          endereco_cidade: string | null
+          endereco_codigo_municipio: string | null
+          endereco_logradouro: string | null
+          endereco_numero: string | null
+          endereco_uf: string | null
+          id: string
+          inscricao_municipal: string | null
+          razao_social: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          certificado_base64?: string | null
+          certificado_senha_encrypted?: string | null
+          cnpj: string
+          created_at?: string
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_codigo_municipio?: string | null
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
+          endereco_uf?: string | null
+          id?: string
+          inscricao_municipal?: string | null
+          razao_social: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          certificado_base64?: string | null
+          certificado_senha_encrypted?: string | null
+          cnpj?: string
+          created_at?: string
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_codigo_municipio?: string | null
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
+          endereco_uf?: string | null
+          id?: string
+          inscricao_municipal?: string | null
+          razao_social?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       image_generation_usage: {
         Row: {
           count: number
@@ -751,6 +808,81 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          cliente_documento: string
+          cliente_nome: string
+          created_at: string
+          data_emissao: string | null
+          descricao_servico: string
+          error_message: string | null
+          id: string
+          numero_nota: string | null
+          nuvem_fiscal_id: string | null
+          order_id: string | null
+          pdf_url: string | null
+          service_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          valor: number
+          xml_url: string | null
+        }
+        Insert: {
+          cliente_documento: string
+          cliente_nome: string
+          created_at?: string
+          data_emissao?: string | null
+          descricao_servico: string
+          error_message?: string | null
+          id?: string
+          numero_nota?: string | null
+          nuvem_fiscal_id?: string | null
+          order_id?: string | null
+          pdf_url?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          valor: number
+          xml_url?: string | null
+        }
+        Update: {
+          cliente_documento?: string
+          cliente_nome?: string
+          created_at?: string
+          data_emissao?: string | null
+          descricao_servico?: string
+          error_message?: string | null
+          id?: string
+          numero_nota?: string | null
+          nuvem_fiscal_id?: string | null
+          order_id?: string | null
+          pdf_url?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number
+          xml_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       laboratory_documents: {
         Row: {
