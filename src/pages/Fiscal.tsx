@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { FiscalSettings } from "@/components/fiscal/FiscalSettings";
 import { FiscalEmitir } from "@/components/fiscal/FiscalEmitir";
 import { FiscalHistorico } from "@/components/fiscal/FiscalHistorico";
+import { FiscalFechamento } from "@/components/fiscal/FiscalFechamento";
 import { useInvoiceLimits } from "@/hooks/useInvoiceLimits";
 
 const Fiscal = () => {
@@ -26,6 +27,7 @@ const Fiscal = () => {
         <TabsList className="w-full md:w-auto">
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="emitir">Emitir Nota</TabsTrigger>
+          <TabsTrigger value="fechamento">Fechamento</TabsTrigger>
           <TabsTrigger value="configuracoes">Dados Fiscais</TabsTrigger>
         </TabsList>
 
@@ -35,6 +37,10 @@ const Fiscal = () => {
 
         <TabsContent value="emitir">
           <FiscalEmitir onSuccess={() => setActiveTab("historico")} />
+        </TabsContent>
+
+        <TabsContent value="fechamento">
+          <FiscalFechamento />
         </TabsContent>
 
         <TabsContent value="configuracoes">
