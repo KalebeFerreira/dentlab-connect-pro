@@ -101,7 +101,7 @@ export function FiscalFechamento() {
     <div className="space-y-4">
       {/* Alertas */}
       {diasParaVencimento > 0 && diasParaVencimento <= 10 && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-200 text-yellow-800 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-accent border border-border text-accent-foreground text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>Seu imposto vence em <strong>{diasParaVencimento} dias</strong> ({format(vencimento, "dd/MM/yyyy")})</span>
         </div>
