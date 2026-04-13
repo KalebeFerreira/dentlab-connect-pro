@@ -27,6 +27,7 @@ const Fiscal = () => {
         <TabsList className="w-full md:w-auto">
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="emitir">Emitir Nota</TabsTrigger>
+          <TabsTrigger value="fechamento">Fechamento</TabsTrigger>
           <TabsTrigger value="configuracoes">Dados Fiscais</TabsTrigger>
         </TabsList>
 
@@ -36,6 +37,10 @@ const Fiscal = () => {
 
         <TabsContent value="emitir">
           <FiscalEmitir onSuccess={() => setActiveTab("historico")} />
+        </TabsContent>
+
+        <TabsContent value="fechamento">
+          <FiscalFechamento />
         </TabsContent>
 
         <TabsContent value="configuracoes">
