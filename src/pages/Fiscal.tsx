@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { FiscalSettings } from "@/components/fiscal/FiscalSettings";
 import { FiscalEmitir } from "@/components/fiscal/FiscalEmitir";
 import { FiscalHistorico } from "@/components/fiscal/FiscalHistorico";
+import { FiscalFechamento } from "@/components/fiscal/FiscalFechamento";
 import { useInvoiceLimits } from "@/hooks/useInvoiceLimits";
 
 const Fiscal = () => {
