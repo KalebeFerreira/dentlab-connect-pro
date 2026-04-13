@@ -779,6 +779,36 @@ export type Database = {
         }
         Relationships: []
       }
+      fiscal_summary: {
+        Row: {
+          created_at: string
+          faturamento_total: number
+          id: string
+          imposto_estimado: number
+          mes_referencia: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          faturamento_total?: number
+          id?: string
+          imposto_estimado?: number
+          mes_referencia: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          faturamento_total?: number
+          id?: string
+          imposto_estimado?: number
+          mes_referencia?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       image_generation_usage: {
         Row: {
           count: number
