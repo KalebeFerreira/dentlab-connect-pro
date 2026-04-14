@@ -644,6 +644,22 @@ export default function AIAgent() {
               </div>
 
               <div className="space-y-2">
+                <Label>Número do WhatsApp</Label>
+                <Input
+                  value={settings.evolution_instance_name?.replace('agent-', '') || ''}
+                  onChange={e => {
+                    const clean = e.target.value.replace(/\D/g, '');
+                    setSettings(s => ({ ...s, evolution_instance_name: `agent-${clean}` }));
+                  }}
+                  placeholder="(11) 99999-9999"
+                  type="tel"
+                />
+                <p className="text-xs text-muted-foreground">
+                  O número vinculado ao agente de atendimento
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label>URL da Evolution API</Label>
                 <Input
                   value={settings.evolution_api_url || ''}
