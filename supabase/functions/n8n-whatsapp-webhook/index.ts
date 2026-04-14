@@ -23,6 +23,45 @@ const SYSTEM_PROMPT_BASE = `Você é um assistente virtual de atendimento de uma
 Se o paciente usar frases como "falar com atendente", "pessoa real", "humano", "atendimento humano", 
 "falar com alguém", "quero um atendente", responda cordialmente e sinalize a transferência.`;
 
+const TRIAL_DAYS = 15;
+
+function isTrialExpired(trialStartedAt: string | null): boolean {
+  if (!trialStartedAt) return false;
+  const start = new Date(trialStartedAt);
+  const now = new Date();
+  const diffMs = now.getTime() - start.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return diffDays > TRIAL_DAYS;
+}
+
+async function sendWhatsAppReply(
+  evolutionApiUrl: string,
+  instanceName: string,
+  phoneNumber: string,
+  message: string,
+): Promise<boolean> {
+  const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+  if (!EVOLUTION_API_KEY || !evolutionApiUrl) return false;
+
+  try {
+    const resp = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        number: phoneNumber,
+        text: message,
+      }),
+    });
+    return resp.ok;
+  } catch (err) {
+    console.error('Erro ao enviar mensagem WhatsApp:', err);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -67,6 +106,114 @@ serve(async (req) => {
       }
     }
 
+    // Get conversations for inbox
+    if (action === 'get_conversations') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { data: conversations, error } = await supabase
+        .from('whatsapp_conversations')
+        .select('*, whatsapp_messages(content, direction, is_from_ai, created_at)')
+        .eq('user_id', user.id)
+        .order('last_message_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ conversations: conversations || [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get messages for a conversation
+    if (action === 'get_messages') {
+      const { conversation_id } = body;
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { data: messages, error } = await supabase
+        .from('whatsapp_messages')
+        .select('*')
+        .eq('conversation_id', conversation_id)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ messages: messages || [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Send manual message (human takeover)
+    if (action === 'send_manual_message') {
+      const { conversation_id, message, phone_number } = body;
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Get agent settings for Evolution API info
+      const { data: agentSettings } = await supabase
+        .from('ai_agent_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Send via WhatsApp
+      let sent = false;
+      if (agentSettings?.evolution_api_url && agentSettings?.evolution_instance_name) {
+        sent = await sendWhatsAppReply(
+          agentSettings.evolution_api_url,
+          agentSettings.evolution_instance_name,
+          phone_number,
+          message
+        );
+      }
+
+      // Store message
+      await supabase.from('whatsapp_messages').insert({
+        conversation_id,
+        user_id: user.id,
+        content: message,
+        direction: 'outbound',
+        message_type: 'text',
+        is_from_ai: false,
+      });
+
+      // Update conversation
+      await supabase
+        .from('whatsapp_conversations')
+        .update({ last_message_at: new Date().toISOString(), requires_human: false })
+        .eq('id', conversation_id);
+
+      return new Response(
+        JSON.stringify({ success: true, whatsapp_sent: sent }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Process message action (called from n8n)
     if (action === 'process_message') {
       const { phone_number, message, patient_name, user_id } = body;
@@ -79,7 +226,7 @@ serve(async (req) => {
       }
 
       // Find agent settings for the user
-      let agentSettings;
+      let agentSettings: any;
       if (user_id) {
         const { data } = await supabase
           .from('ai_agent_settings')
@@ -88,7 +235,6 @@ serve(async (req) => {
           .maybeSingle();
         agentSettings = data;
       } else {
-        // If no user_id, try to find by matching phone in conversations
         const { data: conv } = await supabase
           .from('whatsapp_conversations')
           .select('user_id')
@@ -107,8 +253,28 @@ serve(async (req) => {
 
       if (!agentSettings) {
         return new Response(
-          JSON.stringify({ error: 'Configurações do agente não encontradas. Configure o agente primeiro.' }),
+          JSON.stringify({ error: 'Configurações do agente não encontradas.' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check trial expiration
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select('status, plan_name, current_period_end')
+        .eq('user_id', agentSettings.user_id)
+        .maybeSingle();
+
+      const isPremium = subscription && (
+        subscription.status === 'active' ||
+        subscription.status === 'trialing' ||
+        (subscription.status === 'canceled' && subscription.current_period_end && new Date(subscription.current_period_end) > new Date())
+      );
+
+      if (!isPremium && isTrialExpired(agentSettings.trial_started_at)) {
+        return new Response(
+          JSON.stringify({ error: 'Período de teste expirado. Assine o plano Premium para continuar.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -131,12 +297,25 @@ serve(async (req) => {
       const isClosedDay = isWeekend && !agentSettings.work_on_weekends;
 
       if ((isOutsideHours || isClosedDay) && agentSettings.auto_reply_outside_hours) {
+        const outsideMsg = agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.';
+        
+        // Send outside hours reply via WhatsApp
+        if (agentSettings.evolution_api_url && agentSettings.evolution_instance_name) {
+          await sendWhatsAppReply(
+            agentSettings.evolution_api_url,
+            agentSettings.evolution_instance_name,
+            phone_number,
+            outsideMsg
+          );
+        }
+
         return new Response(
           JSON.stringify({
-            response: agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.',
+            response: outsideMsg,
             agent_name: agentSettings.agent_name,
             requires_human: false,
             outside_hours: true,
+            whatsapp_sent: true,
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -246,6 +425,25 @@ serve(async (req) => {
           message_type: 'text',
           is_from_ai: true,
         });
+
+        // Update conversation with requires_human flag
+        if (requiresHuman) {
+          await supabase
+            .from('whatsapp_conversations')
+            .update({ requires_human: true })
+            .eq('id', conversation.id);
+        }
+      }
+
+      // Send reply via WhatsApp
+      let whatsappSent = false;
+      if (agentSettings.evolution_api_url && agentSettings.evolution_instance_name) {
+        whatsappSent = await sendWhatsAppReply(
+          agentSettings.evolution_api_url,
+          agentSettings.evolution_instance_name,
+          phone_number,
+          reply
+        );
       }
 
       return new Response(
@@ -254,13 +452,14 @@ serve(async (req) => {
           agent_name: agentName,
           requires_human: requiresHuman,
           conversation_id: conversation?.id,
+          whatsapp_sent: whatsappSent,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ error: 'Ação não reconhecida. Use: test_connection ou process_message' }),
+      JSON.stringify({ error: 'Ação não reconhecida. Use: test_connection, process_message, get_conversations, get_messages, send_manual_message' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

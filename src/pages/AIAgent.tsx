@@ -17,8 +17,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
   CheckCircle2, XCircle, Crown, Phone, Globe, Clock,
-  Copy, Timer, Sparkles, Zap, ArrowRight, Shield
+  Copy, Timer, Sparkles, Zap, ArrowRight, Shield, Inbox
 } from 'lucide-react';
+import WhatsAppInbox from '@/components/ai-agent/WhatsAppInbox';
 
 interface AgentSettings {
   id?: string;
@@ -508,9 +509,12 @@ export default function AIAgent() {
       </Card>
 
       <Tabs defaultValue="agent" className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="agent" className="gap-1.5 text-xs sm:text-sm">
             <Bot className="h-4 w-4" /> Agente
+          </TabsTrigger>
+          <TabsTrigger value="inbox" className="gap-1.5 text-xs sm:text-sm">
+            <Inbox className="h-4 w-4" /> Conversas
           </TabsTrigger>
           <TabsTrigger value="horario" className="gap-1.5 text-xs sm:text-sm">
             <Clock className="h-4 w-4" /> Horário
@@ -558,6 +562,11 @@ export default function AIAgent() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab Conversas (Inbox) */}
+        <TabsContent value="inbox" className="space-y-4">
+          <WhatsAppInbox />
         </TabsContent>
 
         {/* Tab Horário */}

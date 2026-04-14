@@ -1789,6 +1789,7 @@ export type Database = {
           patient_id: string | null
           patient_name: string | null
           phone_number: string
+          requires_human: boolean | null
           updated_at: string
           user_id: string
         }
@@ -1800,6 +1801,7 @@ export type Database = {
           patient_id?: string | null
           patient_name?: string | null
           phone_number: string
+          requires_human?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -1811,6 +1813,7 @@ export type Database = {
           patient_id?: string | null
           patient_name?: string | null
           phone_number?: string
+          requires_human?: boolean | null
           updated_at?: string
           user_id?: string
         }
