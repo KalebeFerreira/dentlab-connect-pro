@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
   CheckCircle2, XCircle, Crown, Lock, Phone, Globe, Clock,
-  Copy, ExternalLink
+  Copy, ExternalLink, Timer, Sparkles
 } from 'lucide-react';
 
 interface AgentSettings {
@@ -59,7 +61,9 @@ export default function AIAgent() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const hasAccess = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+  const isPremium = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+  const [trialStartedAt, setTrialStartedAt] = useState<string | null>(null);
+  const [trialLoading, setTrialLoading] = useState(true);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;
 
@@ -91,13 +95,51 @@ export default function AIAgent() {
           auto_reply_outside_hours: data.auto_reply_outside_hours ?? true,
           outside_hours_message: data.outside_hours_message,
         });
+        setTrialStartedAt((data as any).trial_started_at);
       }
     } catch (err) {
       console.error('Erro ao carregar configurações:', err);
     } finally {
       setLoading(false);
+      setTrialLoading(false);
     }
   };
+
+  // Start trial automatically for non-premium users
+  const startTrial = async () => {
+    if (!user) return;
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('ai_agent_settings')
+        .upsert({
+          user_id: user.id,
+          agent_name: settings.agent_name || 'Assistente',
+          trial_started_at: now,
+        } as any, { onConflict: 'user_id' })
+        .select()
+        .single();
+      if (error) throw error;
+      setTrialStartedAt(now);
+      if (data) {
+        setSettings(prev => ({ ...prev, id: data.id }));
+      }
+      toast.success('🎉 Teste gratuito de 15 dias ativado!');
+    } catch (err) {
+      console.error('Erro ao iniciar trial:', err);
+      toast.error('Erro ao ativar período de teste');
+    }
+  };
+
+  // Trial calculations
+  const TRIAL_DAYS = 15;
+  const trialEndDate = trialStartedAt ? new Date(new Date(trialStartedAt).getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000) : null;
+  const now = new Date();
+  const trialDaysRemaining = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : TRIAL_DAYS;
+  const trialExpired = trialStartedAt ? trialDaysRemaining <= 0 : false;
+  const trialActive = trialStartedAt ? !trialExpired : false;
+  const trialPercentUsed = trialStartedAt ? Math.min(100, ((TRIAL_DAYS - trialDaysRemaining) / TRIAL_DAYS) * 100) : 0;
+  const hasAccess = isPremium || trialActive;
 
   const saveSettings = async () => {
     if (!user) return;
@@ -192,22 +234,52 @@ export default function AIAgent() {
   }
 
   if (!hasAccess) {
+    // Trial expired — show upgrade prompt
+    if (trialExpired) {
+      return (
+        <div className="container mx-auto p-4 md:p-6 max-w-4xl">
+          <Card className="border-2 border-destructive/30">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="relative mb-6">
+                <Bot className="h-20 w-20 text-muted-foreground/50" />
+                <XCircle className="h-8 w-8 text-destructive absolute -bottom-1 -right-1" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Período de Teste Encerrado</h2>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                Seu teste gratuito de 15 dias do Agente IA WhatsApp expirou.
+                Assine o plano Premium para continuar usando este recurso.
+              </p>
+              <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
+                <Crown className="h-5 w-5" />
+                Assinar Plano Premium
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // No trial started yet — show activation screen
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-        <Card className="border-2 border-dashed border-muted">
+        <Card className="border-2 border-dashed border-primary/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="relative mb-6">
-              <Bot className="h-20 w-20 text-muted-foreground/50" />
-              <Lock className="h-8 w-8 text-primary absolute -bottom-1 -right-1" />
+              <Bot className="h-20 w-20 text-primary/60" />
+              <Sparkles className="h-8 w-8 text-primary absolute -bottom-1 -right-1" />
             </div>
             <h2 className="text-2xl font-bold mb-2">Agente IA WhatsApp</h2>
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+              <Timer className="h-3 w-3 mr-1" />
+              15 dias grátis
+            </Badge>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Configure seu agente de IA para atendimento automático via WhatsApp.
-              Disponível para assinantes Premium.
+              Experimente gratuitamente por 15 dias! Configure seu agente de IA para 
+              atendimento automático via WhatsApp com integração n8n e Evolution API.
             </p>
-            <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
-              <Crown className="h-5 w-5" />
-              Assinar Plano Premium
+            <Button onClick={startTrial} size="lg" className="gap-2">
+              <Sparkles className="h-5 w-5" />
+              Ativar Teste Gratuito de 15 Dias
             </Button>
           </CardContent>
         </Card>
@@ -232,6 +304,36 @@ export default function AIAgent() {
           Salvar
         </Button>
       </div>
+
+      {/* Trial Banner */}
+      {trialActive && !isPremium && (
+        <Alert className="border-primary/50 bg-primary/5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <Timer className="h-4 w-4 text-primary" />
+                <AlertDescription className="font-semibold">
+                  Teste Gratuito — {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+                </AlertDescription>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Período de teste</span>
+                  <span>{Math.round(trialPercentUsed)}% usado</span>
+                </div>
+                <Progress value={trialPercentUsed} className="h-2" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Seu teste gratuito termina em {trialEndDate?.toLocaleDateString('pt-BR')}. Assine o Premium para acesso permanente.
+              </p>
+              <Button size="sm" onClick={() => navigate('/planos')} variant="outline" className="mt-1 gap-1">
+                <Crown className="h-3 w-3" />
+                Ver Planos
+              </Button>
+            </div>
+          </div>
+        </Alert>
+      )}
 
       <Tabs defaultValue="agent" className="space-y-4">
         <TabsList className="grid grid-cols-3 w-full">
