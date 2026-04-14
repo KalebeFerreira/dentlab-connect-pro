@@ -25,6 +25,7 @@ export type Database = {
           id: string
           is_whatsapp_enabled: boolean | null
           outside_hours_message: string | null
+          trial_started_at: string | null
           updated_at: string
           user_id: string
           welcome_message: string | null
@@ -42,6 +43,7 @@ export type Database = {
           id?: string
           is_whatsapp_enabled?: boolean | null
           outside_hours_message?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id: string
           welcome_message?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           id?: string
           is_whatsapp_enabled?: boolean | null
           outside_hours_message?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id?: string
           welcome_message?: string | null
