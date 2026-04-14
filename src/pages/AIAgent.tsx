@@ -16,8 +16,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
-  CheckCircle2, XCircle, Crown, Lock, Phone, Globe, Clock,
-  Copy, ExternalLink, Timer, Sparkles
+  CheckCircle2, XCircle, Crown, Phone, Globe, Clock,
+  Copy, Timer, Sparkles, Zap, ArrowRight, Shield
 } from 'lucide-react';
 
 interface AgentSettings {
@@ -33,14 +33,13 @@ interface AgentSettings {
   work_on_weekends: boolean;
   auto_reply_outside_hours: boolean;
   outside_hours_message: string | null;
-  n8n_webhook_url?: string | null;
 }
 
 const defaultSettings: AgentSettings = {
-  agent_name: 'Assistente',
-  agent_personality: 'Você é um assistente profissional e cordial de um laboratório/clínica odontológica. Responda de forma clara e objetiva.',
+  agent_name: '',
+  agent_personality: '',
   welcome_message: 'Olá! 👋 Sou o assistente virtual. Como posso ajudar?',
-  is_whatsapp_enabled: false,
+  is_whatsapp_enabled: true,
   evolution_api_url: null,
   evolution_instance_name: null,
   working_hours_start: '08:00',
@@ -48,7 +47,6 @@ const defaultSettings: AgentSettings = {
   work_on_weekends: false,
   auto_reply_outside_hours: true,
   outside_hours_message: 'No momento estamos fora do horário de atendimento. Retornaremos em breve! 😊',
-  n8n_webhook_url: null,
 };
 
 export default function AIAgent() {
@@ -60,11 +58,16 @@ export default function AIAgent() {
   const [saving, setSaving] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [trialStartedAt, setTrialStartedAt] = useState<string | null>(null);
+  const [isConfigured, setIsConfigured] = useState(false);
+
+  // Quick setup fields
+  const [setupName, setSetupName] = useState('');
+  const [setupFunction, setSetupFunction] = useState('');
+  const [setupPhone, setSetupPhone] = useState('');
+  const [setupStep, setSetupStep] = useState<'form' | 'activating' | 'done'>('form');
 
   const isPremium = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
-  const [trialStartedAt, setTrialStartedAt] = useState<string | null>(null);
-  const [trialLoading, setTrialLoading] = useState(true);
-
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;
 
   useEffect(() => {
@@ -96,46 +99,97 @@ export default function AIAgent() {
           outside_hours_message: data.outside_hours_message,
         });
         setTrialStartedAt((data as any).trial_started_at);
+        // Consider configured if agent_name is set and not default
+        setIsConfigured(!!data.agent_name && data.agent_name !== 'Assistente Virtual');
       }
     } catch (err) {
       console.error('Erro ao carregar configurações:', err);
     } finally {
       setLoading(false);
-      setTrialLoading(false);
     }
   };
 
-  // Start trial automatically for non-premium users
-  const startTrial = async () => {
+  // Quick setup: creates everything in one click
+  const handleQuickSetup = async () => {
     if (!user) return;
+    if (!setupName.trim()) {
+      toast.error('Digite o nome do agente');
+      return;
+    }
+    if (!setupFunction.trim()) {
+      toast.error('Descreva a função do agente');
+      return;
+    }
+    if (!setupPhone.trim()) {
+      toast.error('Digite o número do WhatsApp');
+      return;
+    }
+
+    setSetupStep('activating');
+
     try {
       const now = new Date().toISOString();
+      // Format phone: remove non-digits
+      const cleanPhone = setupPhone.replace(/\D/g, '');
+      // Use phone as instance name (simple auto-config)
+      const instanceName = `agent-${cleanPhone}`;
+
+      const personality = `Você é ${setupName}, ${setupFunction}. Seja sempre educado, profissional e objetivo nas respostas. Responda em português brasileiro.`;
+      const welcomeMsg = `Olá! 👋 Eu sou ${setupName}, ${setupFunction.toLowerCase()}. Como posso ajudar você hoje?`;
+
+      const payload = {
+        user_id: user.id,
+        agent_name: setupName.trim(),
+        agent_personality: personality,
+        welcome_message: welcomeMsg,
+        is_whatsapp_enabled: true,
+        evolution_instance_name: instanceName,
+        working_hours_start: '08:00',
+        working_hours_end: '18:00',
+        work_on_weekends: false,
+        auto_reply_outside_hours: true,
+        outside_hours_message: `Olá! No momento estamos fora do horário de atendimento (seg-sex, 8h às 18h). Deixe sua mensagem que ${setupName} responderá assim que possível! 😊`,
+        trial_started_at: now,
+      };
+
       const { data, error } = await supabase
         .from('ai_agent_settings')
-        .upsert({
-          user_id: user.id,
-          agent_name: settings.agent_name || 'Assistente',
-          trial_started_at: now,
-        } as any, { onConflict: 'user_id' })
+        .upsert(payload as any, { onConflict: 'user_id' })
         .select()
         .single();
+
       if (error) throw error;
+
       setTrialStartedAt(now);
-      if (data) {
-        setSettings(prev => ({ ...prev, id: data.id }));
-      }
-      toast.success('🎉 Teste gratuito de 15 dias ativado!');
+      setSettings({
+        id: data.id,
+        agent_name: data.agent_name,
+        agent_personality: data.agent_personality,
+        welcome_message: data.welcome_message,
+        is_whatsapp_enabled: data.is_whatsapp_enabled ?? true,
+        evolution_api_url: data.evolution_api_url,
+        evolution_instance_name: data.evolution_instance_name,
+        working_hours_start: data.working_hours_start,
+        working_hours_end: data.working_hours_end,
+        work_on_weekends: data.work_on_weekends ?? false,
+        auto_reply_outside_hours: data.auto_reply_outside_hours ?? true,
+        outside_hours_message: data.outside_hours_message,
+      });
+      setIsConfigured(true);
+      setSetupStep('done');
+      toast.success('🎉 Agente configurado com sucesso! Teste gratuito de 15 dias ativado!');
     } catch (err) {
-      console.error('Erro ao iniciar trial:', err);
-      toast.error('Erro ao ativar período de teste');
+      console.error('Erro ao configurar agente:', err);
+      toast.error('Erro ao configurar o agente');
+      setSetupStep('form');
     }
   };
 
   // Trial calculations
   const TRIAL_DAYS = 15;
   const trialEndDate = trialStartedAt ? new Date(new Date(trialStartedAt).getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000) : null;
-  const now = new Date();
-  const trialDaysRemaining = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : TRIAL_DAYS;
+  const nowDate = new Date();
+  const trialDaysRemaining = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - nowDate.getTime()) / (1000 * 60 * 60 * 24))) : TRIAL_DAYS;
   const trialExpired = trialStartedAt ? trialDaysRemaining <= 0 : false;
   const trialActive = trialStartedAt ? !trialExpired : false;
   const trialPercentUsed = trialStartedAt ? Math.min(100, ((TRIAL_DAYS - trialDaysRemaining) / TRIAL_DAYS) * 100) : 0;
@@ -144,7 +198,6 @@ export default function AIAgent() {
   const saveSettings = async () => {
     if (!user) return;
     setSaving(true);
-
     try {
       const payload = {
         user_id: user.id,
@@ -176,7 +229,6 @@ export default function AIAgent() {
         if (error) throw error;
         setSettings(prev => ({ ...prev, id: data.id }));
       }
-
       toast.success('Configurações salvas com sucesso!');
     } catch (err) {
       console.error('Erro ao salvar:', err);
@@ -191,10 +243,8 @@ export default function AIAgent() {
       toast.error('Preencha a URL da Evolution API e o nome da instância');
       return;
     }
-
     setTestingConnection(true);
     setConnectionStatus('idle');
-
     try {
       const { data, error } = await supabase.functions.invoke('n8n-whatsapp-webhook', {
         body: {
@@ -203,7 +253,6 @@ export default function AIAgent() {
           instance_name: settings.evolution_instance_name,
         },
       });
-
       if (error) throw error;
       if (data?.connected) {
         setConnectionStatus('success');
@@ -212,7 +261,7 @@ export default function AIAgent() {
         setConnectionStatus('error');
         toast.error(data?.message || 'Falha na conexão');
       }
-    } catch (err) {
+    } catch {
       setConnectionStatus('error');
       toast.error('Erro ao testar conexão');
     } finally {
@@ -233,53 +282,24 @@ export default function AIAgent() {
     );
   }
 
-  if (!hasAccess) {
-    // Trial expired — show upgrade prompt
-    if (trialExpired) {
-      return (
-        <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-          <Card className="border-2 border-destructive/30">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="relative mb-6">
-                <Bot className="h-20 w-20 text-muted-foreground/50" />
-                <XCircle className="h-8 w-8 text-destructive absolute -bottom-1 -right-1" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Período de Teste Encerrado</h2>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                Seu teste gratuito de 15 dias do Agente IA WhatsApp expirou.
-                Assine o plano Premium para continuar usando este recurso.
-              </p>
-              <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
-                <Crown className="h-5 w-5" />
-                Assinar Plano Premium
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    // No trial started yet — show activation screen
+  // Trial expired
+  if (trialExpired && !isPremium) {
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-        <Card className="border-2 border-dashed border-primary/30">
+        <Card className="border-2 border-destructive/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="relative mb-6">
-              <Bot className="h-20 w-20 text-primary/60" />
-              <Sparkles className="h-8 w-8 text-primary absolute -bottom-1 -right-1" />
+              <Bot className="h-20 w-20 text-muted-foreground/50" />
+              <XCircle className="h-8 w-8 text-destructive absolute -bottom-1 -right-1" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Agente IA WhatsApp</h2>
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-              <Timer className="h-3 w-3 mr-1" />
-              15 dias grátis
-            </Badge>
+            <h2 className="text-2xl font-bold mb-2">Período de Teste Encerrado</h2>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Experimente gratuitamente por 15 dias! Configure seu agente de IA para 
-              atendimento automático via WhatsApp com integração n8n e Evolution API.
+              Seu teste gratuito de 15 dias do Agente IA WhatsApp expirou.
+              Assine o plano Premium para continuar usando.
             </p>
-            <Button onClick={startTrial} size="lg" className="gap-2">
-              <Sparkles className="h-5 w-5" />
-              Ativar Teste Gratuito de 15 Dias
+            <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
+              <Crown className="h-5 w-5" />
+              Assinar Plano Premium
             </Button>
           </CardContent>
         </Card>
@@ -287,6 +307,144 @@ export default function AIAgent() {
     );
   }
 
+  // Not configured yet — show simple setup wizard
+  if (!isConfigured && !hasAccess) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 max-w-2xl">
+        <Card className="border-2 border-primary/20 shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Bot className="h-10 w-10 text-primary" />
+                </div>
+                <Sparkles className="h-6 w-6 text-primary absolute -top-1 -right-1" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Configure seu Agente IA em segundos</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Preencha apenas 3 campos e seu assistente WhatsApp estará pronto para atender!
+            </CardDescription>
+            <Badge className="mx-auto mt-3 bg-primary/10 text-primary border-primary/20">
+              <Timer className="h-3 w-3 mr-1" />
+              15 dias grátis — sem cartão de crédito
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            {setupStep === 'done' ? (
+              <div className="text-center space-y-4 py-4">
+                <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold">Agente Configurado! 🎉</h3>
+                <p className="text-muted-foreground">
+                  Seu agente <strong>{settings.agent_name}</strong> está pronto para atender via WhatsApp.
+                </p>
+                <Button onClick={() => setIsConfigured(true)} className="gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Ir para o Painel do Agente
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-base font-medium flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-primary" />
+                    Nome do Agente *
+                  </Label>
+                  <Input
+                    value={setupName}
+                    onChange={e => setSetupName(e.target.value)}
+                    placeholder="Ex: Ana, Dra. Sofia, Assistente Lab..."
+                    className="h-12 text-base"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    O nome que os pacientes/clientes verão nas conversas
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    Função do Agente *
+                  </Label>
+                  <Textarea
+                    value={setupFunction}
+                    onChange={e => setSetupFunction(e.target.value)}
+                    placeholder="Ex: assistente de atendimento da clínica odontológica, responsável por agendar consultas e tirar dúvidas dos pacientes"
+                    rows={3}
+                    className="text-base"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Descreva o que o agente faz — isso define como ele responde automaticamente
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary" />
+                    Número do WhatsApp *
+                  </Label>
+                  <Input
+                    value={setupPhone}
+                    onChange={e => setSetupPhone(e.target.value)}
+                    placeholder="(11) 99999-9999"
+                    className="h-12 text-base"
+                    type="tel"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    O número que receberá as mensagens dos pacientes
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium">O que será configurado automaticamente:</p>
+                      <ul className="text-muted-foreground mt-1 space-y-1">
+                        <li>✅ Personalidade e instruções do agente IA</li>
+                        <li>✅ Mensagem de boas-vindas personalizada</li>
+                        <li>✅ Horário de atendimento (seg-sex, 8h-18h)</li>
+                        <li>✅ Resposta automática fora do horário</li>
+                        <li>✅ Integração WhatsApp ativada</li>
+                        <li>✅ Webhook pronto para conectar ao n8n</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleQuickSetup}
+                  disabled={setupStep === 'activating'}
+                  size="lg"
+                  className="w-full gap-2 h-12 text-base"
+                >
+                  {setupStep === 'activating' ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Configurando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      Ativar Agente — 15 Dias Grátis
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  Você pode personalizar todas as configurações depois no painel avançado
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main dashboard (after configuration)
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
@@ -296,7 +454,7 @@ export default function AIAgent() {
             Agente IA WhatsApp
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Configure seu agente de atendimento automático com integração n8n
+            Gerencie seu agente de atendimento automático
           </p>
         </div>
         <Button onClick={saveSettings} disabled={saving} className="gap-2">
@@ -323,9 +481,6 @@ export default function AIAgent() {
                 </div>
                 <Progress value={trialPercentUsed} className="h-2" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Seu teste gratuito termina em {trialEndDate?.toLocaleDateString('pt-BR')}. Assine o Premium para acesso permanente.
-              </p>
               <Button size="sm" onClick={() => navigate('/planos')} variant="outline" className="mt-1 gap-1">
                 <Crown className="h-3 w-3" />
                 Ver Planos
@@ -335,16 +490,33 @@ export default function AIAgent() {
         </Alert>
       )}
 
+      {/* Status Card */}
+      <Card className="bg-green-50/50 dark:bg-green-950/10 border-green-200/50">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-green-800 dark:text-green-200">
+              Agente "{settings.agent_name}" ativo
+            </p>
+            <p className="text-sm text-green-600 dark:text-green-400">
+              WhatsApp {settings.is_whatsapp_enabled ? 'habilitado' : 'desabilitado'} • Horário: {settings.working_hours_start || '08:00'} - {settings.working_hours_end || '18:00'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="agent" className="space-y-4">
         <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="agent" className="gap-1.5 text-xs sm:text-sm">
             <Bot className="h-4 w-4" /> Agente
           </TabsTrigger>
-          <TabsTrigger value="whatsapp" className="gap-1.5 text-xs sm:text-sm">
-            <Phone className="h-4 w-4" /> WhatsApp
+          <TabsTrigger value="horario" className="gap-1.5 text-xs sm:text-sm">
+            <Clock className="h-4 w-4" /> Horário
           </TabsTrigger>
-          <TabsTrigger value="n8n" className="gap-1.5 text-xs sm:text-sm">
-            <Webhook className="h-4 w-4" /> n8n
+          <TabsTrigger value="avancado" className="gap-1.5 text-xs sm:text-sm">
+            <Settings2 className="h-4 w-4" /> Avançado
           </TabsTrigger>
         </TabsList>
 
@@ -353,7 +525,7 @@ export default function AIAgent() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Identidade do Agente</CardTitle>
-              <CardDescription>Defina o nome e personalidade do seu assistente</CardDescription>
+              <CardDescription>Personalize o nome e comportamento do seu assistente</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -361,11 +533,8 @@ export default function AIAgent() {
                 <Input
                   value={settings.agent_name}
                   onChange={e => setSettings(s => ({ ...s, agent_name: e.target.value }))}
-                  placeholder="Ex: Ana, Dra. Sofia, Assistente Lab..."
+                  placeholder="Ex: Ana, Dra. Sofia..."
                 />
-                <p className="text-xs text-muted-foreground">
-                  Este nome será usado nas conversas com os pacientes/clientes
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -383,13 +552,16 @@ export default function AIAgent() {
                 <Textarea
                   value={settings.welcome_message || ''}
                   onChange={e => setSettings(s => ({ ...s, welcome_message: e.target.value }))}
-                  placeholder="Mensagem enviada automaticamente ao iniciar conversa..."
+                  placeholder="Mensagem enviada ao iniciar conversa..."
                   rows={2}
                 />
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
+        {/* Tab Horário */}
+        <TabsContent value="horario" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -447,8 +619,8 @@ export default function AIAgent() {
           </Card>
         </TabsContent>
 
-        {/* Tab WhatsApp */}
-        <TabsContent value="whatsapp" className="space-y-4">
+        {/* Tab Avançado */}
+        <TabsContent value="avancado" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -456,14 +628,14 @@ export default function AIAgent() {
                 Conexão WhatsApp (Evolution API)
               </CardTitle>
               <CardDescription>
-                Conecte seu número de WhatsApp via Evolution API para atendimento automático
+                Configurações avançadas da conexão com a Evolution API
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base">Ativar WhatsApp</Label>
-                  <p className="text-xs text-muted-foreground">Habilitar atendimento via WhatsApp</p>
+                  <Label className="text-base">WhatsApp Ativo</Label>
+                  <p className="text-xs text-muted-foreground">Habilitar/desabilitar atendimento</p>
                 </div>
                 <Switch
                   checked={settings.is_whatsapp_enabled}
@@ -471,61 +643,50 @@ export default function AIAgent() {
                 />
               </div>
 
-              {settings.is_whatsapp_enabled && (
-                <>
-                  <div className="space-y-2">
-                    <Label>URL da Evolution API</Label>
-                    <Input
-                      value={settings.evolution_api_url || ''}
-                      onChange={e => setSettings(s => ({ ...s, evolution_api_url: e.target.value }))}
-                      placeholder="https://sua-evolution-api.com"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label>URL da Evolution API</Label>
+                <Input
+                  value={settings.evolution_api_url || ''}
+                  onChange={e => setSettings(s => ({ ...s, evolution_api_url: e.target.value }))}
+                  placeholder="https://sua-evolution-api.com"
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label>Nome da Instância</Label>
-                    <Input
-                      value={settings.evolution_instance_name || ''}
-                      onChange={e => setSettings(s => ({ ...s, evolution_instance_name: e.target.value }))}
-                      placeholder="minha-instancia"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Nome da instância criada na Evolution API vinculada ao seu número de WhatsApp
-                    </p>
-                  </div>
+              <div className="space-y-2">
+                <Label>Nome da Instância</Label>
+                <Input
+                  value={settings.evolution_instance_name || ''}
+                  onChange={e => setSettings(s => ({ ...s, evolution_instance_name: e.target.value }))}
+                  placeholder="minha-instancia"
+                />
+              </div>
 
-                  <Button
-                    onClick={testConnection}
-                    disabled={testingConnection}
-                    variant="outline"
-                    className="gap-2 w-full"
-                  >
-                    {testingConnection ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : connectionStatus === 'success' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    ) : connectionStatus === 'error' ? (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    ) : (
-                      <Globe className="h-4 w-4" />
-                    )}
-                    {testingConnection ? 'Testando...' : 'Testar Conexão'}
-                  </Button>
+              <Button
+                onClick={testConnection}
+                disabled={testingConnection}
+                variant="outline"
+                className="gap-2 w-full"
+              >
+                {testingConnection ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : connectionStatus === 'success' ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : connectionStatus === 'error' ? (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                ) : (
+                  <Globe className="h-4 w-4" />
+                )}
+                {testingConnection ? 'Testando...' : 'Testar Conexão'}
+              </Button>
 
-                  {connectionStatus === 'success' && (
-                    <Badge variant="outline" className="w-full justify-center py-2 text-green-600 border-green-300 bg-green-50">
-                      <CheckCircle2 className="h-3 w-3 mr-1" /> WhatsApp conectado e funcionando
-                    </Badge>
-                  )}
-                </>
+              {connectionStatus === 'success' && (
+                <Badge variant="outline" className="w-full justify-center py-2 text-green-600 border-green-300 bg-green-50">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> WhatsApp conectado
+                </Badge>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Tab n8n */}
-        <TabsContent value="whatsapp" className="space-y-4" />
-        <TabsContent value="n8n" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -533,52 +694,29 @@ export default function AIAgent() {
                 Integração n8n
               </CardTitle>
               <CardDescription>
-                Configure o webhook do n8n para conectar a automação do seu agente
+                Webhook para conectar ao seu fluxo de automação n8n
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-                <h4 className="font-medium text-sm">📋 Como configurar:</h4>
-                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                  <li>No n8n, crie um workflow com o trigger <strong>Webhook</strong></li>
-                  <li>Configure o webhook para receber dados via <strong>POST</strong></li>
-                  <li>Copie a URL abaixo e cole no node <strong>HTTP Request</strong> do n8n para enviar mensagens ao agente</li>
-                  <li>No n8n, configure o node da <strong>Evolution API</strong> para enviar as respostas ao WhatsApp</li>
-                </ol>
-              </div>
-
               <div className="space-y-2">
-                <Label>URL do Webhook (use no n8n)</Label>
+                <Label>URL do Webhook</Label>
                 <div className="flex gap-2">
                   <Input value={webhookUrl} readOnly className="font-mono text-xs" />
                   <Button variant="outline" size="icon" onClick={copyWebhookUrl}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Configure este endpoint no n8n para receber as mensagens e processar com IA
-                </p>
               </div>
 
               <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-medium text-sm">📨 Formato do payload esperado:</h4>
+                <h4 className="font-medium text-sm">📨 Payload esperado:</h4>
                 <pre className="text-xs bg-muted rounded p-3 overflow-x-auto">
 {`{
   "action": "process_message",
   "phone_number": "5511999999999",
   "message": "Olá, quero agendar...",
-  "patient_name": "João Silva"
-}`}
-                </pre>
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-medium text-sm">📤 Resposta retornada:</h4>
-                <pre className="text-xs bg-muted rounded p-3 overflow-x-auto">
-{`{
-  "response": "Olá João! Vou verificar...",
-  "agent_name": "${settings.agent_name}",
-  "requires_human": false
+  "patient_name": "João Silva",
+  "user_id": "${user?.id || 'seu-user-id'}"
 }`}
                 </pre>
               </div>
@@ -590,9 +728,8 @@ export default function AIAgent() {
                     <div className="text-sm">
                       <p className="font-medium text-amber-800 dark:text-amber-200">Modo Híbrido</p>
                       <p className="text-amber-700 dark:text-amber-300 mt-1">
-                        O agente responde automaticamente, mas se o paciente pedir para falar com um humano,
-                        o sistema sinaliza <code className="bg-amber-200/50 px-1 rounded">"requires_human": true</code> na resposta.
-                        Configure no n8n para encaminhar essas mensagens para seu atendimento manual.
+                        O agente responde automaticamente. Se o paciente pedir para falar com humano,
+                        o sistema retorna <code className="bg-amber-200/50 px-1 rounded">"requires_human": true</code>.
                       </p>
                     </div>
                   </div>
