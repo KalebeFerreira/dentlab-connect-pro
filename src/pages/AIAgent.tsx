@@ -95,13 +95,51 @@ export default function AIAgent() {
           auto_reply_outside_hours: data.auto_reply_outside_hours ?? true,
           outside_hours_message: data.outside_hours_message,
         });
+        setTrialStartedAt((data as any).trial_started_at);
       }
     } catch (err) {
       console.error('Erro ao carregar configurações:', err);
     } finally {
       setLoading(false);
+      setTrialLoading(false);
     }
   };
+
+  // Start trial automatically for non-premium users
+  const startTrial = async () => {
+    if (!user) return;
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('ai_agent_settings')
+        .upsert({
+          user_id: user.id,
+          agent_name: settings.agent_name || 'Assistente',
+          trial_started_at: now,
+        } as any, { onConflict: 'user_id' })
+        .select()
+        .single();
+      if (error) throw error;
+      setTrialStartedAt(now);
+      if (data) {
+        setSettings(prev => ({ ...prev, id: data.id }));
+      }
+      toast.success('🎉 Teste gratuito de 15 dias ativado!');
+    } catch (err) {
+      console.error('Erro ao iniciar trial:', err);
+      toast.error('Erro ao ativar período de teste');
+    }
+  };
+
+  // Trial calculations
+  const TRIAL_DAYS = 15;
+  const trialEndDate = trialStartedAt ? new Date(new Date(trialStartedAt).getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000) : null;
+  const now = new Date();
+  const trialDaysRemaining = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : TRIAL_DAYS;
+  const trialExpired = trialStartedAt ? trialDaysRemaining <= 0 : false;
+  const trialActive = trialStartedAt ? !trialExpired : false;
+  const trialPercentUsed = trialStartedAt ? Math.min(100, ((TRIAL_DAYS - trialDaysRemaining) / TRIAL_DAYS) * 100) : 0;
+  const hasAccess = isPremium || trialActive;
 
   const saveSettings = async () => {
     if (!user) return;
