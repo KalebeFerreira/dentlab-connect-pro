@@ -38,7 +38,7 @@ const DeliveryPersons = lazy(() => import("./pages/DeliveryPersons"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Install = lazy(() => import("./pages/Install"));
 // const Marketing = lazy(() => import("./pages/Marketing"));
-const AIAssistant = lazy(() => import("./pages/AIAssistant"));
+
 const Employees = lazy(() => import("./pages/Employees"));
 const EmployeeLogin = lazy(() => import("./pages/EmployeeLogin"));
 const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
@@ -135,7 +135,7 @@ const App = () => (
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/install" element={<Install />} />
                                 {/* <Route path="/marketing" element={<Marketing />} /> */}
-                                <Route path="/ai-assistant" element={<AIAssistant />} />
+                                
                                 <Route path="/ai-agent" element={<AIAgent />} />
                                 <Route path="/employees" element={<Employees />} />
                                 <Route path="/fiscal" element={<Fiscal />} />
