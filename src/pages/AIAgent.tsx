@@ -61,7 +61,9 @@ export default function AIAgent() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const hasAccess = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+  const isPremium = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+  const [trialStartedAt, setTrialStartedAt] = useState<string | null>(null);
+  const [trialLoading, setTrialLoading] = useState(true);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;
 
