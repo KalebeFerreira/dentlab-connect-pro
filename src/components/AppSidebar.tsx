@@ -39,7 +39,7 @@ const menuItems = [
 const toolsItems = [
   { title: "Gerador de Imagens", url: "/image-generator", icon: Image },
   { title: "Tabela de Preços", url: "/price-table", icon: Table2 },
-  { title: "Assistente IA", url: "/ai-assistant", icon: Bot },
+  
   { title: "Agente WhatsApp", url: "/ai-agent", icon: MessageSquare },
 ];
 
