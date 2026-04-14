@@ -234,22 +234,52 @@ export default function AIAgent() {
   }
 
   if (!hasAccess) {
+    // Trial expired — show upgrade prompt
+    if (trialExpired) {
+      return (
+        <div className="container mx-auto p-4 md:p-6 max-w-4xl">
+          <Card className="border-2 border-destructive/30">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="relative mb-6">
+                <Bot className="h-20 w-20 text-muted-foreground/50" />
+                <XCircle className="h-8 w-8 text-destructive absolute -bottom-1 -right-1" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Período de Teste Encerrado</h2>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                Seu teste gratuito de 15 dias do Agente IA WhatsApp expirou.
+                Assine o plano Premium para continuar usando este recurso.
+              </p>
+              <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
+                <Crown className="h-5 w-5" />
+                Assinar Plano Premium
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // No trial started yet — show activation screen
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-        <Card className="border-2 border-dashed border-muted">
+        <Card className="border-2 border-dashed border-primary/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="relative mb-6">
-              <Bot className="h-20 w-20 text-muted-foreground/50" />
-              <Lock className="h-8 w-8 text-primary absolute -bottom-1 -right-1" />
+              <Bot className="h-20 w-20 text-primary/60" />
+              <Sparkles className="h-8 w-8 text-primary absolute -bottom-1 -right-1" />
             </div>
             <h2 className="text-2xl font-bold mb-2">Agente IA WhatsApp</h2>
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+              <Timer className="h-3 w-3 mr-1" />
+              15 dias grátis
+            </Badge>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Configure seu agente de IA para atendimento automático via WhatsApp.
-              Disponível para assinantes Premium.
+              Experimente gratuitamente por 15 dias! Configure seu agente de IA para 
+              atendimento automático via WhatsApp com integração n8n e Evolution API.
             </p>
-            <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
-              <Crown className="h-5 w-5" />
-              Assinar Plano Premium
+            <Button onClick={startTrial} size="lg" className="gap-2">
+              <Sparkles className="h-5 w-5" />
+              Ativar Teste Gratuito de 15 Dias
             </Button>
           </CardContent>
         </Card>
