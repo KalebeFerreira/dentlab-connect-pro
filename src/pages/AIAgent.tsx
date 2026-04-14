@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
   CheckCircle2, XCircle, Crown, Lock, Phone, Globe, Clock,
-  Copy, ExternalLink
+  Copy, ExternalLink, Timer, Sparkles
 } from 'lucide-react';
 
 interface AgentSettings {
