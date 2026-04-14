@@ -305,6 +305,36 @@ export default function AIAgent() {
         </Button>
       </div>
 
+      {/* Trial Banner */}
+      {trialActive && !isPremium && (
+        <Alert className="border-primary/50 bg-primary/5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <Timer className="h-4 w-4 text-primary" />
+                <AlertDescription className="font-semibold">
+                  Teste Gratuito — {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+                </AlertDescription>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Período de teste</span>
+                  <span>{Math.round(trialPercentUsed)}% usado</span>
+                </div>
+                <Progress value={trialPercentUsed} className="h-2" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Seu teste gratuito termina em {trialEndDate?.toLocaleDateString('pt-BR')}. Assine o Premium para acesso permanente.
+              </p>
+              <Button size="sm" onClick={() => navigate('/planos')} variant="outline" className="mt-1 gap-1">
+                <Crown className="h-3 w-3" />
+                Ver Planos
+              </Button>
+            </div>
+          </div>
+        </Alert>
+      )}
+
       <Tabs defaultValue="agent" className="space-y-4">
         <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="agent" className="gap-1.5 text-xs sm:text-sm">
