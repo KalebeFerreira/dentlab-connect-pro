@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, Upload, Scan, Loader2, X, Check, FileImage, FileText, File } from "lucide-react";
 import { format } from "date-fns";
+import { isPdfFile, renderPdfFirstPageToImage } from "@/lib/pdfToImage";
 
 interface ExtractedData {
   clinic_name: string | null;
@@ -48,7 +49,6 @@ export const EmployeeDocumentScanner = ({ ownerUserId, employeeId, employeeName,
   const [isSaving, setIsSaving] = useState(false);
   const [currentFileData, setCurrentFileData] = useState<string | null>(null);
 
-  // Editable form fields
   const [workType, setWorkType] = useState("");
   const [serviceName, setServiceName] = useState("");
   const [serviceValue, setServiceValue] = useState("");
@@ -106,16 +106,21 @@ export const EmployeeDocumentScanner = ({ ownerUserId, employeeId, employeeName,
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      let fileData = e.target?.result as string;
+      const originalFileData = e.target?.result as string;
+      let fileData = originalFileData;
+
       if (isImage) {
         fileData = await compressImage(fileData);
+        setPreviewImage(fileData);
+      } else if (isPdfFile(file.type, originalFileData)) {
+        fileData = await renderPdfFirstPageToImage(originalFileData, { maxWidth: 1600, quality: 0.92 });
         setPreviewImage(fileData);
       } else {
         setPreviewImage(null);
       }
       setCurrentFileData(fileData);
       setPreviewFile({ name: file.name, type: file.type });
-      processFile(fileData, isImage ? 'image/jpeg' : file.type);
+      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : file.type);
     };
     reader.readAsDataURL(file);
   };

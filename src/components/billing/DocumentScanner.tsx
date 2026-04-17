@@ -11,12 +11,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useScannerLimits } from "@/hooks/useScannerLimits";
 import { FreemiumBanner } from "@/components/FreemiumBanner";
-import { 
-  Camera, 
-  Upload, 
-  Scan, 
-  Loader2, 
-  X, 
+import {
+  Camera,
+  Upload,
+  Scan,
+  Loader2,
+  X,
   Check,
   FileImage,
   Layers,
@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClientAutocomplete } from "@/components/ClientAutocomplete";
+import { isPdfFile, renderPdfFirstPageToImage } from "@/lib/pdfToImage";
 
 interface ExtractedData {
   clinic_name: string | null;
@@ -47,7 +48,6 @@ interface DocumentScannerProps {
   onScanComplete?: () => void;
 }
 
-// Supported file types
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
@@ -63,15 +63,13 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentFileData, setCurrentFileData] = useState<string | null>(null);
-  
-  // Batch mode states
+
   const [batchMode, setBatchMode] = useState(false);
   const [batchCount, setBatchCount] = useState(0);
-  
-  // Camera help dialog
+
   const [showCameraHelp, setShowCameraHelp] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,12 +94,10 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // iOS/Safari às vezes precisa disso para iniciar o vídeo
         videoRef.current.onloadedmetadata = async () => {
           try {
             await videoRef.current?.play();
           } catch {
-            // ignore
           }
         };
       }
@@ -112,7 +108,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       const name = error?.name || '';
       let errorType = 'unknown';
       let msg = 'Não foi possível abrir a câmera neste aparelho.';
-      
+
       if (name === 'NotAllowedError') {
         errorType = 'permission';
         msg = 'Permissão de câmera negada.';
@@ -142,7 +138,6 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     setShowCamera(false);
   };
 
-  // Compressão de imagem para redes lentas (4G/3G)
   const compressImage = (dataUrl: string, maxWidth = 1200, quality = 0.7): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -151,7 +146,6 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         let width = img.width;
         let height = img.height;
 
-        // Redimensionar se maior que maxWidth
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
@@ -162,23 +156,20 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          // Aplicar suavização para melhor qualidade
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
         }
 
-        // Converter para JPEG com qualidade reduzida
         const compressedData = canvas.toDataURL('image/jpeg', quality);
-        
-        // Log do tamanho para debug
+
         const originalSize = Math.round(dataUrl.length / 1024);
         const compressedSize = Math.round(compressedData.length / 1024);
         console.log(`Imagem comprimida: ${originalSize}KB → ${compressedSize}KB (${Math.round((1 - compressedSize/originalSize) * 100)}% menor)`);
-        
+
         resolve(compressedData);
       };
-      img.onerror = () => resolve(dataUrl); // Fallback para original se falhar
+      img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;
     });
   };
@@ -187,19 +178,18 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         const rawImage = canvas.toDataURL('image/jpeg', 0.9);
-        
-        // Comprimir antes de processar
+
         toast.info('Otimizando imagem...');
         const compressedImage = await compressImage(rawImage);
-        
+
         setPreviewImage(compressedImage);
         setPreviewFile({ name: 'captured_photo.jpg', type: 'image/jpeg' });
         setCurrentFileData(compressedImage);
@@ -233,16 +223,14 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check file type - ser mais flexível com imagens
     const isImage = file.type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(file.type);
     const isDoc = SUPPORTED_DOC_TYPES.includes(file.type);
-    
+
     if (!isImage && !isDoc) {
       toast.error(`Tipo de arquivo não suportado. Use: JPG, PNG, PDF, Word ou Excel`);
       return;
     }
 
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Arquivo muito grande. Máximo 10MB.');
       return;
@@ -250,40 +238,41 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      let fileData = e.target?.result as string;
-      
-      // Comprimir imagens automaticamente para redes lentas
+      const originalFileData = e.target?.result as string;
+      let fileData = originalFileData;
+
       if (isImage) {
         toast.info('Otimizando imagem para envio...');
         fileData = await compressImage(fileData);
         setPreviewImage(fileData);
+      } else if (isPdfFile(file.type, originalFileData)) {
+        toast.info('Preparando PDF para análise...');
+        fileData = await renderPdfFirstPageToImage(originalFileData, { maxWidth: 1600, quality: 0.92 });
+        setPreviewImage(fileData);
       } else {
         setPreviewImage(null);
       }
-      
+
       setCurrentFileData(fileData);
       setPreviewFile({ name: file.name, type: file.type });
-      
-      processFile(fileData, isImage ? 'image/jpeg' : file.type);
+
+      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : file.type);
     };
     reader.readAsDataURL(file);
   };
 
   const processFile = async (fileData: string, fileType: string) => {
-    // Check scanner limits before processing
     if (!scannerLimits.checkAndWarn()) return;
-    
+
     setIsScanning(true);
     try {
-      // Detect if it's an image (check both type and data URL)
-      const isImageType = SUPPORTED_IMAGE_TYPES.includes(fileType) || 
+      const isImageType = SUPPORTED_IMAGE_TYPES.includes(fileType) ||
                           fileType.startsWith('image/') ||
                           fileData.startsWith('data:image/');
-      
-      // For images, use the AI scanner
+
       if (isImageType) {
         console.log('Enviando imagem para scan-document...', { fileType, dataLength: fileData.length });
-        
+
         const { data, error } = await supabase.functions.invoke('scan-document', {
           body: { imageBase64: fileData }
         });
@@ -308,10 +297,8 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
             toast.info('Preencha ou corrija os dados manualmente');
           }
         } else if (data?.error) {
-          // API returned an error but with status 200
           console.error('Erro retornado pela API:', data.error);
           toast.error('Erro: ' + data.error);
-          // Still show dialog for manual entry
           setExtractedData({
             clinic_name: null,
             patient_name: null,
@@ -324,7 +311,6 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
           throw new Error('Resposta inválida do servidor');
         }
       } else {
-        // For documents (PDF, Word, Excel), show form for manual entry
         setExtractedData({
           clinic_name: null,
           patient_name: null,
@@ -337,7 +323,6 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     } catch (error: any) {
       console.error('Erro ao processar documento:', error);
       toast.error('Erro ao processar: ' + (error.message || 'Tente novamente'));
-      // Show dialog for manual entry even on error
       setExtractedData({
         clinic_name: null,
         patient_name: null,
