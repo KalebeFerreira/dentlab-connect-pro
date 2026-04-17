@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2, Camera, Upload, FileImage } from "lucide-react";
 import { useScannerLimits } from "@/hooks/useScannerLimits";
 import { FreemiumBanner } from "@/components/FreemiumBanner";
+import { isPdfFile, renderPdfFirstPageToImage } from "@/lib/pdfToImage";
 
 interface ScannedItem {
   workType: string;
@@ -25,25 +26,26 @@ export const PriceTableScanner = ({ onItemsScanned }: PriceTableScannerProps) =>
   const scannerLimits = useScannerLimits();
 
   const processImage = async (file: File) => {
-    // Check scanner limits before processing
     if (!scannerLimits.checkAndWarn()) return;
-    
+
     setScanning(true);
-    
+
     try {
-      // Convert file to base64
       const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
+      const fileDataUrl = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
 
-      setPreview(base64);
+      const scanInput = isPdfFile(file.type, fileDataUrl)
+        ? await renderPdfFirstPageToImage(fileDataUrl, { maxWidth: 1600, quality: 0.92 })
+        : fileDataUrl;
 
-      // Call edge function to scan document
+      setPreview(scanInput);
+
       const { data, error } = await supabase.functions.invoke("scan-price-table", {
-        body: { imageBase64: base64 },
+        body: { imageBase64: scanInput },
       });
 
       if (error) throw error;
@@ -81,8 +83,7 @@ export const PriceTableScanner = ({ onItemsScanned }: PriceTableScannerProps) =>
     }
 
     await processImage(file);
-    
-    // Reset input
+
     if (e.target) e.target.value = "";
   };
 

@@ -12,12 +12,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useScannerLimits } from "@/hooks/useScannerLimits";
 import { FreemiumBanner } from "@/components/FreemiumBanner";
-import { 
-  Camera, 
-  Upload, 
-  Scan, 
-  Loader2, 
-  X, 
+import {
+  Camera,
+  Upload,
+  Scan,
+  Loader2,
+  X,
   Check,
   FileImage,
   Layers,
@@ -30,6 +30,7 @@ import {
   TrendingDown
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isPdfFile, renderPdfFirstPageToImage } from "@/lib/pdfToImage";
 
 interface ExtractedFinancialData {
   transaction_type: 'receipt' | 'payment' | null;
@@ -44,7 +45,6 @@ interface ExtractedFinancialData {
   classification_reason?: string | null;
 }
 
-// Expense categories
 const EXPENSE_CATEGORIES = [
   { value: 'materials', label: 'Materiais' },
   { value: 'fixed_costs', label: 'Contas Fixas' },
@@ -62,13 +62,12 @@ interface FinancialDocumentScannerProps {
   defaultYear?: number;
 }
 
-// Supported file types
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
 
-export const FinancialDocumentScanner = ({ 
-  onTransactionAdd, 
+export const FinancialDocumentScanner = ({
+  onTransactionAdd,
   onScanComplete,
   defaultMonth = new Date().getMonth() + 1,
   defaultYear = new Date().getFullYear()
@@ -83,21 +82,18 @@ export const FinancialDocumentScanner = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentFileData, setCurrentFileData] = useState<string | null>(null);
-  
-  // Form fields for manual editing
+
   const [formMonth, setFormMonth] = useState(defaultMonth);
   const [formYear, setFormYear] = useState(defaultYear);
   const [formStatus, setFormStatus] = useState<'pending' | 'completed'>('completed');
   const [formCategory, setFormCategory] = useState<string>('');
-  
-  // Batch mode states
+
   const [batchMode, setBatchMode] = useState(false);
   const [batchCount, setBatchCount] = useState(0);
-  
-  // Camera states
+
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [showCameraHelp, setShowCameraHelp] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +121,6 @@ export const FinancialDocumentScanner = ({
           try {
             await videoRef.current?.play();
           } catch {
-            // ignore
           }
         };
       }
@@ -134,7 +129,7 @@ export const FinancialDocumentScanner = ({
       console.error('Erro ao acessar câmera:', error);
       const name = error?.name || '';
       let msg = 'Não foi possível abrir a câmera.';
-      
+
       if (name === 'NotAllowedError') {
         setCameraError('permission');
         msg = 'Permissão de câmera negada.';
@@ -192,18 +187,18 @@ export const FinancialDocumentScanner = ({
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         const rawImage = canvas.toDataURL('image/jpeg', 0.9);
-        
+
         toast.info('Otimizando imagem...');
         const compressedImage = await compressImage(rawImage);
-        
+
         setPreviewImage(compressedImage);
         setPreviewFile({ name: 'captured_photo.jpg', type: 'image/jpeg' });
         setCurrentFileData(compressedImage);
@@ -229,7 +224,7 @@ export const FinancialDocumentScanner = ({
 
     const isImage = file.type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(file.type);
     const isDoc = SUPPORTED_DOC_TYPES.includes(file.type);
-    
+
     if (!isImage && !isDoc) {
       toast.error(`Tipo de arquivo não suportado. Use: JPG, PNG ou PDF`);
       return;
@@ -242,31 +237,37 @@ export const FinancialDocumentScanner = ({
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      let fileData = e.target?.result as string;
-      
+      const originalFileData = e.target?.result as string;
+      let fileData = originalFileData;
+
       if (isImage) {
         toast.info('Otimizando imagem para envio...');
         fileData = await compressImage(fileData);
         setPreviewImage(fileData);
+      } else if (isPdfFile(file.type, originalFileData)) {
+        toast.info('Preparando PDF para análise...');
+        fileData = await renderPdfFirstPageToImage(originalFileData, { maxWidth: 1600, quality: 0.92 });
+        setPreviewImage(fileData);
       } else {
         setPreviewImage(null);
       }
-      
+
       setCurrentFileData(fileData);
       setPreviewFile({ name: file.name, type: file.type });
-      
-      processFile(fileData, isImage ? 'image/jpeg' : file.type);
+
+      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : file.type);
     };
     reader.readAsDataURL(file);
   };
 
   const processFile = async (fileData: string, fileType: string) => {
-    // Check scanner limits before processing
     if (!scannerLimits.checkAndWarn()) return;
-    
+
     setIsScanning(true);
     try {
-      if (SUPPORTED_IMAGE_TYPES.includes(fileType)) {
+      const isImageType = SUPPORTED_IMAGE_TYPES.includes(fileType) || fileType.startsWith('image/') || fileData.startsWith('data:image/');
+
+      if (isImageType) {
         const { data, error } = await supabase.functions.invoke('scan-financial-document', {
           body: { imageBase64: fileData }
         });
@@ -277,17 +278,16 @@ export const FinancialDocumentScanner = ({
           await scannerLimits.incrementUsage();
           const confidence = data.confidence || 'medium';
           const isUnsure = confidence !== 'high';
-          
+
           setExtractedData({
             ...data.data,
-            // Se a IA não tem certeza, não pré-selecionar o tipo
             transaction_type: isUnsure ? null : data.data.transaction_type,
             raw_text: data.raw_text || data.data.raw_text || null,
             confidence: confidence,
             classification_reason: data.classification_reason || null,
           });
           setShowConfirmDialog(true);
-          
+
           if (isUnsure) {
             toast.warning('⚠️ A IA não tem certeza! Escolha se é RECEITA ou DESPESA.', {
               duration: 5000,
@@ -301,7 +301,6 @@ export const FinancialDocumentScanner = ({
           throw new Error(data?.error || 'Erro ao processar imagem');
         }
       } else {
-        // For PDFs, show form for manual entry
         setExtractedData({
           transaction_type: null,
           amount: null,
@@ -317,6 +316,17 @@ export const FinancialDocumentScanner = ({
     } catch (error: any) {
       console.error('Erro ao processar documento:', error);
       toast.error('Erro ao processar: ' + (error.message || 'Tente novamente'));
+      setExtractedData({
+        transaction_type: null,
+        amount: null,
+        description: null,
+        vendor_name: null,
+        document_number: null,
+        date: null,
+        category: null,
+        raw_text: 'Erro ao processar - preencha manualmente'
+      });
+      setShowConfirmDialog(true);
     } finally {
       setIsScanning(false);
     }
