@@ -55,11 +55,8 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { setOpen } = useSidebar();
-  const { role, isDentist } = useUserRole();
+  const { isDentist } = useUserRole();
   const { signOut } = useAuth();
-
-  // Debug: log user role for troubleshooting visibility issues
-  console.log('[AppSidebar] User role:', role, '| isDentist:', isDentist);
 
   const handleNavClick = () => {
     if (isMobile) {

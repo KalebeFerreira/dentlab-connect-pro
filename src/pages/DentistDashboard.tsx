@@ -22,32 +22,38 @@ export default function DentistDashboard() {
   const checkDentistAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         navigate('/auth');
         return;
       }
 
-      // Check if user has dentist role
-      const { data: roles } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'dentist')
-        .single();
+        .maybeSingle();
 
-      if (!roles) {
+      if (roleError) {
+        console.error('Error checking dentist role:', roleError);
+      }
+
+      if (!roleData) {
         console.error('User does not have dentist role');
         navigate('/dashboard');
         return;
       }
 
-      // Get dentist info
-      const { data: dentists } = await supabase
+      const { data: dentists, error: dentistError } = await supabase
         .from('dentists')
         .select('*')
         .eq('user_id', user.id)
         .limit(1);
+
+      if (dentistError) {
+        throw dentistError;
+      }
 
       if (!dentists || dentists.length === 0) {
         console.error('Dentist profile not found');

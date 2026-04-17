@@ -159,19 +159,29 @@ const Dashboard = () => {
         return;
       }
 
-      // Check user role - only redirect dentists automatically
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (roleData?.role === 'dentist') {
+      if (roleError) {
+        console.error("Error checking user role:", roleError);
+      }
+
+      const fallbackRole = user.user_metadata?.role ?? user.user_metadata?.user_type ?? null;
+      const role = roleData?.role ?? fallbackRole;
+
+      if (role === 'dentist') {
         navigate("/dentist");
         return;
       }
 
-      // For clinic and laboratory users, stay on main dashboard
+      if (role === 'employee') {
+        navigate("/employee-dashboard");
+        return;
+      }
+
       setUser(user);
       await loadStats(user.id);
     } catch (error) {

@@ -30,12 +30,16 @@ export default function EmployeeLogin() {
       if (error) throw error;
 
       if (authData.user) {
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', authData.user.id)
           .eq('role', 'employee')
-          .single();
+          .maybeSingle();
+
+        if (roleError) {
+          console.error('Error checking employee role:', roleError);
+        }
 
         if (!roleData) {
           await supabase.auth.signOut();
