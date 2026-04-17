@@ -10,8 +10,30 @@ import { toast } from "sonner";
 import { Loader2, Building2, FlaskConical, Eye, EyeOff, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { InstallAppDialog } from "@/components/InstallAppDialog";
+import type { UserRole } from "@/hooks/useUserRole";
 
 type UserType = "clinic" | "laboratory";
+
+const getFallbackRoleFromMetadata = (metadata?: Record<string, any>): UserRole | null => {
+  const role = metadata?.role;
+  const userType = metadata?.user_type;
+
+  if (role === "admin" || role === "clinic" || role === "laboratory" || role === "dentist" || role === "employee") {
+    return role;
+  }
+
+  if (userType === "clinic" || userType === "laboratory") {
+    return userType;
+  }
+
+  return null;
+};
+
+const getRedirectPathByRole = (role: UserRole | null) => {
+  if (role === "dentist") return "/dentist";
+  if (role === "employee") return "/employee-dashboard";
+  return "/dashboard";
+};
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -23,12 +45,25 @@ const Auth = () => {
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
 
-  // Redirect authenticated users
   useEffect(() => {
-    if (!authLoading && user) {
-      console.log('[AUTH] User already authenticated, redirecting to dashboard');
-      navigate('/dashboard');
-    }
+    const redirectAuthenticatedUser = async () => {
+      if (authLoading || !user) return;
+
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[AUTH] Error fetching role for redirect:", error);
+      }
+
+      const role = (data?.role as UserRole | undefined) ?? getFallbackRoleFromMetadata(user.user_metadata);
+      navigate(getRedirectPathByRole(role), { replace: true });
+    };
+
+    redirectAuthenticatedUser();
   }, [user, authLoading, navigate]);
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -61,8 +96,6 @@ const Auth = () => {
           description: "Você já pode fazer login.",
         });
         setIsSignUp(false);
-        
-        // Show install dialog after successful signup
         setShowInstallDialog(true);
       } else {
         const { data: authData, error } = await supabase.auth.signInWithPassword({
@@ -73,41 +106,35 @@ const Auth = () => {
         if (error) throw error;
 
         toast.success("Login realizado com sucesso!");
-        
-        // Check if user previously skipped install reminder
+
         const skippedInstall = localStorage.getItem("skipInstallReminder");
         const skipDate = localStorage.getItem("skipInstallReminderDate");
-        
-        // Show install reminder if skipped more than 24 hours ago
+
         if (skippedInstall && skipDate) {
           const hoursSinceSkip = (Date.now() - new Date(skipDate).getTime()) / (1000 * 60 * 60);
           if (hoursSinceSkip >= 24) {
-            // Clear the old skip and show reminder
             localStorage.removeItem("skipInstallReminder");
             localStorage.removeItem("skipInstallReminderDate");
             setShowInstallDialog(true);
           }
         }
-        
-        // Check user role to redirect appropriately
-        if (authData.user) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', authData.user.id)
-            .single();
 
-          if (roleData?.role === 'dentist') {
-            navigate("/dentist");
-            return;
+        if (authData.user) {
+          const { data: roleData, error: roleError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", authData.user.id)
+            .maybeSingle();
+
+          if (roleError) {
+            console.error("[AUTH] Error fetching role after login:", roleError);
           }
-          if (roleData?.role === 'employee') {
-            navigate("/employee-dashboard");
-            return;
-          }
+
+          const role = (roleData?.role as UserRole | undefined) ?? getFallbackRoleFromMetadata(authData.user.user_metadata);
+          navigate(getRedirectPathByRole(role));
+          return;
         }
 
-        // For all other users, go to main dashboard
         navigate("/dashboard");
       }
     } catch (error: any) {
@@ -219,10 +246,10 @@ const Auth = () => {
                 Voltar para Login
               </Button>
             </form>
-            
+
             <div className="mt-6 pt-4 border-t text-center">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 <Home className="w-4 h-4" />
@@ -317,7 +344,7 @@ const Auth = () => {
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Entrar
                 </Button>
-                
+
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
@@ -439,7 +466,7 @@ const Auth = () => {
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Criar Conta
                 </Button>
-                
+
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
@@ -480,10 +507,10 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
-          
+
           <div className="mt-6 pt-4 border-t text-center">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               <Home className="w-4 h-4" />
@@ -492,10 +519,10 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
-      
-      <InstallAppDialog 
-        open={showInstallDialog} 
-        onOpenChange={setShowInstallDialog} 
+
+      <InstallAppDialog
+        open={showInstallDialog}
+        onOpenChange={setShowInstallDialog}
       />
     </div>
   );
