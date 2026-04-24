@@ -54,7 +54,7 @@ export const renderPdfFirstPageToImage = async (
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  await page.render({ canvasContext: context, viewport }).promise;
+  await page.render({ canvas, canvasContext: context, viewport }).promise;
 
   return canvas.toDataURL("image/jpeg", options?.quality ?? 0.92);
 };
