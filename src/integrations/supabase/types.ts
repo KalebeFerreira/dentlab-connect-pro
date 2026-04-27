@@ -1435,6 +1435,72 @@ export type Database = {
         }
         Relationships: []
       }
+      pix_payments: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          discounted_amount: number
+          expires_at: string | null
+          id: string
+          mercadopago_payment_id: string | null
+          original_amount: number
+          paid_at: string | null
+          payer_email: string | null
+          plan_key: string
+          price_id: string
+          qr_code: string | null
+          qr_code_base64: string | null
+          status: string
+          subscription_end: string | null
+          subscription_start: string | null
+          ticket_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_cycle: string
+          created_at?: string
+          discounted_amount: number
+          expires_at?: string | null
+          id?: string
+          mercadopago_payment_id?: string | null
+          original_amount: number
+          paid_at?: string | null
+          payer_email?: string | null
+          plan_key: string
+          price_id: string
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          subscription_end?: string | null
+          subscription_start?: string | null
+          ticket_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          discounted_amount?: number
+          expires_at?: string | null
+          id?: string
+          mercadopago_payment_id?: string | null
+          original_amount?: number
+          paid_at?: string | null
+          payer_email?: string | null
+          plan_key?: string
+          price_id?: string
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          subscription_end?: string | null
+          subscription_start?: string | null
+          ticket_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       price_tables: {
         Row: {
           created_at: string
