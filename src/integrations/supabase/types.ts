@@ -1108,6 +1108,57 @@ export type Database = {
         }
         Relationships: []
       }
+      mercadopago_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_action: string | null
+          event_type: string | null
+          http_status: number | null
+          id: string
+          payment_data: Json | null
+          payment_id: string | null
+          payment_status: string | null
+          processing_time_ms: number | null
+          raw_body: Json | null
+          raw_headers: Json | null
+          signature_valid: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_action?: string | null
+          event_type?: string | null
+          http_status?: number | null
+          id?: string
+          payment_data?: Json | null
+          payment_id?: string | null
+          payment_status?: string | null
+          processing_time_ms?: number | null
+          raw_body?: Json | null
+          raw_headers?: Json | null
+          signature_valid?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_action?: string | null
+          event_type?: string | null
+          http_status?: number | null
+          id?: string
+          payment_data?: Json | null
+          payment_id?: string | null
+          payment_status?: string | null
+          processing_time_ms?: number | null
+          raw_body?: Json | null
+          raw_headers?: Json | null
+          signature_valid?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       message_history: {
         Row: {
           appointment_id: string | null
