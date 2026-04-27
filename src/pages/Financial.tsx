@@ -417,6 +417,8 @@ const Financial = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <PixChargeDialog open={pixDialogOpen} onOpenChange={setPixDialogOpen} />
     </div>
   );
 };
