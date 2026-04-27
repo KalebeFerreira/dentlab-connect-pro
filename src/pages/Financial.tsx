@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare, History, FileText } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare, History, FileText, QrCode } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
+import { PixChargeDialog } from "@/components/PixChargeDialog";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialDocumentScanner } from "@/components/FinancialDocumentScanner";
 import { FinancialCharts } from "@/components/FinancialCharts";
@@ -40,6 +41,7 @@ const Financial = () => {
   const [activeTab, setActiveTab] = useState("transactions");
   const [companyName, setCompanyName] = useState("Minha Empresa");
   const [scanHistoryRefresh, setScanHistoryRefresh] = useState(0);
+  const [pixDialogOpen, setPixDialogOpen] = useState(false);
   const { isSubscribed } = useFreemiumLimits();
 
   useEffect(() => {
@@ -196,7 +198,17 @@ const Financial = () => {
                 Gerencie receitas, despesas e acompanhe seu lucro
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={() => setPixDialogOpen(true)}
+                size="sm"
+                variant="outline"
+                className="border-primary/40 text-primary hover:bg-primary/10"
+              >
+                <QrCode className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Cobrança PIX</span>
+                <span className="sm:hidden">PIX</span>
+              </Button>
               <FinancialExportOptions
                 transactions={transactions}
                 month={filterMonth}
