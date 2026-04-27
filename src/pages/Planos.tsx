@@ -9,6 +9,7 @@ import { useSubscription, PLANS } from "@/hooks/useSubscription";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { PixPaymentDialog } from "@/components/PixPaymentDialog";
 
 const Planos = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Planos = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [isAnnual, setIsAnnual] = useState(false);
+  const [pixDialog, setPixDialog] = useState<{ priceId: string; planName: string } | null>(null);
   const { subscribed, currentPlan, loading: subLoading, refresh } = useSubscription();
 
   useEffect(() => {
@@ -244,7 +246,7 @@ const Planos = () => {
                     ))}
                   </ul>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex-col gap-2">
                   <Button
                     className="w-full"
                     onClick={() => handleSubscribe(currentPriceId)}
@@ -256,15 +258,31 @@ const Planos = () => {
                     ) : isCurrentPlan ? (
                       "Plano Ativo"
                     ) : (
-                      "Assinar Agora"
+                      "Assinar com Cartão"
                     )}
                   </Button>
+                  {!isCurrentPlan && currentPriceId && (
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => setPixDialog({ priceId: currentPriceId, planName: plan.name })}
+                    >
+                      Pagar com PIX (10% OFF)
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             );
           })}
         </div>
       </main>
+
+      <PixPaymentDialog
+        open={!!pixDialog}
+        onOpenChange={(o) => !o && setPixDialog(null)}
+        priceId={pixDialog?.priceId ?? null}
+        planName={pixDialog?.planName ?? ""}
+        onSuccess={refresh}
+      />
     </div>
   );
 };
