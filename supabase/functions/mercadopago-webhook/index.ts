@@ -119,8 +119,23 @@ serve(async (req) => {
     }
 
     const status = payment.status;
-    const userId = payment.metadata?.user_id ?? payment.external_reference;
-    const billingCycle = payment.metadata?.billing_cycle ?? "monthly";
+
+    // Look up our pix_payments record FIRST to get the authoritative plan_key/billing_cycle/user_id
+    const { data: pixRecord, error: pixFetchError } = await supabaseAdmin
+      .from("pix_payments")
+      .select("user_id, plan_key, billing_cycle")
+      .eq("mercadopago_payment_id", String(paymentId))
+      .maybeSingle();
+
+    if (pixFetchError) console.error("pix_payments lookup error:", pixFetchError);
+
+    // Prefer the DB record (source of truth), fall back to MP metadata
+    const userId =
+      pixRecord?.user_id ?? payment.metadata?.user_id ?? payment.external_reference;
+    const planKey =
+      pixRecord?.plan_key ?? payment.metadata?.plan_key ?? payment.metadata?.plan_name ?? null;
+    const billingCycle =
+      pixRecord?.billing_cycle ?? payment.metadata?.billing_cycle ?? "monthly";
 
     logEntry = {
       ...logEntry,
@@ -151,14 +166,22 @@ serve(async (req) => {
     if (updateError) console.error("Update pix_payments error:", updateError);
 
     if (status === "approved" && userId && subscriptionEnd) {
+      const subscriptionPayload: Record<string, unknown> = {
+        user_id: userId,
+        status: "active",
+        current_period_start: subscriptionStart,
+        current_period_end: subscriptionEnd,
+        cancel_at_period_end: false,
+        updated_at: new Date().toISOString(),
+      };
+      if (planKey) subscriptionPayload.plan_name = planKey;
+
       const { error: subError } = await supabaseAdmin
         .from("user_subscriptions")
-        .upsert(
-          { user_id: userId, status: "active", current_period_end: subscriptionEnd, updated_at: new Date().toISOString() },
-          { onConflict: "user_id" }
-        );
+        .upsert(subscriptionPayload, { onConflict: "user_id" });
+
       if (subError) console.error("Subscription upsert error:", subError);
-      console.log("Subscription activated for user:", userId, "until", subscriptionEnd);
+      console.log("Subscription activated:", { userId, planKey, billingCycle, until: subscriptionEnd });
     }
 
     await writeLog({}, 200);
