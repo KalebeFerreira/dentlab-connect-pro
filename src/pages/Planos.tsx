@@ -9,6 +9,7 @@ import { useSubscription, PLANS } from "@/hooks/useSubscription";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { PixPaymentDialog } from "@/components/PixPaymentDialog";
 
 const Planos = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Planos = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [isAnnual, setIsAnnual] = useState(false);
+  const [pixDialog, setPixDialog] = useState<{ priceId: string; planName: string } | null>(null);
   const { subscribed, currentPlan, loading: subLoading, refresh } = useSubscription();
 
   useEffect(() => {
