@@ -27,6 +27,7 @@ export const DentistManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDentist, setEditingDentist] = useState<Dentist | null>(null);
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     name: "",
