@@ -108,6 +108,16 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
   const activeCount = employees.filter(e => e.status === "active").length;
 
   const handleOpenDialog = (employee?: Employee) => {
+    if (!employee && isAtFreeLimit) {
+      toast.error("Limite do plano gratuito atingido", {
+        description: "O plano gratuito permite cadastrar apenas 1 funcionário. Faça upgrade para cadastrar mais.",
+        action: {
+          label: "Ver Planos",
+          onClick: () => navigate("/planos"),
+        },
+      });
+      return;
+    }
     if (employee) {
       setEditingEmployee(employee);
       setFormData({
