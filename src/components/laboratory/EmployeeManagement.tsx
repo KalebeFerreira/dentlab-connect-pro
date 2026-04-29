@@ -11,11 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail, KeyRound, Loader2 } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail, KeyRound, Loader2, Crown } from "lucide-react";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { useNavigate } from "react-router-dom";
 
 export interface Employee {
   id: string;
@@ -61,6 +63,10 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { isSubscribed } = useFreemiumLimits();
+  const FREE_EMPLOYEE_LIMIT = 1;
+  const isAtFreeLimit = !isSubscribed && employees.length >= FREE_EMPLOYEE_LIMIT;
   
   const [formData, setFormData] = useState({
     name: "",
@@ -102,6 +108,16 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
   const activeCount = employees.filter(e => e.status === "active").length;
 
   const handleOpenDialog = (employee?: Employee) => {
+    if (!employee && isAtFreeLimit) {
+      toast.error("Limite do plano gratuito atingido", {
+        description: "O plano gratuito permite cadastrar apenas 1 funcionário. Faça upgrade para cadastrar mais.",
+        action: {
+          label: "Ver Planos",
+          onClick: () => navigate("/planos"),
+        },
+      });
+      return;
+    }
     if (employee) {
       setEditingEmployee(employee);
       setFormData({
@@ -146,6 +162,11 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
         if (error) throw error;
         toast.success("Funcionário atualizado!");
       } else {
+        if (isAtFreeLimit) {
+          toast.error("Limite do plano gratuito atingido. Faça upgrade para cadastrar mais.");
+          setSaving(false);
+          return;
+        }
         const { error } = await supabase
           .from("employees")
           .insert({
@@ -404,6 +425,19 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
           </div>
         </CardHeader>
         <CardContent>
+          {isAtFreeLimit && (
+            <div className="mb-4 p-3 rounded-lg border border-primary/40 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <Crown className="h-4 w-4 text-primary mt-0.5" />
+                <p className="text-sm">
+                  <strong>Plano gratuito:</strong> permite cadastrar apenas 1 funcionário. Faça upgrade para cadastrar mais.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => navigate("/planos")}>
+                <Crown className="h-3 w-3 mr-1" /> Ver Planos
+              </Button>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="flex items-center gap-2 flex-1">
               <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />

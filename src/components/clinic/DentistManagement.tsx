@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit, UserCircle } from "lucide-react";
+import { Plus, Trash2, Edit, UserCircle, Crown } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { useNavigate } from "react-router-dom";
 
 interface Dentist {
   id: string;
@@ -25,6 +27,10 @@ export const DentistManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDentist, setEditingDentist] = useState<Dentist | null>(null);
+  const navigate = useNavigate();
+  const { isSubscribed } = useFreemiumLimits();
+  const FREE_DENTIST_LIMIT = 1;
+  const isAtFreeLimit = !isSubscribed && dentists.length >= FREE_DENTIST_LIMIT;
   
   const [formData, setFormData] = useState({
     name: "",
@@ -63,6 +69,10 @@ export const DentistManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!editingDentist && isAtFreeLimit) {
+      toast.error("Limite do plano gratuito atingido. Faça upgrade para cadastrar mais dentistas.");
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -197,6 +207,13 @@ export const DentistManagement = () => {
             <CardDescription>Gerencie os dentistas da sua clínica</CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            if (open && !editingDentist && isAtFreeLimit) {
+              toast.error("Limite do plano gratuito atingido", {
+                description: "O plano gratuito permite cadastrar apenas 1 dentista. Faça upgrade para cadastrar mais.",
+                action: { label: "Ver Planos", onClick: () => navigate("/planos") },
+              });
+              return;
+            }
             setIsDialogOpen(open);
             if (!open) resetForm();
           }}>
@@ -276,6 +293,19 @@ export const DentistManagement = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {isAtFreeLimit && (
+          <div className="mb-4 p-3 rounded-lg border border-primary/40 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-start gap-2">
+              <Crown className="h-4 w-4 text-primary mt-0.5" />
+              <p className="text-sm">
+                <strong>Plano gratuito:</strong> permite cadastrar apenas 1 dentista. Faça upgrade para cadastrar mais.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => navigate("/planos")}>
+              <Crown className="h-3 w-3 mr-1" /> Ver Planos
+            </Button>
+          </div>
+        )}
         {dentists.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
