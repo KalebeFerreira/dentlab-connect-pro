@@ -27,6 +27,10 @@ export const DentistManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDentist, setEditingDentist] = useState<Dentist | null>(null);
+  const navigate = useNavigate();
+  const { isSubscribed } = useFreemiumLimits();
+  const FREE_DENTIST_LIMIT = 1;
+  const isAtFreeLimit = !isSubscribed && dentists.length >= FREE_DENTIST_LIMIT;
   
   const [formData, setFormData] = useState({
     name: "",
