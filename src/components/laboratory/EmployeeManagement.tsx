@@ -11,11 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail, KeyRound, Loader2 } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail, KeyRound, Loader2, Crown } from "lucide-react";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { useNavigate } from "react-router-dom";
 
 export interface Employee {
   id: string;
