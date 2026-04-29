@@ -63,6 +63,7 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     name: "",
