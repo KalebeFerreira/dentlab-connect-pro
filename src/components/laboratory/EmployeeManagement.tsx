@@ -16,6 +16,8 @@ import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { checkTeamLimit } from "@/lib/checkFreePlanTeamLimit";
+import { useNavigate } from "react-router-dom";
 
 export interface Employee {
   id: string;
@@ -61,6 +63,7 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -146,6 +149,17 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
         if (error) throw error;
         toast.success("Funcionário atualizado!");
       } else {
+        const limitCheck = await checkTeamLimit(user.id, "employees");
+        if (!limitCheck.allowed) {
+          toast.error("Limite do plano atingido", {
+            description: limitCheck.reason,
+            duration: 7000,
+            action: { label: "Fazer upgrade", onClick: () => navigate("/planos") },
+          });
+          setSaving(false);
+          return;
+        }
+
         const { error } = await supabase
           .from("employees")
           .insert({
