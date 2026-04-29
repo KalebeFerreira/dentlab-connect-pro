@@ -162,6 +162,11 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
         if (error) throw error;
         toast.success("Funcionário atualizado!");
       } else {
+        if (isAtFreeLimit) {
+          toast.error("Limite do plano gratuito atingido. Faça upgrade para cadastrar mais.");
+          setSaving(false);
+          return;
+        }
         const { error } = await supabase
           .from("employees")
           .insert({
