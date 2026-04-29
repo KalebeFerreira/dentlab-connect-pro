@@ -25,15 +25,10 @@ export const checkTeamLimit = async (
   const free = await isFreePlan(userId);
   if (!free) return { allowed: true };
 
-  let query = supabase
-    .from(table)
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
-
-  if (table === "dentists") query = query.eq("is_active", true);
-  else query = query.eq("status", "active");
-
-  const { count } = await query;
+  const base = supabase.from(table as any).select("id", { count: "exact", head: true }).eq("user_id", userId);
+  const { count } = table === "dentists"
+    ? await base.eq("is_active", true)
+    : await base.eq("status", "active");
 
   if ((count || 0) >= 1) {
     const label = table === "employees" ? "funcionário" : "dentista";
