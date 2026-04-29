@@ -69,6 +69,10 @@ export const DentistManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!editingDentist && isAtFreeLimit) {
+      toast.error("Limite do plano gratuito atingido. Faça upgrade para cadastrar mais dentistas.");
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
