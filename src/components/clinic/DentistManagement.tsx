@@ -207,6 +207,13 @@ export const DentistManagement = () => {
             <CardDescription>Gerencie os dentistas da sua clínica</CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            if (open && !editingDentist && isAtFreeLimit) {
+              toast.error("Limite do plano gratuito atingido", {
+                description: "O plano gratuito permite cadastrar apenas 1 dentista. Faça upgrade para cadastrar mais.",
+                action: { label: "Ver Planos", onClick: () => navigate("/planos") },
+              });
+              return;
+            }
             setIsDialogOpen(open);
             if (!open) resetForm();
           }}>
