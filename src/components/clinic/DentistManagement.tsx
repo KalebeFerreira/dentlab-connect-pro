@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit, UserCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { checkTeamLimit } from "@/lib/checkFreePlanTeamLimit";
+import { useNavigate } from "react-router-dom";
 
 interface Dentist {
   id: string;
