@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit, UserCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { checkTeamLimit } from "@/lib/checkFreePlanTeamLimit";
-import { useNavigate } from "react-router-dom";
 
 interface Dentist {
   id: string;
@@ -27,7 +25,6 @@ export const DentistManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDentist, setEditingDentist] = useState<Dentist | null>(null);
-  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -79,16 +76,6 @@ export const DentistManagement = () => {
         if (error) throw error;
         toast.success("Dentista atualizado com sucesso!");
       } else {
-        const limitCheck = await checkTeamLimit(user.id, "dentists");
-        if (!limitCheck.allowed) {
-          toast.error("Limite do plano atingido", {
-            description: limitCheck.reason,
-            duration: 7000,
-            action: { label: "Fazer upgrade", onClick: () => navigate("/planos") },
-          });
-          return;
-        }
-
         const { error } = await supabase
           .from("dentists")
           .insert([{ ...formData, user_id: user.id }]);
