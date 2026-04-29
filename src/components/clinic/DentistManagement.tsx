@@ -293,6 +293,19 @@ export const DentistManagement = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {isAtFreeLimit && (
+          <div className="mb-4 p-3 rounded-lg border border-primary/40 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-start gap-2">
+              <Crown className="h-4 w-4 text-primary mt-0.5" />
+              <p className="text-sm">
+                <strong>Plano gratuito:</strong> permite cadastrar apenas 1 dentista. Faça upgrade para cadastrar mais.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => navigate("/planos")}>
+              <Crown className="h-3 w-3 mr-1" /> Ver Planos
+            </Button>
+          </div>
+        )}
         {dentists.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
