@@ -79,6 +79,16 @@ export const DentistManagement = () => {
         if (error) throw error;
         toast.success("Dentista atualizado com sucesso!");
       } else {
+        const limitCheck = await checkTeamLimit(user.id, "dentists");
+        if (!limitCheck.allowed) {
+          toast.error("Limite do plano atingido", {
+            description: limitCheck.reason,
+            duration: 7000,
+            action: { label: "Fazer upgrade", onClick: () => navigate("/planos") },
+          });
+          return;
+        }
+
         const { error } = await supabase
           .from("dentists")
           .insert([{ ...formData, user_id: user.id }]);
