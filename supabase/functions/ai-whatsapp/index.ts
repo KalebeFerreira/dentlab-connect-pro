@@ -119,7 +119,7 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages,
         temperature: 0.7,
-        max_tokens: 600,
+        max_tokens: 2048,
         response_format: { type: "json_object" },
       }),
     });
