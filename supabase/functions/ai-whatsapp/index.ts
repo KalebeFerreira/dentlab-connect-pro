@@ -187,7 +187,10 @@ serve(async (req) => {
       try {
         const baseUrl = EVOLUTION_API_URL.replace(/\/+$/, "");
         const sendUrl = `${baseUrl}/message/sendText/${encodeURIComponent(EVOLUTION_INSTANCE)}`;
-        console.log(`[ai-whatsapp] enviando via Evolution: ${sendUrl}`);
+        // Prefer sessionId from n8n (already a remoteJid like "5561...@s.whatsapp.net" or raw number).
+        // Fallback to normalized phone number.
+        const recipient = (sessionId && String(sessionId).trim()) || normalizedPhone;
+        console.log(`[ai-whatsapp] enviando via Evolution: ${sendUrl} → ${recipient}`);
         const evoRes = await fetch(sendUrl, {
           method: "POST",
           headers: {
@@ -195,7 +198,7 @@ serve(async (req) => {
             apikey: EVOLUTION_API_KEY,
           },
           body: JSON.stringify({
-            number: normalizedPhone,
+            number: recipient,
             text: result.response,
           }),
         });
