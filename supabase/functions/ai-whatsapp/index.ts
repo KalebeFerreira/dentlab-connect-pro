@@ -169,7 +169,51 @@ serve(async (req) => {
 
     console.log(`[ai-whatsapp] reply intent=${result.meta.intent} temp=${result.meta.lead_temperature}`);
 
-    return new Response(JSON.stringify(result), {
+    // Send reply back through Evolution API
+    const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
+    const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
+    const EVOLUTION_INSTANCE = Deno.env.get("EVOLUTION_INSTANCE");
+
+    let evolution_sent = false;
+    let evolution_error: string | null = null;
+
+    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE) {
+      evolution_error = "Evolution API não configurada (EVOLUTION_API_URL/EVOLUTION_API_KEY/EVOLUTION_INSTANCE)";
+      console.warn(`[ai-whatsapp] ${evolution_error}`);
+    } else if (/^(https?:\/\/)?(localhost|127\.0\.0\.1)/i.test(EVOLUTION_API_URL)) {
+      evolution_error = "EVOLUTION_API_URL aponta para endereço local — use o domínio público";
+      console.error(`[ai-whatsapp] ${evolution_error}`);
+    } else {
+      try {
+        const baseUrl = EVOLUTION_API_URL.replace(/\/+$/, "");
+        const sendUrl = `${baseUrl}/message/sendText/${encodeURIComponent(EVOLUTION_INSTANCE)}`;
+        console.log(`[ai-whatsapp] enviando via Evolution: ${sendUrl}`);
+        const evoRes = await fetch(sendUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: EVOLUTION_API_KEY,
+          },
+          body: JSON.stringify({
+            number: normalizedPhone,
+            text: result.response,
+          }),
+        });
+        const evoText = await evoRes.text().catch(() => "");
+        if (!evoRes.ok) {
+          evolution_error = `Evolution API erro ${evoRes.status}: ${evoText.slice(0, 300)}`;
+          console.error(`[ai-whatsapp] ${evolution_error}`);
+        } else {
+          evolution_sent = true;
+          console.log(`[ai-whatsapp] enviado com sucesso via Evolution`);
+        }
+      } catch (e) {
+        evolution_error = e instanceof Error ? e.message : String(e);
+        console.error(`[ai-whatsapp] falha no envio Evolution: ${evolution_error}`);
+      }
+    }
+
+    return new Response(JSON.stringify({ ...result, evolution_sent, evolution_error }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
