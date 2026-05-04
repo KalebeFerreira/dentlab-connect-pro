@@ -119,7 +119,7 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages,
         temperature: 0.7,
-        max_tokens: 600,
+        max_tokens: 2048,
         response_format: { type: "json_object" },
       }),
     });
@@ -143,13 +143,21 @@ serve(async (req) => {
     }
 
     const aiData = await aiRes.json();
-    const raw = aiData.choices?.[0]?.message?.content || "";
+    const choice = aiData.choices?.[0];
+    const raw = choice?.message?.content || "";
+    const finishReason = choice?.finish_reason || "unknown";
+    const usage = aiData.usage || {};
+    console.log(`[ai-whatsapp] AI finish_reason=${finishReason} tokens=${JSON.stringify(usage)} raw_len=${raw.length}`);
+
+    if (finishReason === "length" || finishReason === "MAX_TOKENS") {
+      console.warn(`[ai-whatsapp] resposta truncada por limite de tokens — considere aumentar max_tokens`);
+    }
 
     let parsed: { response: string; meta: { lead_temperature: string; intent: string; suggested_action: string } };
     try {
       parsed = JSON.parse(raw);
-    } catch {
-      console.warn("[ai-whatsapp] resposta não-JSON, usando fallback");
+    } catch (e) {
+      console.warn(`[ai-whatsapp] resposta não-JSON (finish=${finishReason}), usando fallback. raw="${raw.slice(0, 200)}"`);
       parsed = {
         response: raw || "Desculpe, pode repetir? 😊",
         meta: { lead_temperature: "warm", intent: "other", suggested_action: "continue" },
