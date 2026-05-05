@@ -228,6 +228,18 @@ const Orders = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
+                        size="sm"
+                        className="h-8 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-md hover:opacity-90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/orders/${order.id}/contract`);
+                        }}
+                        title="Gerar contrato com IA"
+                      >
+                        <FileSignature className="h-4 w-4 mr-1" />
+                        Contrato IA
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
