@@ -174,6 +174,14 @@ const ServiceContract = () => {
             {generatingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             PDF
           </Button>
+          <Button onClick={handleDownloadWord} disabled={!contractText} size="sm" variant="outline">
+            <FileText className="mr-2 h-4 w-4" />
+            Word
+          </Button>
+          <Button onClick={handleDownloadExcel} disabled={!contractText} size="sm" variant="outline">
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Excel
+          </Button>
         </div>
       </header>
 
