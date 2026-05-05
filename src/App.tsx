@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Orders = lazy(() => import("./pages/Orders"));
 const NewOrder = lazy(() => import("./pages/NewOrder"));
 const OrderDetails = lazy(() => import("./pages/OrderDetails"));
+const ServiceContract = lazy(() => import("./pages/ServiceContract"));
 const Financial = lazy(() => import("./pages/Financial"));
 const ImageGenerator = lazy(() => import("./pages/ImageGenerator"));
 const PriceTable = lazy(() => import("./pages/PriceTable"));
