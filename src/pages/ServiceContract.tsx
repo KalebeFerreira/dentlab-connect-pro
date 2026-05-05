@@ -214,7 +214,7 @@ const ServiceContract = () => {
                 <span className="ml-3 text-muted-foreground">Gerando contrato com IA...</span>
               </div>
             ) : (
-              <div ref={printRef} className="bg-white text-black p-8 rounded-md">
+              <div ref={printRef} className="bg-white text-black p-12 rounded-md mx-auto" style={{ width: "794px", fontSize: "16px", lineHeight: "1.7", fontFamily: "Georgia, serif" }}>
                 <div className="prose max-w-none">
                   {renderMarkdown(contractText)}
                 </div>
