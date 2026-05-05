@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil, FileSignature } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { EditOrderDialog } from "@/components/EditOrderDialog";
@@ -227,6 +227,18 @@ const Orders = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        className="h-8 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-md hover:opacity-90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/orders/${order.id}/contract`);
+                        }}
+                        title="Gerar contrato com IA"
+                      >
+                        <FileSignature className="h-4 w-4 mr-1" />
+                        Contrato IA
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
