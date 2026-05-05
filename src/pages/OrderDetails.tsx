@@ -409,6 +409,16 @@ _Enviado via DentLab Connect_`;
                 <Pencil className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Editar</span>
               </Button>
+              <Button
+                onClick={() => navigate(`/orders/${id}/contract`)}
+                variant="outline"
+                size="sm"
+                className="text-primary border-primary hover:bg-primary/10"
+              >
+                <FileSignature className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Contrato IA</span>
+                <span className="sm:hidden">Contrato</span>
+              </Button>
               <Button 
                 onClick={handleSendOrderWhatsApp}
                 variant="outline"
