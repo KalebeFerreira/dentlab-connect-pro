@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye, Pencil } from "lucide-react";
+import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye, Pencil, FileSignature } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EditOrderDialog } from "@/components/EditOrderDialog";
 import { FileUpload } from "@/components/FileUpload";
