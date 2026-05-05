@@ -411,13 +411,11 @@ _Enviado via DentLab Connect_`;
               </Button>
               <Button
                 onClick={() => navigate(`/orders/${id}/contract`)}
-                variant="outline"
                 size="sm"
-                className="text-primary border-primary hover:bg-primary/10"
+                className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover:opacity-90 shadow-lg animate-pulse font-semibold"
               >
                 <FileSignature className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Contrato IA</span>
-                <span className="sm:hidden">Contrato</span>
+                Gerar Contrato IA
               </Button>
               <Button 
                 onClick={handleSendOrderWhatsApp}
