@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, FileSignature, Sparkles, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, FileSignature, Sparkles, Download, Loader2, FileText, FileSpreadsheet } from "lucide-react";
 import { SignaturePad } from "@/components/SignaturePad";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdfGenerator";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from "docx";
+import ExcelJS from "exceljs";
 
 const ServiceContract = () => {
   const { id } = useParams();
