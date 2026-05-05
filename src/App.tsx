@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Orders = lazy(() => import("./pages/Orders"));
 const NewOrder = lazy(() => import("./pages/NewOrder"));
 const OrderDetails = lazy(() => import("./pages/OrderDetails"));
+const ServiceContract = lazy(() => import("./pages/ServiceContract"));
 const Financial = lazy(() => import("./pages/Financial"));
 const ImageGenerator = lazy(() => import("./pages/ImageGenerator"));
 const PriceTable = lazy(() => import("./pages/PriceTable"));
@@ -120,6 +121,7 @@ const App = () => (
                                 <Route path="/orders" element={<Orders />} />
                                 <Route path="/orders/new" element={<NewOrder />} />
                                 <Route path="/orders/:id" element={<OrderDetails />} />
+                                <Route path="/orders/:id/contract" element={<ServiceContract />} />
                                 <Route path="/financial" element={<Financial />} />
                                 <Route path="/image-generator" element={<ImageGenerator />} />
                                 <Route path="/price-table" element={<PriceTable />} />

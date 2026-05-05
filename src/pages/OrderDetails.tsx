@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye, Pencil } from "lucide-react";
+import { ArrowLeft, Building2, User, Calendar, FileText, Download, Mail, MessageCircle, Trash2, Eye, Pencil, FileSignature } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EditOrderDialog } from "@/components/EditOrderDialog";
 import { FileUpload } from "@/components/FileUpload";
@@ -408,6 +408,16 @@ _Enviado via DentLab Connect_`;
               >
                 <Pencil className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Editar</span>
+              </Button>
+              <Button
+                onClick={() => navigate(`/orders/${id}/contract`)}
+                variant="outline"
+                size="sm"
+                className="text-primary border-primary hover:bg-primary/10"
+              >
+                <FileSignature className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Contrato IA</span>
+                <span className="sm:hidden">Contrato</span>
               </Button>
               <Button 
                 onClick={handleSendOrderWhatsApp}
