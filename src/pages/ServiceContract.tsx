@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, FileSignature, Sparkles, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, FileSignature, Sparkles, Download, Loader2, FileText, FileSpreadsheet } from "lucide-react";
 import { SignaturePad } from "@/components/SignaturePad";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdfGenerator";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from "docx";
+import ExcelJS from "exceljs";
 
 const ServiceContract = () => {
   const { id } = useParams();
@@ -63,19 +65,90 @@ const ServiceContract = () => {
     }
   };
 
+  const handleDownloadWord = async () => {
+    try {
+      const lines = contractText.split("\n");
+      const children: Paragraph[] = [];
+      lines.forEach((line) => {
+        if (line.startsWith("# ")) {
+          children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, children: [new TextRun({ text: line.replace("# ", ""), bold: true, size: 32 })] }));
+        } else if (line.startsWith("## ")) {
+          children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: line.replace("## ", ""), bold: true, size: 28 })] }));
+        } else if (line.startsWith("**") && line.endsWith("**")) {
+          children.push(new Paragraph({ children: [new TextRun({ text: line.replace(/\*\*/g, ""), bold: true, size: 24 })] }));
+        } else if (!line.trim()) {
+          children.push(new Paragraph({ children: [new TextRun("")] }));
+        } else {
+          children.push(new Paragraph({ alignment: AlignmentType.JUSTIFIED, children: [new TextRun({ text: line, size: 24 })] }));
+        }
+      });
+
+      if (signature) {
+        children.push(new Paragraph({ children: [new TextRun("")] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: "Assinatura do CONTRATADO:", size: 22 })] }));
+        try {
+          const base64 = signature.split(",")[1];
+          const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+          children.push(new Paragraph({ children: [new ImageRun({ type: "png", data: bytes, transformation: { width: 200, height: 100 } } as any)] }));
+        } catch {}
+        children.push(new Paragraph({ children: [new TextRun({ text: contractor?.nome || "", bold: true, size: 22 })] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: contractor?.cpf_cnpj || "", size: 20 })] }));
+      }
+
+      const doc = new Document({ sections: [{ properties: {}, children }] });
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contrato-${order?.patient_name || "servico"}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Word gerado com sucesso!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao gerar Word");
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    try {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Contrato");
+      ws.columns = [{ width: 110 }];
+      contractText.split("\n").forEach((line) => {
+        const row = ws.addRow([line.replace(/^#+\s*/, "").replace(/\*\*/g, "")]);
+        const cell = row.getCell(1);
+        cell.alignment = { wrapText: true, vertical: "top" };
+        cell.font = { size: 12, bold: line.startsWith("#") || (line.startsWith("**") && line.endsWith("**")) };
+      });
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contrato-${order?.patient_name || "servico"}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Excel gerado com sucesso!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao gerar Excel");
+    }
+  };
+
   const renderMarkdown = (text: string) => {
     return text.split("\n").map((line, i) => {
       if (line.startsWith("## ")) {
-        return <h2 key={i} className="text-lg font-bold mt-4 mb-2">{line.replace("## ", "")}</h2>;
+        return <h2 key={i} className="text-2xl font-bold mt-6 mb-3">{line.replace("## ", "")}</h2>;
       }
       if (line.startsWith("# ")) {
-        return <h1 key={i} className="text-2xl font-bold mt-4 mb-3 text-center">{line.replace("# ", "")}</h1>;
+        return <h1 key={i} className="text-3xl font-bold mt-6 mb-4 text-center">{line.replace("# ", "")}</h1>;
       }
       if (line.startsWith("**") && line.endsWith("**")) {
-        return <p key={i} className="font-semibold my-1">{line.replace(/\*\*/g, "")}</p>;
+        return <p key={i} className="font-semibold my-2 text-base">{line.replace(/\*\*/g, "")}</p>;
       }
       if (!line.trim()) return <br key={i} />;
-      return <p key={i} className="my-2 text-justify leading-relaxed">{line}</p>;
+      return <p key={i} className="my-3 text-justify leading-7 text-base">{line}</p>;
     });
   };
 
@@ -100,6 +173,14 @@ const ServiceContract = () => {
           <Button onClick={handleDownloadPdf} disabled={generatingPdf || !contractText} size="sm">
             {generatingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             PDF
+          </Button>
+          <Button onClick={handleDownloadWord} disabled={!contractText} size="sm" variant="outline">
+            <FileText className="mr-2 h-4 w-4" />
+            Word
+          </Button>
+          <Button onClick={handleDownloadExcel} disabled={!contractText} size="sm" variant="outline">
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Excel
           </Button>
         </div>
       </header>
@@ -133,7 +214,7 @@ const ServiceContract = () => {
                 <span className="ml-3 text-muted-foreground">Gerando contrato com IA...</span>
               </div>
             ) : (
-              <div ref={printRef} className="bg-white text-black p-8 rounded-md">
+              <div ref={printRef} className="bg-white text-black p-12 rounded-md mx-auto" style={{ width: "794px", fontSize: "16px", lineHeight: "1.7", fontFamily: "Georgia, serif" }}>
                 <div className="prose max-w-none">
                   {renderMarkdown(contractText)}
                 </div>
