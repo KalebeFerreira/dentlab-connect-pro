@@ -61,8 +61,8 @@ const ServiceContract = () => {
         format: "a4",
         orientation: "portrait",
         margin: [10, 10, 10, 10],
-        scale: 3,
-        imageQuality: 1,
+        scale: 2,
+        imageQuality: 0.95,
         fitToPage: false,
       });
       toast.success("PDF gerado com sucesso!");
