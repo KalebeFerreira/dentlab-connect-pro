@@ -164,33 +164,35 @@ const ServiceContract = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-14 z-40">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="container mx-auto px-4 py-3 flex flex-wrap items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/orders/${id}`)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              <FileSignature className="h-5 w-5" />
-              Contrato de Prestação de Serviço
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-xl font-bold flex items-center gap-2 truncate">
+              <FileSignature className="h-5 w-5 shrink-0" />
+              <span className="truncate">Contrato de Serviço</span>
             </h1>
-            <p className="text-xs text-muted-foreground">Gerado por IA com seus dados cadastrados</p>
+            <p className="text-xs text-muted-foreground hidden sm:block">Gerado por IA com seus dados cadastrados</p>
           </div>
-          <Button onClick={generateContract} disabled={loading} variant="outline" size="sm">
-            <Sparkles className="mr-2 h-4 w-4" />
-            {loading ? "Gerando..." : "Regerar"}
-          </Button>
-          <Button onClick={handleDownloadPdf} disabled={generatingPdf || !contractText} size="sm">
-            {generatingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            PDF
-          </Button>
-          <Button onClick={handleDownloadWord} disabled={!contractText} size="sm" variant="outline">
-            <FileText className="mr-2 h-4 w-4" />
-            Word
-          </Button>
-          <Button onClick={handleDownloadExcel} disabled={!contractText} size="sm" variant="outline">
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Excel
-          </Button>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <Button onClick={generateContract} disabled={loading} variant="outline" size="sm" className="flex-1 sm:flex-none">
+              <Sparkles className="mr-2 h-4 w-4" />
+              {loading ? "Gerando..." : "Regerar"}
+            </Button>
+            <Button onClick={handleDownloadPdf} disabled={generatingPdf || !contractText} size="sm" className="flex-1 sm:flex-none">
+              {generatingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              PDF
+            </Button>
+            <Button onClick={handleDownloadWord} disabled={!contractText} size="sm" variant="outline" className="flex-1 sm:flex-none">
+              <FileText className="mr-2 h-4 w-4" />
+              Word
+            </Button>
+            <Button onClick={handleDownloadExcel} disabled={!contractText} size="sm" variant="outline" className="flex-1 sm:flex-none">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Excel
+            </Button>
+          </div>
         </div>
       </header>
 
