@@ -258,7 +258,16 @@ const ServiceContract = () => {
           </CardContent>
         </Card>
 
-        <SignaturePad value={signature} onSignatureChange={setSignature} />
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-semibold mb-2">Assinatura do CONTRATANTE</p>
+            <SignaturePad value={signatureContratante} onSignatureChange={setSignatureContratante} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold mb-2">Assinatura do CONTRATADO</p>
+            <SignaturePad value={signature} onSignatureChange={setSignature} />
+          </div>
+        </div>
       </main>
     </div>
   );
