@@ -8,6 +8,7 @@ interface PDFOptions {
   orientation?: "portrait" | "landscape";
   imageQuality?: number;
   scale?: number;
+  fitToPage?: boolean;
 }
 
 const defaultOptions: Required<PDFOptions> = {
@@ -17,6 +18,7 @@ const defaultOptions: Required<PDFOptions> = {
   orientation: "portrait",
   imageQuality: 0.98,
   scale: 2,
+  fitToPage: true,
 };
 
 /**
@@ -62,10 +64,13 @@ export async function generatePDF(
   const availableWidth = pageWidth - margins[1] - margins[3];
   const availableHeight = pageHeight - margins[0] - margins[2];
   
-  // Calculate image dimensions maintaining aspect ratio
+  // Calculate image dimensions maintaining aspect ratio.
+  // For long documents, width-based scaling keeps text readable and lets content flow across pages.
   const imgWidth = canvas.width;
   const imgHeight = canvas.height;
-  const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
+  const ratio = opts.fitToPage
+    ? Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
+    : availableWidth / imgWidth;
   
   const scaledWidth = imgWidth * ratio;
   const scaledHeight = imgHeight * ratio;
@@ -152,7 +157,9 @@ export async function generatePDFBlob(
   
   const imgWidth = canvas.width;
   const imgHeight = canvas.height;
-  const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
+  const ratio = opts.fitToPage
+    ? Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
+    : availableWidth / imgWidth;
   
   const scaledWidth = imgWidth * ratio;
   const scaledHeight = imgHeight * ratio;

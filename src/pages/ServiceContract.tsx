@@ -55,9 +55,10 @@ const ServiceContract = () => {
         filename: `contrato-${order?.patient_name || "servico"}.pdf`,
         format: "a4",
         orientation: "portrait",
-        margin: [15, 15, 15, 15],
+        margin: [10, 10, 10, 10],
         scale: 3,
         imageQuality: 1,
+        fitToPage: false,
       });
       toast.success("PDF gerado com sucesso!");
     } catch (e) {
@@ -142,16 +143,16 @@ const ServiceContract = () => {
   const renderMarkdown = (text: string) => {
     return text.split("\n").map((line, i) => {
       if (line.startsWith("## ")) {
-        return <h2 key={i} className="text-2xl font-bold mt-6 mb-3">{line.replace("## ", "")}</h2>;
+        return <h2 key={i} className="text-[26px] font-bold mt-8 mb-4 pb-2 border-b-2 border-black">{line.replace("## ", "")}</h2>;
       }
       if (line.startsWith("# ")) {
-        return <h1 key={i} className="text-3xl font-bold mt-6 mb-4 text-center">{line.replace("# ", "")}</h1>;
+        return <h1 key={i} className="text-[34px] font-bold mt-2 mb-3 text-center">{line.replace("# ", "")}</h1>;
       }
       if (line.startsWith("**") && line.endsWith("**")) {
-        return <p key={i} className="font-semibold my-2 text-base">{line.replace(/\*\*/g, "")}</p>;
+        return <p key={i} className="font-semibold my-3 text-[20px]">{line.replace(/\*\*/g, "")}</p>;
       }
       if (!line.trim()) return <br key={i} />;
-      return <p key={i} className="my-3 text-justify leading-7 text-base">{line}</p>;
+      return <p key={i} className="my-4 text-justify leading-[1.85] text-[19px]">{line}</p>;
     });
   };
 
@@ -217,18 +218,26 @@ const ServiceContract = () => {
                 <span className="ml-3 text-muted-foreground">Gerando contrato com IA...</span>
               </div>
             ) : (
-              <div ref={printRef} className="bg-white text-black rounded-md mx-auto" style={{ width: "680px", padding: "32px", fontSize: "17px", lineHeight: "1.75", fontFamily: "Georgia, serif", color: "#000" }}>
-                <div className="prose max-w-none">
+              <div ref={printRef} className="bg-white text-black rounded-md mx-auto" style={{ width: "800px", padding: "40px", fontSize: "19px", lineHeight: "1.85", fontFamily: "Arial, sans-serif", color: "#000" }}>
+                <div className="text-center mb-8 border-b-2 border-black pb-5">
+                  <FileSignature className="h-12 w-12 mx-auto mb-3 text-black" />
+                  <p className="text-[16px] font-semibold uppercase tracking-wide">Contrato gerado por IA</p>
+                  <p className="text-[15px] mt-2">Data de emissão: {new Date().toLocaleDateString("pt-BR")}</p>
+                </div>
+                <div className="prose max-w-none text-black">
                   {renderMarkdown(contractText)}
                 </div>
                 {signature && (
-                  <div className="mt-8 pt-6 border-t">
-                    <p className="text-sm text-gray-600 mb-2">Assinatura do CONTRATADO:</p>
-                    <img src={signature} alt="Assinatura" className="max-h-32 border rounded p-2" />
-                    <p className="text-sm mt-2 font-semibold">{contractor?.nome}</p>
-                    <p className="text-xs text-gray-600">{contractor?.cpf_cnpj}</p>
+                  <div className="mt-10 pt-7 border-t-2 border-black">
+                    <p className="text-[18px] text-black mb-3 font-semibold">Assinatura do CONTRATADO:</p>
+                    <img src={signature} alt="Assinatura" className="max-h-36 border border-black rounded p-3" />
+                    <p className="text-[18px] mt-3 font-semibold">{contractor?.nome}</p>
+                    <p className="text-[16px] text-black">{contractor?.cpf_cnpj}</p>
                   </div>
                 )}
+                <div className="mt-12 pt-5 border-t text-center text-[14px] text-black">
+                  <p>Documento gerado automaticamente pelo sistema.</p>
+                </div>
               </div>
             )}
           </CardContent>
