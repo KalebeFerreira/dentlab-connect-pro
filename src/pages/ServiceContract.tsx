@@ -144,16 +144,16 @@ const ServiceContract = () => {
   const renderMarkdown = (text: string) => {
     return text.split("\n").map((line, i) => {
       if (line.startsWith("## ")) {
-        return <h2 key={i} className="text-[26px] font-bold mt-8 mb-4 pb-2 border-b-2 border-black">{line.replace("## ", "")}</h2>;
+        return <h2 key={i} className="text-[22px] font-bold mt-7 mb-3 pb-2 border-b-2 border-black">{line.replace("## ", "")}</h2>;
       }
       if (line.startsWith("# ")) {
-        return <h1 key={i} className="text-[34px] font-bold mt-2 mb-3 text-center">{line.replace("# ", "")}</h1>;
+        return <h1 key={i} className="text-[28px] font-bold mt-2 mb-3 text-center">{line.replace("# ", "")}</h1>;
       }
       if (line.startsWith("**") && line.endsWith("**")) {
-        return <p key={i} className="font-semibold my-3 text-[20px]">{line.replace(/\*\*/g, "")}</p>;
+        return <p key={i} className="font-semibold my-3 text-[17px]">{line.replace(/\*\*/g, "")}</p>;
       }
       if (!line.trim()) return <br key={i} />;
-      return <p key={i} className="my-4 text-justify leading-[1.85] text-[19px]">{line}</p>;
+      return <p key={i} className="my-3 text-justify leading-[1.75] text-[16px]">{line}</p>;
     });
   };
 
