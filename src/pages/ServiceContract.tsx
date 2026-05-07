@@ -19,6 +19,7 @@ const ServiceContract = () => {
   const [contractText, setContractText] = useState("");
   const [extraInstructions, setExtraInstructions] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
+  const [signatureContratante, setSignatureContratante] = useState<string | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [contractor, setContractor] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
@@ -143,16 +144,16 @@ const ServiceContract = () => {
   const renderMarkdown = (text: string) => {
     return text.split("\n").map((line, i) => {
       if (line.startsWith("## ")) {
-        return <h2 key={i} className="text-[26px] font-bold mt-8 mb-4 pb-2 border-b-2 border-black">{line.replace("## ", "")}</h2>;
+        return <h2 key={i} className="text-[22px] font-bold mt-7 mb-3 pb-2 border-b-2 border-black">{line.replace("## ", "")}</h2>;
       }
       if (line.startsWith("# ")) {
-        return <h1 key={i} className="text-[34px] font-bold mt-2 mb-3 text-center">{line.replace("# ", "")}</h1>;
+        return <h1 key={i} className="text-[28px] font-bold mt-2 mb-3 text-center">{line.replace("# ", "")}</h1>;
       }
       if (line.startsWith("**") && line.endsWith("**")) {
-        return <p key={i} className="font-semibold my-3 text-[20px]">{line.replace(/\*\*/g, "")}</p>;
+        return <p key={i} className="font-semibold my-3 text-[17px]">{line.replace(/\*\*/g, "")}</p>;
       }
       if (!line.trim()) return <br key={i} />;
-      return <p key={i} className="my-4 text-justify leading-[1.85] text-[19px]">{line}</p>;
+      return <p key={i} className="my-3 text-justify leading-[1.75] text-[16px]">{line}</p>;
     });
   };
 
@@ -218,24 +219,38 @@ const ServiceContract = () => {
                 <span className="ml-3 text-muted-foreground">Gerando contrato com IA...</span>
               </div>
             ) : (
-              <div ref={printRef} className="bg-white text-black rounded-md mx-auto" style={{ width: "800px", padding: "40px", fontSize: "19px", lineHeight: "1.85", fontFamily: "Arial, sans-serif", color: "#000" }}>
+              <div ref={printRef} className="bg-white text-black rounded-md mx-auto" style={{ width: "800px", padding: "40px", fontSize: "16px", lineHeight: "1.75", fontFamily: "Arial, sans-serif", color: "#000" }}>
                 <div className="text-center mb-8 border-b-2 border-black pb-5">
                   <FileSignature className="h-12 w-12 mx-auto mb-3 text-black" />
-                  <p className="text-[16px] font-semibold uppercase tracking-wide">Contrato gerado por IA</p>
-                  <p className="text-[15px] mt-2">Data de emissão: {new Date().toLocaleDateString("pt-BR")}</p>
+                  <p className="text-[14px] font-semibold uppercase tracking-wide">Contrato gerado por IA</p>
+                  <p className="text-[13px] mt-2">Data de emissão: {new Date().toLocaleDateString("pt-BR")}</p>
                 </div>
                 <div className="prose max-w-none text-black">
                   {renderMarkdown(contractText)}
                 </div>
-                {signature && (
-                  <div className="mt-10 pt-7 border-t-2 border-black">
-                    <p className="text-[18px] text-black mb-3 font-semibold">Assinatura do CONTRATADO:</p>
-                    <img src={signature} alt="Assinatura" className="max-h-36 border border-black rounded p-3" />
-                    <p className="text-[18px] mt-3 font-semibold">{contractor?.nome}</p>
-                    <p className="text-[16px] text-black">{contractor?.cpf_cnpj}</p>
+                <div className="mt-10 pt-7 border-t-2 border-black grid grid-cols-2 gap-8">
+                  <div>
+                    <p className="text-[15px] text-black mb-3 font-semibold">Assinatura do CONTRATANTE:</p>
+                    {signatureContratante ? (
+                      <img src={signatureContratante} alt="Assinatura Contratante" className="max-h-32 border border-black rounded p-2" />
+                    ) : (
+                      <div className="h-32 border-b border-black" />
+                    )}
+                    <p className="text-[15px] mt-3 font-semibold">{order?.patient_name || order?.client_name || "_______________________"}</p>
+                    <p className="text-[13px] text-black">CONTRATANTE</p>
                   </div>
-                )}
-                <div className="mt-12 pt-5 border-t text-center text-[14px] text-black">
+                  <div>
+                    <p className="text-[15px] text-black mb-3 font-semibold">Assinatura do CONTRATADO:</p>
+                    {signature ? (
+                      <img src={signature} alt="Assinatura Contratado" className="max-h-32 border border-black rounded p-2" />
+                    ) : (
+                      <div className="h-32 border-b border-black" />
+                    )}
+                    <p className="text-[15px] mt-3 font-semibold">{contractor?.nome}</p>
+                    <p className="text-[13px] text-black">{contractor?.cpf_cnpj}</p>
+                  </div>
+                </div>
+                <div className="mt-12 pt-5 border-t text-center text-[12px] text-black">
                   <p>Documento gerado automaticamente pelo sistema.</p>
                 </div>
               </div>
@@ -243,7 +258,16 @@ const ServiceContract = () => {
           </CardContent>
         </Card>
 
-        <SignaturePad value={signature} onSignatureChange={setSignature} />
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-semibold mb-2">Assinatura do CONTRATANTE</p>
+            <SignaturePad value={signatureContratante} onSignatureChange={setSignatureContratante} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold mb-2">Assinatura do CONTRATADO</p>
+            <SignaturePad value={signature} onSignatureChange={setSignature} />
+          </div>
+        </div>
       </main>
     </div>
   );
