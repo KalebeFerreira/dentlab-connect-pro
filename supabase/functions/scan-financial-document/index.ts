@@ -151,11 +151,7 @@ REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), c
       }
     }
 
-    // Garantir que amount seja número
-    if (extractedData.amount) {
-      const cleanValue = String(extractedData.amount).replace(/[^\d.,]/g, '').replace(',', '.');
-      extractedData.amount = parseFloat(cleanValue) || null;
-    }
+    extractedData.amount = normalizeCurrencyNumber(extractedData.amount);
 
     // Log da classificação para debug
     console.log('Classificação:', {
@@ -228,4 +224,15 @@ function parseAIResponse(content: string) {
       raw_text: content || 'Não foi possível extrair texto'
     };
   }
+}
+
+function normalizeCurrencyNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (!value) return null;
+  const cleaned = String(value).replace(/[^\d,.]/g, '');
+  if (!cleaned) return null;
+  const normalized = cleaned.includes(',')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : cleaned;
+  return parseFloat(normalized) || null;
 }
