@@ -363,7 +363,9 @@ export const FinancialDocumentScanner = ({
         return;
       }
 
-      const vendorName = extractedData.vendor_name || extractedData.description || 'Transação escaneada';
+      const transactionType = normalizeTransactionType(extractedData.transaction_type) || 'payment';
+      const amount = parseCurrencyValue(extractedData.amount);
+      const vendorName = (extractedData.vendor_name || extractedData.description || 'Transação escaneada').trim();
       
       // Check if there's an existing transaction with same vendor in same month/year
       // to suggest client matching
@@ -386,13 +388,13 @@ export const FinancialDocumentScanner = ({
         .from('financial_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: extractedData.transaction_type || 'payment',
-          amount: extractedData.amount || 0,
+          transaction_type: transactionType,
+          amount,
           description: finalDescription,
           status: formStatus,
           month: formMonth,
           year: formYear,
-          category: extractedData.transaction_type === 'payment' ? (formCategory || extractedData.category) : null
+          category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
         })
         .select('id')
         .single();
@@ -427,14 +429,14 @@ export const FinancialDocumentScanner = ({
                 image_url: publicUrl.publicUrl,
                 file_name: previewFile?.name || 'documento_escaneado.jpg',
                 file_type: previewFile?.type || 'image/jpeg',
-                transaction_type: extractedData.transaction_type || 'payment',
-                amount: extractedData.amount || 0,
+                transaction_type: transactionType,
+                amount,
                 description: finalDescription,
                 vendor_name: extractedData.vendor_name,
                 document_number: extractedData.document_number,
                 document_date: extractedData.date,
                 transaction_id: transactionData?.id,
-                category: extractedData.transaction_type === 'payment' ? (formCategory || extractedData.category) : null
+                category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
               });
           }
         } catch (historyError) {
