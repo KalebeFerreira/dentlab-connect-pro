@@ -55,6 +55,9 @@ const ServiceContract = () => {
         filename: `contrato-${order?.patient_name || "servico"}.pdf`,
         format: "a4",
         orientation: "portrait",
+        margin: [15, 15, 15, 15],
+        scale: 3,
+        imageQuality: 1,
       });
       toast.success("PDF gerado com sucesso!");
     } catch (e) {
