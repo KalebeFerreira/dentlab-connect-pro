@@ -557,7 +557,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     if (extractedData) {
       setExtractedData({
         ...extractedData,
-        [field]: field === 'service_value' ? parseFloat(String(value)) || 0 : value
+        [field]: field === 'service_value' ? parseCurrencyValue(value) : value
       });
     }
   };
