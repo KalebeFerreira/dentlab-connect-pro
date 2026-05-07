@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdfGenerator";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from "docx";
 import ExcelJS from "exceljs";
+import { useSubscription } from "@/hooks/useSubscription";
+import essenciaLogo from "@/assets/essencia-logo.jpg";
 
 const ServiceContract = () => {
   const { id } = useParams();
