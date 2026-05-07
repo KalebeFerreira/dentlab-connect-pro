@@ -52,6 +52,20 @@ const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/we
 const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
 
+const parseCurrencyValue = (value: string | number | null | undefined) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (!value) return 0;
+  const cleaned = String(value).replace(/[^\d,.]/g, '');
+  if (!cleaned) return 0;
+  const normalized = cleaned.includes(',')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : cleaned;
+  return parseFloat(normalized) || 0;
+};
+
+const safeText = (value: string | null | undefined, fallback = '') =>
+  (value || fallback).trim();
+
 export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScannerProps) => {
   const isMobile = useIsMobile();
   const scannerLimits = useScannerLimits();
@@ -431,17 +445,20 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         }
       }
 
+      const serviceName = safeText(extractedData.service_name || extractedData.work_type, 'Serviço escaneado');
+      const serviceValue = parseCurrencyValue(extractedData.service_value);
+
       // Insert service with deduplicated client name
       const { data: serviceData, error: serviceError } = await supabase
         .from('services')
         .insert({
           user_id: user.id,
-          service_name: extractedData.service_name || 'Serviço escaneado',
-          service_value: extractedData.service_value || 0,
-          client_name: finalClientName,
-          patient_name: extractedData.patient_name,
+          service_name: serviceName,
+          service_value: serviceValue,
+          client_name: safeText(finalClientName) || null,
+          patient_name: safeText(extractedData.patient_name) || null,
           color: extractedData.color || null,
-          work_type: extractedData.work_type || extractedData.service_name || null,
+          work_type: safeText(extractedData.work_type || serviceName) || null,
           service_date: new Date().toISOString().split('T')[0],
           status: 'active'
         })
@@ -459,8 +476,8 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
             image_url: fileUrl,
             clinic_name: finalClientName,
             patient_name: extractedData.patient_name,
-            service_name: extractedData.service_name,
-            service_value: extractedData.service_value,
+            service_name: serviceName,
+            service_value: serviceValue,
             service_id: serviceData?.id,
             file_type: previewFile.type,
             file_name: previewFile.name
