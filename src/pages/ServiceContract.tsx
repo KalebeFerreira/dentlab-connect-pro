@@ -11,10 +11,14 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdfGenerator";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from "docx";
 import ExcelJS from "exceljs";
+import { useSubscription } from "@/hooks/useSubscription";
+import essenciaLogo from "@/assets/essencia-logo.jpg";
 
 const ServiceContract = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { subscribed } = useSubscription();
+  const isFree = !subscribed;
   const [loading, setLoading] = useState(false);
   const [contractText, setContractText] = useState("");
   const [extraInstructions, setExtraInstructions] = useState("");
@@ -221,8 +225,11 @@ const ServiceContract = () => {
             ) : (
               <div ref={printRef} className="bg-white text-black rounded-md mx-auto" style={{ width: "800px", padding: "40px", fontSize: "16px", lineHeight: "1.75", fontFamily: "Arial, sans-serif", color: "#000" }}>
                 <div className="text-center mb-8 border-b-2 border-black pb-5">
-                  <FileSignature className="h-12 w-12 mx-auto mb-3 text-black" />
-                  <p className="text-[14px] font-semibold uppercase tracking-wide">Contrato gerado por IA</p>
+                  {isFree ? (
+                    <img src={essenciaLogo} alt="Essência Dental-Lab" className="h-16 mx-auto mb-3 object-contain" />
+                  ) : (
+                    <FileSignature className="h-12 w-12 mx-auto mb-3 text-black" />
+                  )}
                   <p className="text-[13px] mt-2">Data de emissão: {new Date().toLocaleDateString("pt-BR")}</p>
                 </div>
                 <div className="prose max-w-none text-black">
