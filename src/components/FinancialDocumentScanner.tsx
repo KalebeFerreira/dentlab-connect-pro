@@ -66,6 +66,24 @@ const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/we
 const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
 
+const parseCurrencyValue = (value: string | number | null | undefined) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (!value) return 0;
+  const cleaned = String(value).replace(/[^\d,.]/g, '');
+  if (!cleaned) return 0;
+  const normalized = cleaned.includes(',')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : cleaned;
+  return parseFloat(normalized) || 0;
+};
+
+const normalizeTransactionType = (value: string | null | undefined): 'receipt' | 'payment' | null => {
+  const normalized = (value || '').toLowerCase().trim();
+  if (['receipt', 'receita', 'income', 'entrada', 'crédito', 'credito', 'recebido'].includes(normalized)) return 'receipt';
+  if (['payment', 'despesa', 'expense', 'saída', 'saida', 'débito', 'debito', 'compra', 'pago'].includes(normalized)) return 'payment';
+  return null;
+};
+
 export const FinancialDocumentScanner = ({
   onTransactionAdd,
   onScanComplete,
@@ -277,11 +295,13 @@ export const FinancialDocumentScanner = ({
         if (data?.data) {
           await scannerLimits.incrementUsage();
           const confidence = data.confidence || 'medium';
-          const isUnsure = confidence !== 'high';
+          const transactionType = normalizeTransactionType(data.data.transaction_type);
+          const isUnsure = !transactionType;
 
           setExtractedData({
             ...data.data,
-            transaction_type: isUnsure ? null : data.data.transaction_type,
+            transaction_type: transactionType,
+            amount: parseCurrencyValue(data.data.amount),
             raw_text: data.raw_text || data.data.raw_text || null,
             confidence: confidence,
             classification_reason: data.classification_reason || null,
@@ -343,7 +363,9 @@ export const FinancialDocumentScanner = ({
         return;
       }
 
-      const vendorName = extractedData.vendor_name || extractedData.description || 'Transação escaneada';
+      const transactionType = normalizeTransactionType(extractedData.transaction_type) || 'payment';
+      const amount = parseCurrencyValue(extractedData.amount);
+      const vendorName = (extractedData.vendor_name || extractedData.description || 'Transação escaneada').trim();
       
       // Check if there's an existing transaction with same vendor in same month/year
       // to suggest client matching
@@ -366,13 +388,13 @@ export const FinancialDocumentScanner = ({
         .from('financial_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: extractedData.transaction_type || 'payment',
-          amount: extractedData.amount || 0,
+          transaction_type: transactionType,
+          amount,
           description: finalDescription,
           status: formStatus,
           month: formMonth,
           year: formYear,
-          category: extractedData.transaction_type === 'payment' ? (formCategory || extractedData.category) : null
+          category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
         })
         .select('id')
         .single();
@@ -407,14 +429,14 @@ export const FinancialDocumentScanner = ({
                 image_url: publicUrl.publicUrl,
                 file_name: previewFile?.name || 'documento_escaneado.jpg',
                 file_type: previewFile?.type || 'image/jpeg',
-                transaction_type: extractedData.transaction_type || 'payment',
-                amount: extractedData.amount || 0,
+                transaction_type: transactionType,
+                amount,
                 description: finalDescription,
                 vendor_name: extractedData.vendor_name,
                 document_number: extractedData.document_number,
                 document_date: extractedData.date,
                 transaction_id: transactionData?.id,
-                category: extractedData.transaction_type === 'payment' ? (formCategory || extractedData.category) : null
+                category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
               });
           }
         } catch (historyError) {
@@ -490,7 +512,7 @@ export const FinancialDocumentScanner = ({
     if (extractedData) {
       setExtractedData({
         ...extractedData,
-        [field]: field === 'amount' ? parseFloat(String(value)) || 0 : value
+        [field]: field === 'amount' ? parseCurrencyValue(value) : value
       });
     }
   };
