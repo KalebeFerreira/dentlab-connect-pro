@@ -512,7 +512,7 @@ export const FinancialDocumentScanner = ({
     if (extractedData) {
       setExtractedData({
         ...extractedData,
-        [field]: field === 'amount' ? parseFloat(String(value)) || 0 : value
+        [field]: field === 'amount' ? parseCurrencyValue(value) : value
       });
     }
   };
