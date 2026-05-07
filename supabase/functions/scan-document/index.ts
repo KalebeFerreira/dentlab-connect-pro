@@ -109,11 +109,7 @@ Seja preciso na extração e tente identificar mesmo com escrita manual.`;
     const extractedData = parseAIResponse(content);
     const rawText = extractedData.raw_text || '';
 
-    // Garantir que service_value seja número
-    if (extractedData.service_value) {
-      const cleanValue = String(extractedData.service_value).replace(/[^\d.,]/g, '').replace(',', '.');
-      extractedData.service_value = parseFloat(cleanValue) || null;
-    }
+    extractedData.service_value = normalizeCurrencyNumber(extractedData.service_value);
 
     console.log('Dados extraídos:', extractedData);
 
@@ -172,4 +168,15 @@ function parseAIResponse(content: string) {
       raw_text: content || 'Não foi possível extrair texto'
     };
   }
+}
+
+function normalizeCurrencyNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (!value) return null;
+  const cleaned = String(value).replace(/[^\d,.]/g, '');
+  if (!cleaned) return null;
+  const normalized = cleaned.includes(',')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : cleaned;
+  return parseFloat(normalized) || null;
 }
