@@ -17,6 +17,8 @@ import essenciaLogo from "@/assets/essencia-logo.jpg";
 const ServiceContract = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { subscribed } = useSubscription();
+  const isFree = !subscribed;
   const [loading, setLoading] = useState(false);
   const [contractText, setContractText] = useState("");
   const [extraInstructions, setExtraInstructions] = useState("");
