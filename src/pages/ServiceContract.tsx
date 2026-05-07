@@ -19,6 +19,7 @@ const ServiceContract = () => {
   const [contractText, setContractText] = useState("");
   const [extraInstructions, setExtraInstructions] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
+  const [signatureContratante, setSignatureContratante] = useState<string | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [contractor, setContractor] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
