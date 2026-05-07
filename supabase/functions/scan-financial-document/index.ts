@@ -169,7 +169,9 @@ REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), c
           description: extractedData.description,
           vendor_name: extractedData.vendor_name,
           document_number: extractedData.document_number,
-          date: extractedData.date
+          date: extractedData.date,
+          category: extractedData.category || null,
+          raw_text: extractedData.raw_text || content
         },
         confidence: extractedData.confidence || 'medium',
         classification_reason: extractedData.classification_reason || null,
