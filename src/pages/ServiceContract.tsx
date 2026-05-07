@@ -225,8 +225,11 @@ const ServiceContract = () => {
             ) : (
               <div ref={printRef} className="bg-white text-black rounded-md mx-auto" style={{ width: "800px", padding: "40px", fontSize: "16px", lineHeight: "1.75", fontFamily: "Arial, sans-serif", color: "#000" }}>
                 <div className="text-center mb-8 border-b-2 border-black pb-5">
-                  <FileSignature className="h-12 w-12 mx-auto mb-3 text-black" />
-                  <p className="text-[14px] font-semibold uppercase tracking-wide">Contrato gerado por IA</p>
+                  {isFree ? (
+                    <img src={essenciaLogo} alt="Essência Dental-Lab" className="h-16 mx-auto mb-3 object-contain" />
+                  ) : (
+                    <FileSignature className="h-12 w-12 mx-auto mb-3 text-black" />
+                  )}
                   <p className="text-[13px] mt-2">Data de emissão: {new Date().toLocaleDateString("pt-BR")}</p>
                 </div>
                 <div className="prose max-w-none text-black">
