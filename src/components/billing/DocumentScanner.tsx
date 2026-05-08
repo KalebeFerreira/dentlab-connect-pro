@@ -299,7 +299,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         }
 
         if (data?.data) {
-          await scannerLimits.incrementUsage();
+          try { await scannerLimits.incrementUsage(); } catch (e) { console.warn('incrementUsage falhou', e); }
           setExtractedData({
             ...data.data,
             raw_text: data.raw_text || data.data.raw_text || null
