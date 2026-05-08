@@ -293,7 +293,7 @@ export const FinancialDocumentScanner = ({
         if (error) throw error;
 
         if (data?.data) {
-          await scannerLimits.incrementUsage();
+          try { await scannerLimits.incrementUsage(); } catch (e) { console.warn('incrementUsage falhou', e); }
           const confidence = data.confidence || 'medium';
           const transactionType = normalizeTransactionType(data.data.transaction_type);
           const isUnsure = !transactionType;
