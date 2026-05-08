@@ -276,7 +276,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   };
 
   const processFile = async (fileData: string, fileType: string) => {
-    if (!scannerLimits.checkAndWarn()) return;
+    try { scannerLimits.checkAndWarn(); } catch (e) { console.warn('scannerLimits warn falhou', e); }
 
     setIsScanning(true);
     try {
@@ -299,7 +299,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         }
 
         if (data?.data) {
-          await scannerLimits.incrementUsage();
+          try { await scannerLimits.incrementUsage(); } catch (e) { console.warn('incrementUsage falhou', e); }
           setExtractedData({
             ...data.data,
             raw_text: data.raw_text || data.data.raw_text || null
