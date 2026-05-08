@@ -276,7 +276,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
   };
 
   const processFile = async (fileData: string, fileType: string) => {
-    if (!scannerLimits.checkAndWarn()) return;
+    try { scannerLimits.checkAndWarn(); } catch (e) { console.warn('scannerLimits warn falhou', e); }
 
     setIsScanning(true);
     try {
