@@ -51,6 +51,8 @@ interface DocumentScannerProps {
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
+const SUPPORTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+const SUPPORTED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
 const parseCurrencyValue = (value: string | number | null | undefined) => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -97,13 +99,8 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
-        },
-      });
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      }).catch(() => navigator.mediaDevices.getUserMedia({ audio: false, video: true }));
 
       streamRef.current = stream;
       if (videoRef.current) {
@@ -213,8 +210,26 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     }
   };
 
-  const getFileExtension = (filename: string): string => {
-    return filename.split('.').pop()?.toLowerCase() || '';
+  const getFileExtension = (filename: string): string => filename.split('.').pop()?.toLowerCase() || '';
+
+  const isSupportedImageFile = (file: File) => {
+    const type = file.type.toLowerCase();
+    const extension = getFileExtension(file.name);
+    return type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(type) || SUPPORTED_IMAGE_EXTENSIONS.includes(extension);
+  };
+
+  const isSupportedDocumentFile = (file: File) => {
+    const type = file.type.toLowerCase();
+    const extension = getFileExtension(file.name);
+    return SUPPORTED_DOC_TYPES.includes(type) || SUPPORTED_DOC_EXTENSIONS.includes(extension);
+  };
+
+  const normalizeFileType = (file: File, isImage: boolean) => file.type || (isImage ? 'image/jpeg' : 'application/octet-stream');
+
+  const ensureImageDataUrl = (dataUrl: string) => {
+    if (dataUrl.startsWith('data:image/')) return dataUrl;
+    const base64 = dataUrl.split(',')[1];
+    return base64 ? `data:image/jpeg;base64,${base64}` : dataUrl;
   };
 
   const getFileIcon = (type: string) => {
@@ -237,8 +252,9 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const isImage = file.type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(file.type);
-    const isDoc = SUPPORTED_DOC_TYPES.includes(file.type);
+    const isImage = isSupportedImageFile(file);
+    const isDoc = isSupportedDocumentFile(file);
+    const normalizedFileType = normalizeFileType(file, isImage);
 
     if (!isImage && !isDoc) {
       toast.error(`Tipo de arquivo não suportado. Use: JPG, PNG, PDF, Word ou Excel`);
@@ -259,7 +275,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
         toast.info('Otimizando imagem para envio...');
         fileData = await compressImage(fileData);
         setPreviewImage(fileData);
-      } else if (isPdfFile(file.type, originalFileData)) {
+      } else if (isPdfFile(normalizedFileType, originalFileData)) {
         toast.info('Preparando PDF para análise...');
         fileData = await renderPdfFirstPageToImage(originalFileData, { maxWidth: 1600, quality: 0.92 });
         setPreviewImage(fileData);
@@ -268,9 +284,10 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       }
 
       setCurrentFileData(fileData);
-      setPreviewFile({ name: file.name, type: file.type });
+      setPreviewFile({ name: file.name, type: normalizedFileType });
 
-      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : file.type);
+      const payloadData = isImage ? ensureImageDataUrl(fileData) : fileData;
+      processFile(payloadData, payloadData.startsWith('data:image/') ? 'image/jpeg' : normalizedFileType);
     };
     reader.readAsDataURL(file);
   };
@@ -660,15 +677,13 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
                 </Button>
               )}
               
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                className="w-full h-14 text-base"
-                size="lg"
+              <label
+                htmlFor="file-input-billing"
+                className="flex items-center justify-center w-full h-14 text-base rounded-md border border-input bg-background px-4 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 <Upload className="mr-2 h-5 w-5" />
                 Upload de Arquivo
-              </Button>
+              </label>
               <div className="flex items-center justify-center gap-2">
                 <p className="text-xs text-muted-foreground">
                   Suporta: JPG, PNG, PDF, Word, Excel (máx. 10MB)
@@ -701,6 +716,7 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
               
               {/* Upload geral (imagens + docs) */}
               <input
+                id="file-input-billing"
                 ref={fileInputRef}
                 type="file"
                 accept={acceptedFileTypes}
