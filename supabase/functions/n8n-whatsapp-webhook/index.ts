@@ -41,23 +41,32 @@ async function sendWhatsAppReply(
   message: string,
 ): Promise<boolean> {
   const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-  if (!EVOLUTION_API_KEY || !evolutionApiUrl) return false;
+  if (!EVOLUTION_API_KEY || !evolutionApiUrl || !instanceName) {
+    console.error('[sendWhatsAppReply] missing config', { hasKey: !!EVOLUTION_API_KEY, url: evolutionApiUrl, instance: instanceName });
+    return false;
+  }
+
+  const baseUrl = evolutionApiUrl.replace(/\/+$/, '');
+  const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
+  // Normalize number: digits only, ensure 55 prefix
+  let number = (phoneNumber || '').replace(/\D/g, '');
+  if (number && !number.startsWith('55')) number = '55' + number;
 
   try {
-    const resp = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
+    const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'apikey': EVOLUTION_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        number: phoneNumber,
-        text: message,
-      }),
+      headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number, text: message }),
     });
-    return resp.ok;
+    const text = await resp.text().catch(() => '');
+    if (!resp.ok) {
+      console.error(`[sendWhatsAppReply] Evolution ${resp.status} url=${url} body=${text.slice(0, 400)}`);
+      return false;
+    }
+    console.log(`[sendWhatsAppReply] ok → ${number}`);
+    return true;
   } catch (err) {
-    console.error('Erro ao enviar mensagem WhatsApp:', err);
+    console.error('[sendWhatsAppReply] erro:', err);
     return false;
   }
 }
@@ -333,17 +342,20 @@ serve(async (req) => {
       const isOutsideHours = currentTime < startTime || currentTime > endTime;
       const isClosedDay = isWeekend && !agentSettings.work_on_weekends;
 
+      // Resolve Evolution config with fallback to env secrets
+      const evoUrl = agentSettings.evolution_api_url || Deno.env.get('EVOLUTION_API_URL') || '';
+      const evoInstance = agentSettings.evolution_instance_name || Deno.env.get('EVOLUTION_INSTANCE') || '';
+      console.log(`[process_message] evolution config url=${evoUrl ? 'set' : 'MISSING'} instance=${evoInstance || 'MISSING'}`);
+
       if ((isOutsideHours || isClosedDay) && agentSettings.auto_reply_outside_hours) {
         const outsideMsg = agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.';
-        
-        // Send outside hours reply via WhatsApp
-        if (agentSettings.evolution_api_url && agentSettings.evolution_instance_name) {
-          await sendWhatsAppReply(
-            agentSettings.evolution_api_url,
-            agentSettings.evolution_instance_name,
-            phone_number,
-            outsideMsg
-          );
+
+        let outsideSent = false;
+        if (evoUrl && evoInstance) {
+          outsideSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, outsideMsg);
+          console.log(`[process_message] outside-hours sent=${outsideSent}`);
+        } else {
+          console.warn('[process_message] outside-hours: Evolution config missing, not sending');
         }
 
         return new Response(
@@ -352,7 +364,7 @@ serve(async (req) => {
             agent_name: agentSettings.agent_name,
             requires_human: false,
             outside_hours: true,
-            whatsapp_sent: true,
+            whatsapp_sent: outsideSent,
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -472,15 +484,13 @@ serve(async (req) => {
         }
       }
 
-      // Send reply via WhatsApp
+      // Send reply via WhatsApp (uses evoUrl/evoInstance resolved above with env fallback)
       let whatsappSent = false;
-      if (agentSettings.evolution_api_url && agentSettings.evolution_instance_name) {
-        whatsappSent = await sendWhatsAppReply(
-          agentSettings.evolution_api_url,
-          agentSettings.evolution_instance_name,
-          phone_number,
-          reply
-        );
+      if (evoUrl && evoInstance) {
+        whatsappSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
+        console.log(`[process_message] reply sent=${whatsappSent}`);
+      } else {
+        console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
       }
 
       return new Response(
