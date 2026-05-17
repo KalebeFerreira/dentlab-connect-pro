@@ -84,6 +84,12 @@ const isSupportedDocumentFile = (file: File) => {
 
 const normalizeFileType = (file: File, isImage: boolean) => file.type || (isImage ? 'image/jpeg' : 'application/octet-stream');
 
+const ensureImageDataUrl = (dataUrl: string) => {
+  if (dataUrl.startsWith('data:image/')) return dataUrl;
+  const base64 = dataUrl.split(',')[1];
+  return base64 ? `data:image/jpeg;base64,${base64}` : dataUrl;
+};
+
 const parseCurrencyValue = (value: string | number | null | undefined) => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   if (!value) return 0;
@@ -143,12 +149,8 @@ export const FinancialDocumentScanner = ({
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      });
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      }).catch(() => navigator.mediaDevices.getUserMedia({ audio: false, video: true }));
 
       streamRef.current = stream;
       if (videoRef.current) {
@@ -292,7 +294,8 @@ export const FinancialDocumentScanner = ({
       setCurrentFileData(fileData);
       setPreviewFile({ name: file.name, type: normalizedFileType });
 
-      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : normalizedFileType);
+      const payloadData = isImage ? ensureImageDataUrl(fileData) : fileData;
+      processFile(payloadData, payloadData.startsWith('data:image/') ? 'image/jpeg' : normalizedFileType);
     };
     reader.readAsDataURL(file);
   };
