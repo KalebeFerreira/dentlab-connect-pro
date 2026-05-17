@@ -34,6 +34,13 @@ function isTrialExpired(trialStartedAt: string | null): boolean {
   return diffDays > TRIAL_DAYS;
 }
 
+function normalizeEvolutionApiUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || '').trim();
+  const markdownUrl = trimmed.match(/\]\((https?:\/\/[^)]+)\)/i)?.[1];
+  const plainUrl = markdownUrl || trimmed.match(/https?:\/\/[^\s)\]]+/i)?.[0] || trimmed;
+  return plainUrl.replace(/\/+$/, '');
+}
+
 async function sendWhatsAppReply(
   evolutionApiUrl: string,
   instanceName: string,
@@ -46,7 +53,7 @@ async function sendWhatsAppReply(
     return false;
   }
 
-  const baseUrl = evolutionApiUrl.replace(/\/+$/, '');
+  const baseUrl = normalizeEvolutionApiUrl(evolutionApiUrl);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
   // Normalize number: digits only, ensure 55 prefix
   let number = (phoneNumber || '').replace(/\D/g, '');
