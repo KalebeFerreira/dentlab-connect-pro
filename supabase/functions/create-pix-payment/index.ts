@@ -53,6 +53,44 @@ serve(async (req) => {
     const idempotencyKey = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
 
+    // Build payer with proper first/last name split (MP requires both for Pix in many accounts)
+    const fullName: string = (user.user_metadata?.name ?? "Cliente Lovable").toString().trim();
+    const nameParts = fullName.split(/\s+/);
+    const firstName = nameParts[0] || "Cliente";
+    const lastName = nameParts.slice(1).join(" ") || "Lovable";
+
+    const payerBody: Record<string, unknown> = {
+      email: user.email,
+      first_name: firstName,
+      last_name: lastName,
+    };
+
+    // If CPF is stored in user_metadata, include it (MP requires identification in some flows)
+    const cpf = (user.user_metadata?.cpf ?? user.user_metadata?.document ?? "")
+      .toString()
+      .replace(/\D/g, "");
+    if (cpf.length === 11) {
+      payerBody.identification = { type: "CPF", number: cpf };
+    }
+
+    const mpPayload = {
+      transaction_amount: discountedAmount,
+      description: `${plan.name} (${plan.cycle === "annual" ? "Anual" : "Mensal"}) - 10% OFF PIX`,
+      payment_method_id: "pix",
+      date_of_expiration: expiresAt.toISOString(),
+      payer: payerBody,
+      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercadopago-webhook`,
+      external_reference: user.id,
+      metadata: {
+        user_id: user.id,
+        price_id: priceId,
+        plan_key: plan.key,
+        billing_cycle: plan.cycle,
+      },
+    };
+
+    console.log("MP request payload:", JSON.stringify(mpPayload));
+
     const mpResponse = await fetch("https://api.mercadopago.com/v1/payments", {
       method: "POST",
       headers: {
@@ -60,31 +98,26 @@ serve(async (req) => {
         "Content-Type": "application/json",
         "X-Idempotency-Key": idempotencyKey,
       },
-      body: JSON.stringify({
-        transaction_amount: discountedAmount,
-        description: `${plan.name} (${plan.cycle === "annual" ? "Anual" : "Mensal"}) - 10% OFF PIX`,
-        payment_method_id: "pix",
-        date_of_expiration: expiresAt.toISOString(),
-        payer: {
-          email: user.email,
-          first_name: user.user_metadata?.name ?? "Cliente",
-        },
-        notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercadopago-webhook`,
-        external_reference: user.id,
-        metadata: {
-          user_id: user.id,
-          price_id: priceId,
-          plan_key: plan.key,
-          billing_cycle: plan.cycle,
-        },
-      }),
+      body: JSON.stringify(mpPayload),
     });
 
-    const mpData = await mpResponse.json();
+    const rawText = await mpResponse.text();
+    let mpData: any;
+    try {
+      mpData = JSON.parse(rawText);
+    } catch {
+      mpData = { raw: rawText };
+    }
 
     if (!mpResponse.ok) {
-      console.error("Mercado Pago error:", mpData);
-      throw new Error(mpData.message || "Erro ao criar pagamento no Mercado Pago");
+      console.error("Mercado Pago error - status:", mpResponse.status, "body:", rawText);
+      const detail =
+        mpData?.cause?.[0]?.description ||
+        mpData?.cause?.[0]?.code ||
+        mpData?.message ||
+        rawText ||
+        "Erro ao criar pagamento no Mercado Pago";
+      throw new Error(`MP ${mpResponse.status}: ${detail}`);
     }
 
     const qrCode = mpData.point_of_interaction?.transaction_data?.qr_code;
