@@ -636,15 +636,13 @@ export const FinancialDocumentScanner = ({
                 </Button>
               )}
               
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                className="w-full h-14 text-base"
-                size="lg"
+              <label
+                htmlFor="file-input-financial"
+                className="flex items-center justify-center w-full h-14 text-base rounded-md border border-input bg-background px-4 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 <Upload className="mr-2 h-5 w-5" />
                 Upload de Arquivo
-              </Button>
+              </label>
               <div className="flex items-center justify-center gap-2">
                 <p className="text-xs text-muted-foreground">
                   Suporta: JPG, PNG, PDF (máx. 10MB)
@@ -674,6 +672,7 @@ export const FinancialDocumentScanner = ({
               )}
               
               <input
+                id="file-input-financial"
                 ref={fileInputRef}
                 type="file"
                 accept={acceptedFileTypes}
