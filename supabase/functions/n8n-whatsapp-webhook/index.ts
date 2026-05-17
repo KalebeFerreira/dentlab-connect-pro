@@ -333,17 +333,20 @@ serve(async (req) => {
       const isOutsideHours = currentTime < startTime || currentTime > endTime;
       const isClosedDay = isWeekend && !agentSettings.work_on_weekends;
 
+      // Resolve Evolution config with fallback to env secrets
+      const evoUrl = agentSettings.evolution_api_url || Deno.env.get('EVOLUTION_API_URL') || '';
+      const evoInstance = agentSettings.evolution_instance_name || Deno.env.get('EVOLUTION_INSTANCE') || '';
+      console.log(`[process_message] evolution config url=${evoUrl ? 'set' : 'MISSING'} instance=${evoInstance || 'MISSING'}`);
+
       if ((isOutsideHours || isClosedDay) && agentSettings.auto_reply_outside_hours) {
         const outsideMsg = agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.';
-        
-        // Send outside hours reply via WhatsApp
-        if (agentSettings.evolution_api_url && agentSettings.evolution_instance_name) {
-          await sendWhatsAppReply(
-            agentSettings.evolution_api_url,
-            agentSettings.evolution_instance_name,
-            phone_number,
-            outsideMsg
-          );
+
+        let outsideSent = false;
+        if (evoUrl && evoInstance) {
+          outsideSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, outsideMsg);
+          console.log(`[process_message] outside-hours sent=${outsideSent}`);
+        } else {
+          console.warn('[process_message] outside-hours: Evolution config missing, not sending');
         }
 
         return new Response(
@@ -352,7 +355,7 @@ serve(async (req) => {
             agent_name: agentSettings.agent_name,
             requires_human: false,
             outside_hours: true,
-            whatsapp_sent: true,
+            whatsapp_sent: outsideSent,
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
