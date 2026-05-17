@@ -216,7 +216,7 @@ serve(async (req) => {
 
     // Process message action (called from n8n)
     if (action === 'process_message') {
-      const { phone_number, message, patient_name, user_id } = body;
+      const { phone_number, message, patient_name, user_id, instance_name } = body;
 
       if (!phone_number || !message) {
         return new Response(
@@ -225,8 +225,12 @@ serve(async (req) => {
         );
       }
 
-      // Find agent settings for the user
-      let agentSettings: any;
+      console.log('[process_message] lookup', { user_id, instance_name, phone_number });
+
+      // Find agent settings — try multiple strategies
+      let agentSettings: any = null;
+
+      // 1. Explicit user_id
       if (user_id) {
         const { data } = await supabase
           .from('ai_agent_settings')
@@ -234,7 +238,20 @@ serve(async (req) => {
           .eq('user_id', user_id)
           .maybeSingle();
         agentSettings = data;
-      } else {
+      }
+
+      // 2. By instance_name (case-insensitive)
+      if (!agentSettings && instance_name) {
+        const { data } = await supabase
+          .from('ai_agent_settings')
+          .select('*')
+          .ilike('evolution_instance_name', instance_name)
+          .maybeSingle();
+        agentSettings = data;
+      }
+
+      // 3. By existing conversation phone number
+      if (!agentSettings) {
         const { data: conv } = await supabase
           .from('whatsapp_conversations')
           .select('user_id')
@@ -251,9 +268,29 @@ serve(async (req) => {
         }
       }
 
+      // 4. Fallback: any enabled WhatsApp agent (single-tenant deployments)
       if (!agentSettings) {
+        const { data } = await supabase
+          .from('ai_agent_settings')
+          .select('*')
+          .eq('is_whatsapp_enabled', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        agentSettings = data;
+        if (agentSettings) {
+          console.log('[process_message] fallback to first whatsapp-enabled agent', agentSettings.user_id);
+        }
+      }
+
+      if (!agentSettings) {
+        console.error('[process_message] no agent found', { user_id, instance_name, phone_number });
         return new Response(
-          JSON.stringify({ error: 'Configurações do agente não encontradas.' }),
+          JSON.stringify({
+            error: 'Configurações do agente não encontradas.',
+            hint: 'Cadastre o agente em Ajustes → Agente IA e preencha o campo "Nome da instância" exatamente igual ao usado no n8n/Evolution.',
+            received: { user_id: user_id || null, instance_name: instance_name || null, phone_number },
+          }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
