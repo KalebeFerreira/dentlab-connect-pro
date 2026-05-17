@@ -65,6 +65,24 @@ interface FinancialDocumentScannerProps {
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const SUPPORTED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 const ALL_SUPPORTED_TYPES = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_DOC_TYPES];
+const SUPPORTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+const SUPPORTED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx'];
+
+const getFileExtension = (filename: string) => filename.split('.').pop()?.toLowerCase() || '';
+
+const isSupportedImageFile = (file: File) => {
+  const type = file.type.toLowerCase();
+  const extension = getFileExtension(file.name);
+  return type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(type) || SUPPORTED_IMAGE_EXTENSIONS.includes(extension);
+};
+
+const isSupportedDocumentFile = (file: File) => {
+  const type = file.type.toLowerCase();
+  const extension = getFileExtension(file.name);
+  return SUPPORTED_DOC_TYPES.includes(type) || SUPPORTED_DOC_EXTENSIONS.includes(extension);
+};
+
+const normalizeFileType = (file: File, isImage: boolean) => file.type || (isImage ? 'image/jpeg' : 'application/octet-stream');
 
 const parseCurrencyValue = (value: string | number | null | undefined) => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -240,8 +258,9 @@ export const FinancialDocumentScanner = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const isImage = file.type.startsWith('image/') || SUPPORTED_IMAGE_TYPES.includes(file.type);
-    const isDoc = SUPPORTED_DOC_TYPES.includes(file.type);
+    const isImage = isSupportedImageFile(file);
+    const isDoc = isSupportedDocumentFile(file);
+    const normalizedFileType = normalizeFileType(file, isImage);
 
     if (!isImage && !isDoc) {
       toast.error(`Tipo de arquivo não suportado. Use: JPG, PNG ou PDF`);
@@ -262,7 +281,7 @@ export const FinancialDocumentScanner = ({
         toast.info('Otimizando imagem para envio...');
         fileData = await compressImage(fileData);
         setPreviewImage(fileData);
-      } else if (isPdfFile(file.type, originalFileData)) {
+      } else if (isPdfFile(normalizedFileType, originalFileData)) {
         toast.info('Preparando PDF para análise...');
         fileData = await renderPdfFirstPageToImage(originalFileData, { maxWidth: 1600, quality: 0.92 });
         setPreviewImage(fileData);
@@ -271,9 +290,9 @@ export const FinancialDocumentScanner = ({
       }
 
       setCurrentFileData(fileData);
-      setPreviewFile({ name: file.name, type: file.type });
+      setPreviewFile({ name: file.name, type: normalizedFileType });
 
-      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : file.type);
+      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : normalizedFileType);
     };
     reader.readAsDataURL(file);
   };
