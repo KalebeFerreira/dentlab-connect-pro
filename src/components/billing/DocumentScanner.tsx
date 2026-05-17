@@ -99,13 +99,8 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
-        },
-      });
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      }).catch(() => navigator.mediaDevices.getUserMedia({ audio: false, video: true }));
 
       streamRef.current = stream;
       if (videoRef.current) {
@@ -231,6 +226,12 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
 
   const normalizeFileType = (file: File, isImage: boolean) => file.type || (isImage ? 'image/jpeg' : 'application/octet-stream');
 
+  const ensureImageDataUrl = (dataUrl: string) => {
+    if (dataUrl.startsWith('data:image/')) return dataUrl;
+    const base64 = dataUrl.split(',')[1];
+    return base64 ? `data:image/jpeg;base64,${base64}` : dataUrl;
+  };
+
   const getFileIcon = (type: string) => {
     if (SUPPORTED_IMAGE_TYPES.includes(type)) {
       return <FileImage className="h-12 w-12 text-blue-500" />;
@@ -285,7 +286,8 @@ export const DocumentScanner = ({ onServiceAdd, onScanComplete }: DocumentScanne
       setCurrentFileData(fileData);
       setPreviewFile({ name: file.name, type: normalizedFileType });
 
-      processFile(fileData, fileData.startsWith('data:image/') ? 'image/jpeg' : normalizedFileType);
+      const payloadData = isImage ? ensureImageDataUrl(fileData) : fileData;
+      processFile(payloadData, payloadData.startsWith('data:image/') ? 'image/jpeg' : normalizedFileType);
     };
     reader.readAsDataURL(file);
   };
