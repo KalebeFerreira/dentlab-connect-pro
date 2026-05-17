@@ -475,15 +475,13 @@ serve(async (req) => {
         }
       }
 
-      // Send reply via WhatsApp
+      // Send reply via WhatsApp (uses evoUrl/evoInstance resolved above with env fallback)
       let whatsappSent = false;
-      if (agentSettings.evolution_api_url && agentSettings.evolution_instance_name) {
-        whatsappSent = await sendWhatsAppReply(
-          agentSettings.evolution_api_url,
-          agentSettings.evolution_instance_name,
-          phone_number,
-          reply
-        );
+      if (evoUrl && evoInstance) {
+        whatsappSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
+        console.log(`[process_message] reply sent=${whatsappSent}`);
+      } else {
+        console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
       }
 
       return new Response(
