@@ -41,23 +41,32 @@ async function sendWhatsAppReply(
   message: string,
 ): Promise<boolean> {
   const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-  if (!EVOLUTION_API_KEY || !evolutionApiUrl) return false;
+  if (!EVOLUTION_API_KEY || !evolutionApiUrl || !instanceName) {
+    console.error('[sendWhatsAppReply] missing config', { hasKey: !!EVOLUTION_API_KEY, url: evolutionApiUrl, instance: instanceName });
+    return false;
+  }
+
+  const baseUrl = evolutionApiUrl.replace(/\/+$/, '');
+  const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
+  // Normalize number: digits only, ensure 55 prefix
+  let number = (phoneNumber || '').replace(/\D/g, '');
+  if (number && !number.startsWith('55')) number = '55' + number;
 
   try {
-    const resp = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
+    const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'apikey': EVOLUTION_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        number: phoneNumber,
-        text: message,
-      }),
+      headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number, text: message }),
     });
-    return resp.ok;
+    const text = await resp.text().catch(() => '');
+    if (!resp.ok) {
+      console.error(`[sendWhatsAppReply] Evolution ${resp.status} url=${url} body=${text.slice(0, 400)}`);
+      return false;
+    }
+    console.log(`[sendWhatsAppReply] ok → ${number}`);
+    return true;
   } catch (err) {
-    console.error('Erro ao enviar mensagem WhatsApp:', err);
+    console.error('[sendWhatsAppReply] erro:', err);
     return false;
   }
 }
