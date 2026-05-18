@@ -442,7 +442,7 @@ export const FinancialDocumentScanner = ({
 
             // Save to financial_scanned_documents history
             const { error: historyInsertError } = await supabase
-              .from('financial_scanned_documents' as any)
+              .from('financial_scanned_documents')
               .insert({
                 user_id: user.id,
                 image_url: publicUrl.publicUrl,
@@ -493,9 +493,9 @@ export const FinancialDocumentScanner = ({
           setTimeout(() => startCamera(), 500);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar transação:', error);
-      toast.error('Erro ao salvar: ' + error.message);
+      toast.error('Erro ao salvar: ' + (error instanceof Error ? error.message : 'Tente novamente'));
     } finally {
       setIsSaving(false);
     }
