@@ -158,14 +158,15 @@ export const FinancialDocumentScanner = ({
         videoRef.current.onloadedmetadata = async () => {
           try {
             await videoRef.current?.play();
-          } catch {
+          } catch (playError) {
+            console.warn('Não foi possível iniciar o vídeo automaticamente:', playError);
           }
         };
       }
       setShowCamera(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao acessar câmera:', error);
-      const name = error?.name || '';
+      const name = error instanceof DOMException ? error.name : '';
       let msg = 'Não foi possível abrir a câmera.';
 
       if (name === 'NotAllowedError') {
@@ -192,7 +193,7 @@ export const FinancialDocumentScanner = ({
     setShowCamera(false);
   };
 
-  const compressImage = (dataUrl: string, maxWidth = 800, quality = 0.5): Promise<string> => {
+  const compressImage = (dataUrl: string, maxWidth = 1600, quality = 0.9): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -355,9 +356,9 @@ export const FinancialDocumentScanner = ({
         setShowConfirmDialog(true);
         toast.info('Documento carregado. Preencha os dados manualmente.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao processar documento:', error);
-      toast.error('Erro ao processar: ' + (error.message || 'Tente novamente'));
+      toast.error('Erro ao processar: ' + (error instanceof Error ? error.message : 'Tente novamente'));
       setExtractedData({
         transaction_type: null,
         amount: null,
@@ -385,25 +386,21 @@ export const FinancialDocumentScanner = ({
         return;
       }
 
-      const transactionType = normalizeTransactionType(extractedData.transaction_type) || 'payment';
+      const transactionType = normalizeTransactionType(extractedData.transaction_type);
+      if (!transactionType) {
+        toast.error('Escolha se o lançamento é RECEITA ou DESPESA antes de salvar.');
+        return;
+      }
+
       const amount = parseCurrencyValue(extractedData.amount);
+      if (amount <= 0) {
+        toast.error('Informe um valor maior que zero antes de salvar.');
+        return;
+      }
+
       const vendorName = (extractedData.vendor_name || extractedData.description || 'Transação escaneada').trim();
       
-      // Check if there's an existing transaction with same vendor in same month/year
-      // to suggest client matching
-      const { data: existingTransactions } = await supabase
-        .from('financial_transactions')
-        .select('description')
-        .eq('user_id', user.id)
-        .eq('month', formMonth)
-        .eq('year', formYear)
-        .ilike('description', `%${vendorName.split(' ')[0]}%`)
-        .limit(1);
-
-      // Use existing description format if found
-      const finalDescription = existingTransactions && existingTransactions.length > 0
-        ? existingTransactions[0].description
-        : vendorName;
+      const finalDescription = vendorName;
 
       // Insert financial transaction
       const { data: transactionData, error: transactionError } = await supabase
@@ -424,7 +421,7 @@ export const FinancialDocumentScanner = ({
       if (transactionError) throw transactionError;
 
       // Save scanned document to history if we have image data
-      if (currentFileData && previewImage) {
+      if (currentFileData) {
         try {
           // Upload image to storage
           const fileName = `${user.id}/${Date.now()}_financial.jpg`;
@@ -438,32 +435,37 @@ export const FinancialDocumentScanner = ({
               upsert: false
             });
 
+          let documentImageUrl = currentFileData;
           if (!uploadError && uploadData) {
             const { data: publicUrl } = supabase.storage
               .from('scanned-documents')
               .getPublicUrl(uploadData.path);
 
-            // Save to financial_scanned_documents history
-            await supabase
-              .from('financial_scanned_documents' as any)
-              .insert({
-                user_id: user.id,
-                image_url: publicUrl.publicUrl,
-                file_name: previewFile?.name || 'documento_escaneado.jpg',
-                file_type: previewFile?.type || 'image/jpeg',
-                transaction_type: transactionType,
-                amount,
-                description: finalDescription,
-                vendor_name: extractedData.vendor_name,
-                document_number: extractedData.document_number,
-                document_date: extractedData.date,
-                transaction_id: transactionData?.id,
-                category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
-              });
+            documentImageUrl = publicUrl.publicUrl;
           }
+
+          // Save to financial_scanned_documents history even if storage upload fails
+          const { error: historyInsertError } = await supabase
+            .from('financial_scanned_documents')
+            .insert({
+              user_id: user.id,
+              image_url: documentImageUrl,
+              file_name: previewFile?.name || 'documento_escaneado.jpg',
+              file_type: previewFile?.type || 'image/jpeg',
+              transaction_type: transactionType,
+              amount,
+              description: finalDescription,
+              vendor_name: extractedData.vendor_name,
+              document_number: extractedData.document_number,
+              document_date: extractedData.date,
+              transaction_id: transactionData?.id,
+              category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
+            });
+
+          if (historyInsertError) throw historyInsertError;
         } catch (historyError) {
           console.error('Erro ao salvar histórico:', historyError);
-          // Don't fail the whole operation if history save fails
+          toast.warning('Lançamento salvo, mas não foi possível registrar o documento no histórico.');
         }
       }
 
@@ -494,9 +496,9 @@ export const FinancialDocumentScanner = ({
           setTimeout(() => startCamera(), 500);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar transação:', error);
-      toast.error('Erro ao salvar: ' + error.message);
+      toast.error('Erro ao salvar: ' + (error instanceof Error ? error.message : 'Tente novamente'));
     } finally {
       setIsSaving(false);
     }

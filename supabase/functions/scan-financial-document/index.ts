@@ -53,7 +53,7 @@ serve(async (req) => {
       throw new Error('Configuração de IA não encontrada');
     }
 
-    const systemPrompt = `Você é um especialista em classificação de documentos financeiros para laboratórios de prótese dentária e clínicas odontológicas.
+    const systemPrompt = `Você é um especialista em OCR e classificação de documentos financeiros para laboratórios de prótese dentária e clínicas odontológicas.
 
 TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA ou DESPESA.
 
@@ -88,7 +88,7 @@ TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA o
 4. **Nota fiscal**: Verifique se você é COMPRADOR (despesa) ou VENDEDOR (receita)
 5. **Na dúvida entre receita e despesa, classifique como DESPESA** - é mais seguro para o controle financeiro
 
-## FORMATO DE RESPOSTA (JSON estrito):
+## FORMATO DE RESPOSTA (JSON estrito, sem markdown, sem crases):
 {
   "transaction_type": "receipt" | "payment",
   "amount": number | null,
@@ -98,7 +98,8 @@ TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA o
   "date": "YYYY-MM-DD" | null,
   "category": "materials" | "fixed_costs" | "suppliers" | "services" | "salaries" | "taxes" | "other" | null,
   "confidence": "high" | "medium" | "low",
-  "classification_reason": "breve explicação do porquê classificou assim"
+  "classification_reason": "breve explicação do porquê classificou assim",
+  "raw_text": "todo o texto legível do documento, linha por linha"
 }
 
 ## CATEGORIAS DE DESPESA (apenas se transaction_type = "payment"):
@@ -110,7 +111,7 @@ TAREFA: Analisar a imagem do documento e classificar CORRETAMENTE como RECEITA o
 - "taxes": Impostos, taxas, contribuições
 - "other": Outros gastos não classificados
 
-REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), classifique OBRIGATORIAMENTE como "payment" (DESPESA). NÃO classifique pagamentos feitos por você como receita.`;
+REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), classifique OBRIGATORIAMENTE como "payment" (DESPESA). NÃO classifique pagamentos feitos por você como receita. Sempre extraia o texto completo em raw_text para conferência do usuário.`;
 
     // Usar Lovable AI Gateway com modelo mais capaz
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -142,7 +143,7 @@ REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), c
             ]
           }
         ],
-        max_tokens: 800,
+        max_tokens: 1600,
         temperature: 0.1
       })
     });
@@ -178,6 +179,16 @@ REGRA FINAL: Se o documento é um COMPROVANTE DE PAGAMENTO (você pagou algo), c
     }
 
     extractedData.amount = normalizeCurrencyNumber(extractedData.amount);
+    extractedData.raw_text = extractedData.raw_text || content;
+
+    const deterministicType = inferTransactionTypeFromText(`${extractedData.raw_text}\n${extractedData.description || ''}\n${extractedData.classification_reason || ''}`);
+    if (deterministicType && deterministicType !== extractedData.transaction_type) {
+      extractedData.transaction_type = deterministicType;
+      extractedData.confidence = 'high';
+      extractedData.classification_reason = deterministicType === 'payment'
+        ? 'Regras automáticas identificaram sinais de pagamento enviado/compra, então foi marcado como despesa.'
+        : 'Regras automáticas identificaram sinais de valor recebido, então foi marcado como receita.';
+    }
 
     // Log da classificação para debug
     console.log('Classificação:', {
@@ -263,4 +274,47 @@ function normalizeCurrencyNumber(value: unknown): number | null {
     ? cleaned.replace(/\./g, '').replace(',', '.')
     : cleaned;
   return parseFloat(normalized) || null;
+}
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function inferTransactionTypeFromText(value: string): 'receipt' | 'payment' | null {
+  const text = normalizeText(value);
+
+  const paymentSignals = [
+    'voce fez um pix',
+    'pix enviado',
+    'transferencia enviada',
+    'pagamento enviado',
+    'pagamento realizado',
+    'pagamento efetuado',
+    'comprovante de pagamento',
+    'boleto pago',
+    'debito',
+    'compra no debito',
+    'valor pago',
+    'paguei',
+    'pagador',
+  ];
+
+  const receiptSignals = [
+    'pix recebido',
+    'transferencia recebida',
+    'valor recebido',
+    'recebemos de',
+    'recebido de',
+    'credito recebido',
+    'voce recebeu',
+    'recebimento',
+  ];
+
+  if (paymentSignals.some((signal) => text.includes(signal))) return 'payment';
+  if (receiptSignals.some((signal) => text.includes(signal))) return 'receipt';
+
+  return null;
 }
