@@ -435,34 +435,37 @@ export const FinancialDocumentScanner = ({
               upsert: false
             });
 
+          let documentImageUrl = currentFileData;
           if (!uploadError && uploadData) {
             const { data: publicUrl } = supabase.storage
               .from('scanned-documents')
               .getPublicUrl(uploadData.path);
 
-            // Save to financial_scanned_documents history
-            const { error: historyInsertError } = await supabase
-              .from('financial_scanned_documents')
-              .insert({
-                user_id: user.id,
-                image_url: publicUrl.publicUrl,
-                file_name: previewFile?.name || 'documento_escaneado.jpg',
-                file_type: previewFile?.type || 'image/jpeg',
-                transaction_type: transactionType,
-                amount,
-                description: finalDescription,
-                vendor_name: extractedData.vendor_name,
-                document_number: extractedData.document_number,
-                document_date: extractedData.date,
-                transaction_id: transactionData?.id,
-                category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
-              });
-
-            if (historyInsertError) throw historyInsertError;
+            documentImageUrl = publicUrl.publicUrl;
           }
+
+          // Save to financial_scanned_documents history even if storage upload fails
+          const { error: historyInsertError } = await supabase
+            .from('financial_scanned_documents')
+            .insert({
+              user_id: user.id,
+              image_url: documentImageUrl,
+              file_name: previewFile?.name || 'documento_escaneado.jpg',
+              file_type: previewFile?.type || 'image/jpeg',
+              transaction_type: transactionType,
+              amount,
+              description: finalDescription,
+              vendor_name: extractedData.vendor_name,
+              document_number: extractedData.document_number,
+              document_date: extractedData.date,
+              transaction_id: transactionData?.id,
+              category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
+            });
+
+          if (historyInsertError) throw historyInsertError;
         } catch (historyError) {
           console.error('Erro ao salvar histórico:', historyError);
-          // Don't fail the whole operation if history save fails
+          toast.warning('Lançamento salvo, mas não foi possível registrar o documento no histórico.');
         }
       }
 
