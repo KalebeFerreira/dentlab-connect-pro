@@ -192,7 +192,7 @@ export const FinancialDocumentScanner = ({
     setShowCamera(false);
   };
 
-  const compressImage = (dataUrl: string, maxWidth = 800, quality = 0.5): Promise<string> => {
+  const compressImage = (dataUrl: string, maxWidth = 1600, quality = 0.9): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
