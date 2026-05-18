@@ -385,8 +385,18 @@ export const FinancialDocumentScanner = ({
         return;
       }
 
-      const transactionType = normalizeTransactionType(extractedData.transaction_type) || 'payment';
+      const transactionType = normalizeTransactionType(extractedData.transaction_type);
+      if (!transactionType) {
+        toast.error('Escolha se o lançamento é RECEITA ou DESPESA antes de salvar.');
+        return;
+      }
+
       const amount = parseCurrencyValue(extractedData.amount);
+      if (amount <= 0) {
+        toast.error('Informe um valor maior que zero antes de salvar.');
+        return;
+      }
+
       const vendorName = (extractedData.vendor_name || extractedData.description || 'Transação escaneada').trim();
       
       // Check if there's an existing transaction with same vendor in same month/year
@@ -401,9 +411,7 @@ export const FinancialDocumentScanner = ({
         .limit(1);
 
       // Use existing description format if found
-      const finalDescription = existingTransactions && existingTransactions.length > 0
-        ? existingTransactions[0].description
-        : vendorName;
+      const finalDescription = vendorName;
 
       // Insert financial transaction
       const { data: transactionData, error: transactionError } = await supabase
@@ -444,7 +452,7 @@ export const FinancialDocumentScanner = ({
               .getPublicUrl(uploadData.path);
 
             // Save to financial_scanned_documents history
-            await supabase
+            const { error: historyInsertError } = await supabase
               .from('financial_scanned_documents' as any)
               .insert({
                 user_id: user.id,
@@ -460,6 +468,8 @@ export const FinancialDocumentScanner = ({
                 transaction_id: transactionData?.id,
                 category: transactionType === 'payment' ? (formCategory || extractedData.category) : null
               });
+
+            if (historyInsertError) throw historyInsertError;
           }
         } catch (historyError) {
           console.error('Erro ao salvar histórico:', historyError);
