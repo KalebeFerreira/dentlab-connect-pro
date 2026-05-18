@@ -59,8 +59,18 @@ serve(async (req) => {
     const firstName = nameParts[0] || "Cliente";
     const lastName = nameParts.slice(1).join(" ") || "Lovable";
 
+    // MP doesn't allow paying yourself. If payer email matches the receiver account,
+    // use a generic payer email (real email is preserved in metadata + external_reference).
+    const RECEIVER_EMAILS = new Set([
+      "joseedimilsonmessiaspassos@gmail.com",
+      "joseedimilsonmessiaspassos80@gmail.com",
+    ]);
+    const payerEmail = RECEIVER_EMAILS.has(user.email.toLowerCase())
+      ? `pagador+${user.id.slice(0, 8)}@dentlab.app`
+      : user.email;
+
     const payerBody: Record<string, unknown> = {
-      email: user.email,
+      email: payerEmail,
       first_name: firstName,
       last_name: lastName,
     };
