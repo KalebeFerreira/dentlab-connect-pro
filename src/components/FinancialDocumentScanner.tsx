@@ -158,14 +158,15 @@ export const FinancialDocumentScanner = ({
         videoRef.current.onloadedmetadata = async () => {
           try {
             await videoRef.current?.play();
-          } catch {
+          } catch (playError) {
+            console.warn('Não foi possível iniciar o vídeo automaticamente:', playError);
           }
         };
       }
       setShowCamera(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao acessar câmera:', error);
-      const name = error?.name || '';
+      const name = error instanceof DOMException ? error.name : '';
       let msg = 'Não foi possível abrir a câmera.';
 
       if (name === 'NotAllowedError') {
@@ -355,9 +356,9 @@ export const FinancialDocumentScanner = ({
         setShowConfirmDialog(true);
         toast.info('Documento carregado. Preencha os dados manualmente.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao processar documento:', error);
-      toast.error('Erro ao processar: ' + (error.message || 'Tente novamente'));
+      toast.error('Erro ao processar: ' + (error instanceof Error ? error.message : 'Tente novamente'));
       setExtractedData({
         transaction_type: null,
         amount: null,
