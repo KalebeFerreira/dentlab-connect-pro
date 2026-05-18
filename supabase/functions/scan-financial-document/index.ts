@@ -275,3 +275,46 @@ function normalizeCurrencyNumber(value: unknown): number | null {
     : cleaned;
   return parseFloat(normalized) || null;
 }
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function inferTransactionTypeFromText(value: string): 'receipt' | 'payment' | null {
+  const text = normalizeText(value);
+
+  const paymentSignals = [
+    'voce fez um pix',
+    'pix enviado',
+    'transferencia enviada',
+    'pagamento enviado',
+    'pagamento realizado',
+    'pagamento efetuado',
+    'comprovante de pagamento',
+    'boleto pago',
+    'debito',
+    'compra no debito',
+    'valor pago',
+    'paguei',
+    'pagador',
+  ];
+
+  const receiptSignals = [
+    'pix recebido',
+    'transferencia recebida',
+    'valor recebido',
+    'recebemos de',
+    'recebido de',
+    'credito recebido',
+    'voce recebeu',
+    'recebimento',
+  ];
+
+  if (paymentSignals.some((signal) => text.includes(signal))) return 'payment';
+  if (receiptSignals.some((signal) => text.includes(signal))) return 'receipt';
+
+  return null;
+}
