@@ -261,14 +261,6 @@ const Planos = () => {
                       "Assinar com Cartão"
                     )}
                   </Button>
-                  {!isCurrentPlan && currentPriceId && (
-                    <Button
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => setPixDialog({ priceId: currentPriceId, planName: plan.name })}
-                    >
-                      Pagar com PIX (10% OFF)
-                    </Button>
-                  )}
                 </CardFooter>
               </Card>
             );
