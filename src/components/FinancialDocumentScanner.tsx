@@ -420,7 +420,7 @@ export const FinancialDocumentScanner = ({
       if (transactionError) throw transactionError;
 
       // Save scanned document to history if we have image data
-      if (currentFileData && previewImage) {
+      if (currentFileData) {
         try {
           // Upload image to storage
           const fileName = `${user.id}/${Date.now()}_financial.jpg`;
