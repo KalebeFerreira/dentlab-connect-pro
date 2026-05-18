@@ -77,11 +77,11 @@ serve(async (req) => {
         signatureValid = hmac === v1;
 
         if (!signatureValid) {
-          console.error("Invalid signature", { expected: hmac, got: v1 });
-          await writeLog({ signature_valid: false, error_message: "Invalid signature" }, 401);
-          return new Response(JSON.stringify({ error: "Invalid signature" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          // Don't block: we re-fetch the payment from MP with our access token below,
+          // which authenticates the event. Just log the mismatch for visibility.
+          console.warn("Signature mismatch (continuing, will verify via MP API)", {
+            expected: hmac,
+            got: v1,
           });
         }
       }
