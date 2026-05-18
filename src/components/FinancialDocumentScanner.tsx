@@ -399,18 +399,6 @@ export const FinancialDocumentScanner = ({
 
       const vendorName = (extractedData.vendor_name || extractedData.description || 'Transação escaneada').trim();
       
-      // Check if there's an existing transaction with same vendor in same month/year
-      // to suggest client matching
-      const { data: existingTransactions } = await supabase
-        .from('financial_transactions')
-        .select('description')
-        .eq('user_id', user.id)
-        .eq('month', formMonth)
-        .eq('year', formYear)
-        .ilike('description', `%${vendorName.split(' ')[0]}%`)
-        .limit(1);
-
-      // Use existing description format if found
       const finalDescription = vendorName;
 
       // Insert financial transaction
