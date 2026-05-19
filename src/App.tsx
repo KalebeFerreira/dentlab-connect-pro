@@ -146,6 +146,7 @@ const App = () => (
                                 <Route path="/fiscal" element={<Fiscal />} />
                                 <Route path="/mercadopago-diagnostico" element={<MercadoPagoDiagnostico />} />
                                 <Route path="/minha-assinatura" element={<MinhaAssinatura />} />
+                                <Route path="/admin/stripe-events" element={<AdminStripeEvents />} />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
                             </Suspense>
