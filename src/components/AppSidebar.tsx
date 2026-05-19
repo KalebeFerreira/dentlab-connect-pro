@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import essenciaLogo from "@/assets/essencia-logo.jpg";
 
 import {
@@ -59,6 +60,7 @@ export function AppSidebar() {
   const { setOpen } = useSidebar();
   const { isDentist } = useUserRole();
   const { signOut } = useAuth();
+  const { subscribed, currentPlan } = useSubscription();
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -149,6 +151,15 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="px-3 py-2 mb-1 rounded-md bg-primary/10 border border-primary/20">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Seu plano</p>
+              <p className="text-sm font-bold text-primary flex items-center gap-1">
+                <Crown className="h-3.5 w-3.5" />
+                {subscribed && currentPlan ? currentPlan.name : "Plano Gratuito"}
+              </p>
+            </div>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={handleLogout} 
