@@ -113,9 +113,37 @@ serve(async (req) => {
 
     // Handle different event types
     switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        logStep("Checkout completed", { sessionId: session.id, subId: session.subscription });
+        if (session.subscription) {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          await syncSubscription(sub);
+        }
+        break;
+      }
+
+      case "customer.subscription.created": {
+        const subscription = event.data.object as Stripe.Subscription;
+        logStep("Subscription created", { id: subscription.id });
+        await syncSubscription(subscription);
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        logStep("Invoice paid", { id: invoice.id });
+        if (invoice.subscription) {
+          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          await syncSubscription(sub);
+        }
+        break;
+      }
+
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription updated", { subscriptionId: subscription.id, status: subscription.status });
+        await syncSubscription(subscription);
         
         // Check if subscription is ending soon (7 days before)
         const daysUntilEnd = Math.floor(
