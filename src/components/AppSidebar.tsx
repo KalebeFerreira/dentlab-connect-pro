@@ -152,6 +152,15 @@ export function AppSidebar() {
       <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
+            <div className="px-3 py-2 mb-1 rounded-md bg-primary/10 border border-primary/20">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Seu plano</p>
+              <p className="text-sm font-bold text-primary flex items-center gap-1">
+                <Crown className="h-3.5 w-3.5" />
+                {subscribed && currentPlan ? currentPlan.name : "Plano Gratuito"}
+              </p>
+            </div>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={handleLogout} 
               className="hover:bg-destructive/10 text-destructive hover:text-destructive py-2.5"
