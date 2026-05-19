@@ -111,21 +111,56 @@ serve(async (req) => {
     let subscriptionEnd = null;
     let priceId = null;
 
+    // Map price_id -> plan_name (must match useSubscription PLANS)
+    const PRICE_TO_PLAN: Record<string, string> = {
+      "price_1SYVOhF2249riykhzMKCVXNw": "basic",
+      "price_1SYVOhF2249riykh1HAwzkce": "basic",
+      "price_1SYVOiF2249riykhLo07A0Lx": "professional",
+      "price_1SYVOiF2249riykhphMkNE0w": "professional",
+      "price_1SYVOjF2249riykhJmw4RoVM": "premium",
+      "price_1SYVOjF2249riykhi2o98hEf": "premium",
+      "price_1Sq1xDF2249riykhpt3dJbLS": "super_premium",
+      "price_1Sq1xZF2249riykhmTrDAtsF": "super_premium",
+    };
+
+    let planName = "free";
+    let subscription: any = null;
+
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+      subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       productId = subscription.items.data[0].price.product as string;
       priceId = subscription.items.data[0].price.id;
-      logStep("Determined subscription tier", { productId, priceId });
+      planName = PRICE_TO_PLAN[priceId] || "basic";
+      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, priceId, planName });
     } else {
       logStep("No active subscription found");
+    }
+
+    // Upsert into user_subscriptions so backend PDF/feature checks recognize paid users immediately
+    try {
+      await supabaseClient.from("user_subscriptions").upsert({
+        user_id: user.id,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription?.id || null,
+        stripe_price_id: priceId,
+        plan_name: planName,
+        status: hasActiveSub ? "active" : "canceled",
+        current_period_start: subscription ? new Date(subscription.current_period_start * 1000).toISOString() : null,
+        current_period_end: subscriptionEnd,
+        cancel_at_period_end: subscription?.cancel_at_period_end || false,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+      logStep("user_subscriptions upserted", { planName, status: hasActiveSub ? "active" : "canceled" });
+    } catch (upsertErr) {
+      logStep("Failed to upsert user_subscriptions", { error: String(upsertErr) });
     }
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       product_id: productId,
       price_id: priceId,
+      plan_name: planName,
       subscription_end: subscriptionEnd
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
