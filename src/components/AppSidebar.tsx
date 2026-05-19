@@ -60,6 +60,7 @@ export function AppSidebar() {
   const { setOpen } = useSidebar();
   const { isDentist } = useUserRole();
   const { signOut } = useAuth();
+  const { subscribed, currentPlan } = useSubscription();
 
   const handleNavClick = () => {
     if (isMobile) {
