@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
   CheckCircle2, XCircle, Crown, Phone, Globe, Clock,
@@ -283,29 +283,15 @@ export default function AIAgent() {
     );
   }
 
-  // Trial expired
-  if (trialExpired && !isPremium) {
-    return (
-      <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-        <Card className="border-2 border-destructive/30">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="relative mb-6">
-              <Bot className="h-20 w-20 text-muted-foreground/50" />
-              <XCircle className="h-8 w-8 text-destructive absolute -bottom-1 -right-1" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Período de Teste Encerrado</h2>
-            <p className="text-muted-foreground mb-6 max-w-md">
-              Seu teste gratuito de 15 dias do Agente IA WhatsApp expirou.
-              Assine o plano Premium para continuar usando.
-            </p>
-            <Button onClick={() => navigate('/planos')} size="lg" className="gap-2">
-              <Crown className="h-5 w-5" />
-              Assinar Plano Premium
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+  // Sem Premium e sem trial ativo (nunca iniciado OU expirado) → redireciona para upgrade
+  if (!isPremium && !trialActive) {
+    const reason = trialExpired ? 'trial_expired' : 'upgrade_required';
+    toast.info(
+      trialExpired
+        ? 'Seu teste gratuito de 15 dias expirou. Faça upgrade para continuar usando o Agente IA.'
+        : 'O Agente IA WhatsApp requer o plano Premium. Faça upgrade para começar a usar.'
     );
+    return <Navigate to={`/planos?highlight=premium&reason=${reason}`} replace />;
   }
 
   // Not configured yet — show simple setup wizard
