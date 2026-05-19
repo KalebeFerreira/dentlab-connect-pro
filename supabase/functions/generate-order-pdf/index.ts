@@ -130,17 +130,30 @@ serve(async (req) => {
       }
     }
 
-    // Get signature position preference from company_info
+    // Get signature position + user logo from company_info, fallback to laboratory_info
     let signaturePosition = 'bottom';
+    let userLogoUrl: string | null = null;
     const { data: companyInfo } = await supabase
       .from('company_info')
-      .select('signature_position')
+      .select('signature_position, logo_url')
       .eq('user_id', user.id)
       .maybeSingle();
-    
+
     if (companyInfo?.signature_position) {
       signaturePosition = companyInfo.signature_position;
     }
+    if (companyInfo?.logo_url) {
+      userLogoUrl = companyInfo.logo_url;
+    } else {
+      const { data: labInfo } = await supabase
+        .from('laboratory_info')
+        .select('logo_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (labInfo?.logo_url) userLogoUrl = labInfo.logo_url;
+    }
+    // Only show user logo for paid plans
+    const showUserLogo = isSubscribed && !!userLogoUrl;
 
     // Signature block to be reused
     const signatureBlock = signatureDataUrl ? `
@@ -258,7 +271,7 @@ serve(async (req) => {
 </head>
 <body>
   <div class="header">
-    <!-- Logo will be added here when laboratory info is fetched -->
+    ${showUserLogo ? `<div style="text-align:center;margin-bottom:12px;"><img src="${userLogoUrl}" alt="Logo" style="max-width:180px;max-height:80px;object-fit:contain;" /></div>` : ''}
     <h1>ORDEM DE TRABALHO</h1>
     <p class="order-number">Nº ${order.os_number || order.id.substring(0, 8).toUpperCase()}</p>
   </div>
