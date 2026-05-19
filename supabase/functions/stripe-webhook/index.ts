@@ -175,6 +175,8 @@ serve(async (req) => {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription deleted", { subscriptionId: subscription.id });
+        await syncSubscription(subscription);
+        
         
         const customer = await stripe.customers.retrieve(subscription.customer as string);
         
