@@ -1828,6 +1828,51 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_event_logs: {
+        Row: {
+          api_version: string | null
+          created_at: string
+          error: string | null
+          id: string
+          livemode: boolean
+          payload: Json | null
+          processed_at: string | null
+          status: string
+          stripe_created_at: string | null
+          stripe_event_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          api_version?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          livemode?: boolean
+          payload?: Json | null
+          processed_at?: string | null
+          status?: string
+          stripe_created_at?: string | null
+          stripe_event_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          api_version?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          livemode?: boolean
+          payload?: Json | null
+          processed_at?: string | null
+          status?: string
+          stripe_created_at?: string | null
+          stripe_event_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
