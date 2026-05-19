@@ -1,12 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { Resend } from "https://esm.sh/resend@3.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2025-08-27.basil",
 });
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const supabaseAdmin = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  { auth: { persistSession: false } }
+);
+
+// Map Stripe price IDs -> internal plan names (must match useSubscription PLANS)
+const PRICE_TO_PLAN: Record<string, string> = {
+  "price_1SYVOhF2249riykhzMKCVXNw": "basic",
+  "price_1SYVOhF2249riykh1HAwzkce": "basic",
+  "price_1SYVOiF2249riykhLo07A0Lx": "professional",
+  "price_1SYVOiF2249riykhphMkNE0w": "professional",
+  "price_1SYVOjF2249riykhJmw4RoVM": "premium",
+  "price_1SYVOjF2249riykhi2o98hEf": "premium",
+  "price_1Sq1xDF2249riykhpt3dJbLS": "super_premium",
+  "price_1Sq1xZF2249riykhmTrDAtsF": "super_premium",
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +36,46 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
+
+async function syncSubscription(subscription: Stripe.Subscription) {
+  try {
+    const customerId = subscription.customer as string;
+    const customer = await stripe.customers.retrieve(customerId);
+    const email = "email" in customer ? customer.email : null;
+    if (!email) {
+      logStep("Cannot sync: customer has no email", { customerId });
+      return;
+    }
+
+    const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+    const user = userList?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      logStep("No matching user for email", { email });
+      return;
+    }
+
+    const priceId = subscription.items.data[0]?.price.id ?? null;
+    const planName = (priceId && PRICE_TO_PLAN[priceId]) || "basic";
+    const isActive = ["active", "trialing"].includes(subscription.status);
+
+    await supabaseAdmin.from("user_subscriptions").upsert({
+      user_id: user.id,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscription.id,
+      stripe_price_id: priceId,
+      plan_name: isActive ? planName : "free",
+      status: subscription.status,
+      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+
+    logStep("Subscription synced", { userId: user.id, planName, status: subscription.status });
+  } catch (err) {
+    logStep("Error syncing subscription", { error: (err as Error).message });
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -54,9 +113,37 @@ serve(async (req) => {
 
     // Handle different event types
     switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        logStep("Checkout completed", { sessionId: session.id, subId: session.subscription });
+        if (session.subscription) {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          await syncSubscription(sub);
+        }
+        break;
+      }
+
+      case "customer.subscription.created": {
+        const subscription = event.data.object as Stripe.Subscription;
+        logStep("Subscription created", { id: subscription.id });
+        await syncSubscription(subscription);
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        logStep("Invoice paid", { id: invoice.id });
+        if (invoice.subscription) {
+          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          await syncSubscription(sub);
+        }
+        break;
+      }
+
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription updated", { subscriptionId: subscription.id, status: subscription.status });
+        await syncSubscription(subscription);
         
         // Check if subscription is ending soon (7 days before)
         const daysUntilEnd = Math.floor(
@@ -88,6 +175,8 @@ serve(async (req) => {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription deleted", { subscriptionId: subscription.id });
+        await syncSubscription(subscription);
+        
         
         const customer = await stripe.customers.retrieve(subscription.customer as string);
         
