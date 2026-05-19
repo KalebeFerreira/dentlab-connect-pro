@@ -24,6 +24,7 @@ interface RequestBody {
     company_name?: string;
     email?: string;
     phone?: string;
+    logo_url?: string;
   };
 }
 
