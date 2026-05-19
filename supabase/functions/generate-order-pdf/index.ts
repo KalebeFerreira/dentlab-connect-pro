@@ -271,7 +271,7 @@ serve(async (req) => {
 </head>
 <body>
   <div class="header">
-    <!-- Logo will be added here when laboratory info is fetched -->
+    ${showUserLogo ? `<div style="text-align:center;margin-bottom:12px;"><img src="${userLogoUrl}" alt="Logo" style="max-width:180px;max-height:80px;object-fit:contain;" /></div>` : ''}
     <h1>ORDEM DE TRABALHO</h1>
     <p class="order-number">Nº ${order.os_number || order.id.substring(0, 8).toUpperCase()}</p>
   </div>
