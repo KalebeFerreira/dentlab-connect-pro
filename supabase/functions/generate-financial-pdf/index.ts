@@ -254,6 +254,7 @@ serve(async (req) => {
     </head>
     <body>
       <div class="header">
+        ${isSubscribed && companyInfo?.logo_url ? `<div style="text-align:center;margin-bottom:10px;"><img src="${companyInfo.logo_url}" alt="Logo" style="max-width:180px;max-height:80px;object-fit:contain;" /></div>` : ''}
         <div class="logo">${companyInfo?.company_name || 'Essência Dental Lab'}</div>
         <div class="report-title">Relatório Financeiro</div>
         <div class="report-period">${monthName} de ${year}</div>
