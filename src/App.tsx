@@ -47,6 +47,7 @@ const Fiscal = lazy(() => import("./pages/Fiscal"));
 const AIAgent = lazy(() => import("./pages/AIAgent"));
 const MercadoPagoDiagnostico = lazy(() => import("./pages/MercadoPagoDiagnostico"));
 const MinhaAssinatura = lazy(() => import("./pages/MinhaAssinatura"));
+const AdminStripeEvents = lazy(() => import("./pages/AdminStripeEvents"));
 
 // Lazy load heavy components
 const AppSidebar = lazy(() => import("@/components/AppSidebar").then(m => ({ default: m.AppSidebar })));
