@@ -176,8 +176,23 @@ export const useSubscription = () => {
       checkSubscription();
     });
 
+    // Auto-refresh periódico (a cada 60s) para liberar recursos pagos sem reload
+    const intervalId = setInterval(() => {
+      checkSubscription();
+    }, 60000);
+
+    // Revalidar ao voltar para a aba ou recuperar foco
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") checkSubscription();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", checkSubscription);
+
     return () => {
       subscription.unsubscribe();
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", checkSubscription);
     };
   }, []);
 
