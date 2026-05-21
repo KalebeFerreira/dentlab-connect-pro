@@ -692,18 +692,36 @@ export default function AIAgent() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Conexão WhatsApp (Evolution API)
+                <Smartphone className="h-5 w-5" />
+                Conectar Meu WhatsApp
               </CardTitle>
               <CardDescription>
-                Configurações avançadas da conexão com a Evolution API
+                Cada usuário conecta seu próprio número WhatsApp. Seus dados ficam totalmente isolados dos outros usuários.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <div className={`h-2.5 w-2.5 rounded-full ${waState === 'open' ? 'bg-green-500' : waState === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
+                  <div>
+                    <p className="text-sm font-medium">
+                      {waState === 'open' ? 'WhatsApp conectado' :
+                       waState === 'connecting' ? 'Aguardando leitura do QR…' :
+                       waState === 'not_configured' ? 'Servidor não configurado' :
+                       'WhatsApp desconectado'}
+                    </p>
+                    {waInstance && <p className="text-[10px] text-muted-foreground font-mono">{waInstance}</p>}
+                  </div>
+                </div>
+                <Button size="sm" variant="ghost" onClick={refreshWaStatus} className="gap-1">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base">WhatsApp Ativo</Label>
-                  <p className="text-xs text-muted-foreground">Habilitar/desabilitar atendimento</p>
+                  <Label className="text-base">Atendimento WhatsApp ativo</Label>
+                  <p className="text-xs text-muted-foreground">Habilitar/desabilitar respostas automáticas</p>
                 </div>
                 <Switch
                   checked={settings.is_whatsapp_enabled}
@@ -711,65 +729,41 @@ export default function AIAgent() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Número do WhatsApp</Label>
-                <Input
-                  value={settings.evolution_instance_name?.replace('agent-', '') || ''}
-                  onChange={e => {
-                    const clean = e.target.value.replace(/\D/g, '');
-                    setSettings(s => ({ ...s, evolution_instance_name: `agent-${clean}` }));
-                  }}
-                  placeholder="(11) 99999-9999"
-                  type="tel"
-                />
-                <p className="text-xs text-muted-foreground">
-                  O número vinculado ao agente de atendimento
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>URL da Evolution API</Label>
-                <Input
-                  value={settings.evolution_api_url || ''}
-                  onChange={e => setSettings(s => ({ ...s, evolution_api_url: e.target.value }))}
-                  placeholder="https://sua-evolution-api.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Nome da Instância</Label>
-                <Input
-                  value={settings.evolution_instance_name || ''}
-                  onChange={e => setSettings(s => ({ ...s, evolution_instance_name: e.target.value }))}
-                  placeholder="minha-instancia"
-                />
-              </div>
-
-              <Button
-                onClick={testConnection}
-                disabled={testingConnection}
-                variant="outline"
-                className="gap-2 w-full"
-              >
-                {testingConnection ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : connectionStatus === 'success' ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : connectionStatus === 'error' ? (
-                  <XCircle className="h-4 w-4 text-red-500" />
-                ) : (
-                  <Globe className="h-4 w-4" />
-                )}
-                {testingConnection ? 'Testando...' : 'Testar Conexão'}
-              </Button>
-
-              {connectionStatus === 'success' && (
-                <Badge variant="outline" className="w-full justify-center py-2 text-green-600 border-green-300 bg-green-50">
-                  <CheckCircle2 className="h-3 w-3 mr-1" /> WhatsApp conectado
-                </Badge>
+              {qrCode && waState !== 'open' && (
+                <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 flex flex-col items-center gap-3">
+                  <img src={qrCode} alt="QR Code WhatsApp" className="w-56 h-56 rounded bg-white p-2" />
+                  <div className="text-center text-sm">
+                    <p className="font-medium flex items-center justify-center gap-1">
+                      <QrCode className="h-4 w-4" /> Escaneie com o WhatsApp do seu celular
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Abra o WhatsApp → Aparelhos conectados → Conectar um aparelho
+                    </p>
+                  </div>
+                </div>
               )}
+
+              {waState === 'open' ? (
+                <Button onClick={disconnectWhatsApp} variant="outline" className="w-full gap-2">
+                  <LogOut className="h-4 w-4" /> Desconectar WhatsApp
+                </Button>
+              ) : (
+                <Button onClick={connectWhatsApp} disabled={loadingQr} className="w-full gap-2">
+                  {loadingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                  {qrCode ? 'Gerar novo QR Code' : 'Conectar Meu WhatsApp'}
+                </Button>
+              )}
+
+              <Alert className="border-primary/20 bg-primary/5">
+                <Shield className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Sua instância é privada e identificada pelo seu ID de usuário. Mensagens, conversas e contatos
+                  jamais se misturam com os de outro usuário do sistema.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
+
 
           <Card>
             <CardHeader>
