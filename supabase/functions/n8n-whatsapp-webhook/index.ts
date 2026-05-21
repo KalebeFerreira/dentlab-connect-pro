@@ -91,34 +91,147 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Test connection action
+    // ============================================================
+    // Per-user Evolution instance management (multi-tenant)
+    // Each user gets a unique instance = `user-{userIdNoHyphens24}` on
+    // the SHARED Evolution server (EVOLUTION_API_URL + EVOLUTION_API_KEY).
+    // Premium/trial plan is required.
+    // ============================================================
+    const requireUser = async () => {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) return { error: 'Não autenticado', status: 401 as const };
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) return { error: 'Token inválido', status: 401 as const };
+      return { user };
+    };
+
+    const checkPlanAccess = async (userId: string) => {
+      const { data: settings } = await supabase
+        .from('ai_agent_settings').select('trial_started_at').eq('user_id', userId).maybeSingle();
+      const { data: sub } = await supabase
+        .from('user_subscriptions').select('status, plan_name, current_period_end')
+        .eq('user_id', userId).maybeSingle();
+      const isPremium = sub && (
+        sub.status === 'active' || sub.status === 'trialing' ||
+        (sub.status === 'canceled' && sub.current_period_end && new Date(sub.current_period_end) > new Date())
+      ) && (sub.plan_name === 'premium' || sub.plan_name === 'super_premium');
+      const trialActive = settings?.trial_started_at && !isTrialExpired(settings.trial_started_at);
+      return !!(isPremium || trialActive);
+    };
+
+    const userInstanceName = (userId: string) => `user-${userId.replace(/-/g, '').slice(0, 24)}`;
+    const sharedEvoUrl = () => normalizeEvolutionApiUrl(Deno.env.get('EVOLUTION_API_URL') || '');
+    const sharedEvoKey = () => Deno.env.get('EVOLUTION_API_KEY') || '';
+    const webhookCallbackUrl = () => `${Deno.env.get('SUPABASE_URL')}/functions/v1/n8n-whatsapp-webhook`;
+
+    // ----- create_instance: ensures Evolution instance exists, returns QR -----
+    if (action === 'create_instance') {
+      const auth = await requireUser();
+      if ('error' in auth) return new Response(JSON.stringify({ error: auth.error }), { status: auth.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const user = auth.user;
+      if (!(await checkPlanAccess(user.id))) {
+        return new Response(JSON.stringify({ error: 'Plano Premium necessário', upgrade_required: true }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const baseUrl = sharedEvoUrl();
+      const apiKey = sharedEvoKey();
+      if (!baseUrl || !apiKey) {
+        return new Response(JSON.stringify({ error: 'Servidor WhatsApp não configurado' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const instanceName = userInstanceName(user.id);
+      try {
+        const createResp = await fetch(`${baseUrl}/instance/create`, {
+          method: 'POST',
+          headers: { apikey: apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instanceName, qrcode: true, integration: 'WHATSAPP-BAILEYS' }),
+        });
+        const createText = await createResp.text();
+        let createData: any = null;
+        try { createData = JSON.parse(createText); } catch { /* ignore */ }
+        if (!createResp.ok && createResp.status !== 403 && createResp.status !== 409) {
+          console.error(`[create_instance] ${createResp.status}: ${createText.slice(0, 300)}`);
+        }
+        // Wire webhook so messages route back automatically
+        await fetch(`${baseUrl}/webhook/set/${encodeURIComponent(instanceName)}`, {
+          method: 'POST',
+          headers: { apikey: apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ webhook: { url: webhookCallbackUrl(), enabled: true, events: ['MESSAGES_UPSERT'] } }),
+        }).catch(() => {});
+
+        await supabase.from('ai_agent_settings').upsert({
+          user_id: user.id,
+          agent_name: 'Assistente Virtual',
+          evolution_instance_name: instanceName,
+          is_whatsapp_enabled: true,
+        }, { onConflict: 'user_id' });
+
+        const directQr = createData?.qrcode?.base64 || createData?.qrcode?.code || null;
+        if (directQr) {
+          return new Response(JSON.stringify({ ok: true, instance_name: instanceName, qrcode: directQr }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        const qrResp = await fetch(`${baseUrl}/instance/connect/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
+        const qrData = await qrResp.json().catch(() => ({}));
+        return new Response(JSON.stringify({
+          ok: true,
+          instance_name: instanceName,
+          qrcode: qrData?.base64 || qrData?.code || qrData?.qrcode?.base64 || null,
+          pairing_code: qrData?.pairingCode || null,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (e) {
+        console.error('[create_instance] error', e);
+        return new Response(JSON.stringify({ error: 'Falha ao criar instância WhatsApp' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // ----- get_connection_status -----
+    if (action === 'get_connection_status') {
+      const auth = await requireUser();
+      if ('error' in auth) return new Response(JSON.stringify({ error: auth.error }), { status: auth.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const user = auth.user;
+      const baseUrl = sharedEvoUrl();
+      const apiKey = sharedEvoKey();
+      const instanceName = userInstanceName(user.id);
+      if (!baseUrl || !apiKey) {
+        return new Response(JSON.stringify({ connected: false, state: 'not_configured', instance_name: instanceName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      try {
+        const resp = await fetch(`${baseUrl}/instance/connectionState/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
+        const data = await resp.json().catch(() => ({}));
+        const state = data?.instance?.state || data?.state || 'unknown';
+        return new Response(JSON.stringify({ connected: state === 'open', state, instance_name: instanceName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch {
+        return new Response(JSON.stringify({ connected: false, state: 'unknown', instance_name: instanceName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // ----- disconnect_instance -----
+    if (action === 'disconnect_instance') {
+      const auth = await requireUser();
+      if ('error' in auth) return new Response(JSON.stringify({ error: auth.error }), { status: auth.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const user = auth.user;
+      const baseUrl = sharedEvoUrl();
+      const apiKey = sharedEvoKey();
+      const instanceName = userInstanceName(user.id);
+      try {
+        await fetch(`${baseUrl}/instance/logout/${encodeURIComponent(instanceName)}`, { method: 'DELETE', headers: { apikey: apiKey } });
+      } catch { /* ignore */ }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Legacy test_connection (kept for backwards compatibility)
     if (action === 'test_connection') {
       const { evolution_api_url, instance_name } = body;
-      const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-
-      if (!EVOLUTION_API_KEY) {
-        return new Response(
-          JSON.stringify({ connected: false, message: 'Chave da Evolution API não configurada' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const key = sharedEvoKey();
+      if (!key) {
+        return new Response(JSON.stringify({ connected: false, message: 'Chave da Evolution API não configurada' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-
       try {
-        const resp = await fetch(`${evolution_api_url}/instance/connectionState/${instance_name}`, {
-          headers: { 'apikey': EVOLUTION_API_KEY },
-        });
+        const resp = await fetch(`${normalizeEvolutionApiUrl(evolution_api_url)}/instance/connectionState/${instance_name}`, { headers: { apikey: key } });
         const data = await resp.json();
         const connected = data?.instance?.state === 'open';
-
-        return new Response(
-          JSON.stringify({ connected, message: connected ? 'Conectado' : 'Instância não conectada' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ connected, message: connected ? 'Conectado' : 'Instância não conectada' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch {
-        return new Response(
-          JSON.stringify({ connected: false, message: 'Não foi possível conectar à Evolution API' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ connected: false, message: 'Não foi possível conectar à Evolution API' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
