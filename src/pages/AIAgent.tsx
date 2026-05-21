@@ -137,10 +137,8 @@ export default function AIAgent() {
 
     try {
       const now = new Date().toISOString();
-      // Format phone: remove non-digits
-      const cleanPhone = setupPhone.replace(/\D/g, '');
-      // Use phone as instance name (simple auto-config)
-      const instanceName = `agent-${cleanPhone}`;
+      // Deterministic per-user instance name — matches the edge function (`user-{userIdNoHyphens24}`)
+      const instanceName = `user-${user.id.replace(/-/g, '').slice(0, 24)}`;
 
       const personality = `Você é ${setupName}, ${setupFunction}. Seja sempre educado, profissional e objetivo nas respostas. Responda em português brasileiro.`;
       const welcomeMsg = `Olá! 👋 Eu sou ${setupName}, ${setupFunction.toLowerCase()}. Como posso ajudar você hoje?`;
