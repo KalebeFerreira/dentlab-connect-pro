@@ -17,7 +17,8 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
   CheckCircle2, XCircle, Crown, Phone, Globe, Clock,
-  Copy, Timer, Sparkles, Zap, ArrowRight, Shield, Inbox
+  Copy, Timer, Sparkles, Zap, ArrowRight, Shield, Inbox,
+  Smartphone, QrCode, RefreshCw, LogOut
 } from 'lucide-react';
 import WhatsAppInbox from '@/components/ai-agent/WhatsAppInbox';
 
