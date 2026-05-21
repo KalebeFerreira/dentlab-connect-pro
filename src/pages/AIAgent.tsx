@@ -282,6 +282,72 @@ export default function AIAgent() {
     toast.success('URL do webhook copiada!');
   };
 
+  // ===== Per-user WhatsApp connection =====
+  const refreshWaStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('n8n-whatsapp-webhook', {
+        body: { action: 'get_connection_status' },
+      });
+      if (error) throw error;
+      setWaState(data?.state || 'unknown');
+      setWaInstance(data?.instance_name || null);
+      if (data?.connected) setQrCode(null);
+    } catch (err) {
+      console.error('status err', err);
+    }
+  };
+
+  const connectWhatsApp = async () => {
+    setLoadingQr(true);
+    setQrCode(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('n8n-whatsapp-webhook', {
+        body: { action: 'create_instance' },
+      });
+      if (error) throw error;
+      if (data?.upgrade_required) {
+        toast.error('Faça upgrade para o plano Premium para conectar seu WhatsApp.');
+        navigate('/planos?highlight=premium');
+        return;
+      }
+      if (data?.qrcode) {
+        const qr = data.qrcode.startsWith('data:') ? data.qrcode : `data:image/png;base64,${data.qrcode}`;
+        setQrCode(qr);
+        setWaInstance(data.instance_name);
+        toast.success('QR Code gerado — escaneie com seu WhatsApp');
+      } else {
+        toast.info('Instância criada. Aguarde alguns segundos e atualize o status.');
+      }
+      // Auto-poll status every 4s while QR is shown
+      const poll = setInterval(async () => {
+        await refreshWaStatus();
+      }, 4000);
+      setTimeout(() => clearInterval(poll), 120000);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao conectar WhatsApp');
+    } finally {
+      setLoadingQr(false);
+    }
+  };
+
+  const disconnectWhatsApp = async () => {
+    try {
+      await supabase.functions.invoke('n8n-whatsapp-webhook', { body: { action: 'disconnect_instance' } });
+      setWaState('close');
+      setQrCode(null);
+      toast.success('WhatsApp desconectado');
+    } catch {
+      toast.error('Erro ao desconectar');
+    }
+  };
+
+  useEffect(() => {
+    if (user && hasAccess) refreshWaStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, hasAccess]);
+
+
   if (subLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
