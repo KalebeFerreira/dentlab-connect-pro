@@ -137,21 +137,25 @@ serve(async (req) => {
       logStep("No active or trialing subscription found");
     }
 
-    // Upsert into user_subscriptions so backend PDF/feature checks recognize paid users immediately
+    // Upsert into user_subscriptions so backend PDF/feature checks recognize paid/trial users immediately
     try {
+      const normalizedStatus = subscription && ["active", "trialing"].includes(subscription.status)
+        ? "active"
+        : "canceled";
+
       await supabaseClient.from("user_subscriptions").upsert({
         user_id: user.id,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscription?.id || null,
         stripe_price_id: priceId,
         plan_name: planName,
-        status: subscription?.status || "canceled",
+        status: normalizedStatus,
         current_period_start: subscription ? new Date(subscription.current_period_start * 1000).toISOString() : null,
         current_period_end: subscriptionEnd,
         cancel_at_period_end: subscription?.cancel_at_period_end || false,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
-      logStep("user_subscriptions upserted", { planName, status: subscription?.status || "canceled" });
+      logStep("user_subscriptions upserted", { planName, stripeStatus: subscription?.status || "none", storedStatus: normalizedStatus });
     } catch (upsertErr) {
       logStep("Failed to upsert user_subscriptions", { error: String(upsertErr) });
     }
