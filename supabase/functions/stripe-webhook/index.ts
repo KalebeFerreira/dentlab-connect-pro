@@ -86,15 +86,29 @@ async function syncSubscription(subscription: Stripe.Subscription) {
     }
 
     const priceId = subscription.items.data[0]?.price.id ?? null;
-    const planName = (priceId && PRICE_TO_PLAN[priceId]) || "basic";
+    const resolvedPlan = await resolvePlanName(priceId);
     const isActive = ["active", "trialing"].includes(subscription.status);
+
+    // If price is unmapped, fetch current stored plan to avoid silent downgrade
+    let planName = resolvedPlan;
+    if (!planName && isActive) {
+      const { data: existing } = await supabaseAdmin
+        .from("user_subscriptions")
+        .select("plan_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      planName = existing?.plan_name && existing.plan_name !== "free"
+        ? existing.plan_name
+        : "basic";
+      logStep("Plan unresolved — preserving prior plan", { userId: user.id, priceId, planName });
+    }
 
     await supabaseAdmin.from("user_subscriptions").upsert({
       user_id: user.id,
       stripe_customer_id: customerId,
       stripe_subscription_id: subscription.id,
       stripe_price_id: priceId,
-      plan_name: isActive ? planName : "free",
+      plan_name: isActive ? (planName || "basic") : "free",
       status: subscription.status,
       current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
       current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
