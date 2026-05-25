@@ -22,19 +22,21 @@ export interface FreemiumLimits {
   loading: boolean;
 }
 
-const PLAN_LIMITS = {
-  free: {
-    ORDERS_PER_MONTH: 50,
-    PATIENTS: 50,
-    IMAGE_GENERATIONS: 20,
-    PDF_GENERATIONS: 30,
-    PRICE_TABLES: 1,
-    MONTHLY_REPORTS: 3,
-    SCANNERS: 30,
-  },
+const FREE_LIMITS = {
+  ORDERS_PER_MONTH: 50,
+  PATIENTS: 50,
+  IMAGE_GENERATIONS: 20,
+  PDF_GENERATIONS: 30,
+  PRICE_TABLES: 1,
+  MONTHLY_REPORTS: 3,
+  SCANNERS: 30,
+};
+
+const BASE_PLAN_LIMITS = {
+  free: { ...FREE_LIMITS },
   basic: {
-    ORDERS_PER_MONTH: 120,
-    PATIENTS: 120,
+    ORDERS_PER_MONTH: 200,
+    PATIENTS: 200,
     IMAGE_GENERATIONS: 70,
     PDF_GENERATIONS: 150,
     PRICE_TABLES: -1,
@@ -60,6 +62,25 @@ const PLAN_LIMITS = {
     SCANNERS: -1,
   },
 };
+
+// Soma o limite do plano gratuito em cima de qualquer plano pago.
+// -1 (ilimitado) em qualquer um dos dois mantém ilimitado.
+const addFree = (planValue: number, freeValue: number) => {
+  if (planValue === -1 || freeValue === -1) return -1;
+  return planValue + freeValue;
+};
+
+const PLAN_LIMITS = {
+  free: BASE_PLAN_LIMITS.free,
+  basic: Object.fromEntries(
+    Object.entries(BASE_PLAN_LIMITS.basic).map(([k, v]) => [k, addFree(v as number, (FREE_LIMITS as any)[k])])
+  ) as typeof BASE_PLAN_LIMITS.basic,
+  professional: Object.fromEntries(
+    Object.entries(BASE_PLAN_LIMITS.professional).map(([k, v]) => [k, addFree(v as number, (FREE_LIMITS as any)[k])])
+  ) as typeof BASE_PLAN_LIMITS.professional,
+  premium: BASE_PLAN_LIMITS.premium,
+};
+
 
 type PlanType = keyof typeof PLAN_LIMITS;
 
