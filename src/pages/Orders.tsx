@@ -140,7 +140,21 @@ const Orders = () => {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase.from("orders").delete().eq("id", orderId);
+      if (error) throw error;
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      setFilteredOrders((prev) => prev.filter((o) => o.id !== orderId));
+      toast.success("Ordem excluída com sucesso");
+    } catch (error: any) {
+      console.error("Error deleting order:", error);
+      toast.error("Erro ao excluir ordem: " + (error.message || ""));
+    }
+  };
+
   if (loading) {
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
