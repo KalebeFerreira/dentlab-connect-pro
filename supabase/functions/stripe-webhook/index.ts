@@ -17,15 +17,46 @@ const supabaseAdmin = createClient(
 
 // Map Stripe price IDs -> internal plan names (must match useSubscription PLANS)
 const PRICE_TO_PLAN: Record<string, string> = {
+  // Basic (monthly + annual)
   "price_1SYVOhF2249riykhzMKCVXNw": "basic",
   "price_1SYVOhF2249riykh1HAwzkce": "basic",
+  // Professional (monthly + annual)
   "price_1SYVOiF2249riykhLo07A0Lx": "professional",
   "price_1SYVOiF2249riykhphMkNE0w": "professional",
+  // Premium (monthly + annual)
   "price_1SYVOjF2249riykhJmw4RoVM": "premium",
   "price_1SYVOjF2249riykhi2o98hEf": "premium",
+  // Super Premium (monthly + annual)
   "price_1Sq1xDF2249riykhpt3dJbLS": "super_premium",
   "price_1Sq1xZF2249riykhmTrDAtsF": "super_premium",
 };
+
+// Fallback: map Stripe product IDs -> internal plan names.
+// Used when a price ID is not in PRICE_TO_PLAN (e.g. a new price was created
+// in Stripe but not yet deployed here). Prevents silent downgrades to free.
+const PRODUCT_TO_PLAN: Record<string, string> = {
+  "prod_TVWRXeZuqfWe86": "basic",
+  "prod_TVWRJ8WPfSfMWc": "professional",
+  "prod_TVWR6sSh4O5ln8": "premium",
+  "prod_TndDQjAPGbShAC": "super_premium",
+};
+
+async function resolvePlanName(priceId: string | null): Promise<string | null> {
+  if (!priceId) return null;
+  if (PRICE_TO_PLAN[priceId]) return PRICE_TO_PLAN[priceId];
+  try {
+    const price = await stripe.prices.retrieve(priceId);
+    const productId = typeof price.product === "string" ? price.product : price.product?.id;
+    if (productId && PRODUCT_TO_PLAN[productId]) {
+      logStep("Resolved plan via product fallback", { priceId, productId, plan: PRODUCT_TO_PLAN[productId] });
+      return PRODUCT_TO_PLAN[productId];
+    }
+    logStep("Unmapped price/product — keeping existing plan", { priceId, productId });
+  } catch (err) {
+    logStep("Failed to fetch price for fallback", { priceId, error: (err as Error).message });
+  }
+  return null;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
