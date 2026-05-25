@@ -3,10 +3,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
-import { Calendar, User, Eye } from "lucide-react";
+import { Calendar, User, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
+
 
 interface Order {
   id: string;
@@ -70,7 +83,20 @@ export const OrdersTracking = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleDelete = async (orderId: string) => {
+    try {
+      const { error } = await supabase.from("orders").delete().eq("id", orderId);
+      if (error) throw error;
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      toast.success("Pedido excluído com sucesso");
+    } catch (error: any) {
+      console.error("Error deleting order:", error);
+      toast.error("Erro ao excluir pedido: " + (error.message || ""));
+    }
+  };
+
   if (loading) {
+
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -132,13 +158,37 @@ export const OrdersTracking = () => {
                     </p>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate(`/orders/${order.id}`)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. O pedido {order.os_number || "S/N"} do paciente {order.patient_name} será excluído permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(order.id)}>
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
               </div>
             ))}
           </div>
