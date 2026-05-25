@@ -103,10 +103,13 @@ serve(async (req) => {
 
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      status: "all",
+      limit: 10,
     });
-    const hasActiveSub = subscriptions.data.length > 0;
+    const subscription = subscriptions.data
+      .filter((sub) => ["active", "trialing"].includes(sub.status))
+      .sort((a, b) => b.created - a.created)[0];
+    const hasActiveSub = Boolean(subscription);
     let productId = null;
     let subscriptionEnd = null;
     let priceId = null;
@@ -124,17 +127,14 @@ serve(async (req) => {
     };
 
     let planName = "free";
-    let subscription: any = null;
-
     if (hasActiveSub) {
-      subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       productId = subscription.items.data[0].price.product as string;
       priceId = subscription.items.data[0].price.id;
       planName = PRICE_TO_PLAN[priceId] || "basic";
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, priceId, planName });
+      logStep("Valid subscription found", { subscriptionId: subscription.id, status: subscription.status, endDate: subscriptionEnd, priceId, planName });
     } else {
-      logStep("No active subscription found");
+      logStep("No active or trialing subscription found");
     }
 
     // Upsert into user_subscriptions so backend PDF/feature checks recognize paid users immediately
@@ -145,13 +145,13 @@ serve(async (req) => {
         stripe_subscription_id: subscription?.id || null,
         stripe_price_id: priceId,
         plan_name: planName,
-        status: hasActiveSub ? "active" : "canceled",
+        status: subscription?.status || "canceled",
         current_period_start: subscription ? new Date(subscription.current_period_start * 1000).toISOString() : null,
         current_period_end: subscriptionEnd,
         cancel_at_period_end: subscription?.cancel_at_period_end || false,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
-      logStep("user_subscriptions upserted", { planName, status: hasActiveSub ? "active" : "canceled" });
+      logStep("user_subscriptions upserted", { planName, status: subscription?.status || "canceled" });
     } catch (upsertErr) {
       logStep("Failed to upsert user_subscriptions", { error: String(upsertErr) });
     }
