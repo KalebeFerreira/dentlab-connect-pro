@@ -83,7 +83,20 @@ export const OrdersTracking = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleDelete = async (orderId: string) => {
+    try {
+      const { error } = await supabase.from("orders").delete().eq("id", orderId);
+      if (error) throw error;
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      toast.success("Pedido excluído com sucesso");
+    } catch (error: any) {
+      console.error("Error deleting order:", error);
+      toast.error("Erro ao excluir pedido: " + (error.message || ""));
+    }
+  };
+
   if (loading) {
+
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
