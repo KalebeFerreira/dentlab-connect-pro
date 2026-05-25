@@ -130,12 +130,31 @@ serve(async (req) => {
     if (pixFetchError) console.error("pix_payments lookup error:", pixFetchError);
 
     // Prefer the DB record (source of truth), fall back to MP metadata
-    const userId =
-      pixRecord?.user_id ?? payment.metadata?.user_id ?? payment.external_reference;
-    const planKey =
+    let userId: string | null =
+      pixRecord?.user_id ?? payment.metadata?.user_id ?? payment.external_reference ?? null;
+    const planKey: string | null =
       pixRecord?.plan_key ?? payment.metadata?.plan_key ?? payment.metadata?.plan_name ?? null;
     const billingCycle =
       pixRecord?.billing_cycle ?? payment.metadata?.billing_cycle ?? "monthly";
+
+    const payerEmail: string | null =
+      payment.payer?.email ?? payment.additional_info?.payer?.email ?? null;
+
+    // Secondary lookup: try to resolve user by payer email if userId missing
+    if (!userId && payerEmail) {
+      try {
+        const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+        const matched = userList?.users?.find(
+          (u) => u.email?.toLowerCase() === payerEmail.toLowerCase()
+        );
+        if (matched) {
+          userId = matched.id;
+          console.log("Resolved user by payer email", { userId, payerEmail });
+        }
+      } catch (e) {
+        console.error("Email-based user lookup failed:", e);
+      }
+    }
 
     logEntry = {
       ...logEntry,
@@ -164,6 +183,21 @@ serve(async (req) => {
       .eq("mercadopago_payment_id", String(paymentId));
 
     if (updateError) console.error("Update pix_payments error:", updateError);
+
+    // If approved but we cannot identify user or plan, log a rich error for manual reconciliation
+    if (status === "approved" && (!userId || !planKey)) {
+      const missing = [
+        !userId ? "user_id" : null,
+        !planKey ? "plan_key" : null,
+      ].filter(Boolean).join(", ");
+      const errMsg = `Approved payment missing ${missing}. payer_email=${payerEmail ?? "n/a"}, paymentId=${paymentId}, external_reference=${payment.external_reference ?? "n/a"}`;
+      console.error(errMsg);
+      await writeLog({ error_message: errMsg }, 200);
+      return new Response(JSON.stringify({ ok: true, status, paymentId, warning: errMsg }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (status === "approved" && userId && subscriptionEnd) {
       const subscriptionPayload: Record<string, unknown> = {
