@@ -216,7 +216,8 @@ _Enviado automaticamente via DentLab Connect_`;
         const fileName = `signature_${Date.now()}.png`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('order-files')
-          .upload(`signatures/${fileName}`, blob);
+          .upload(`signatures/${user.id}/${fileName}`, blob);
+
 
         if (uploadError) throw uploadError;
         signatureUrl = uploadData.path;
