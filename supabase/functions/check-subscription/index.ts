@@ -161,10 +161,14 @@ serve(async (req) => {
       logStep("No active or trialing subscription found");
     }
 
+    // If Stripe has no active sub, fall back to DB record (preserves manual liberations)
+    if (!hasActiveSub) {
+      return await returnFromDb("no active stripe subscription");
+    }
+
     // Upsert into user_subscriptions so backend PDF/feature checks recognize paid/trial users immediately
     try {
-      const normalizedStatus = subscription && ["active", "trialing"].includes(subscription.status)
-        ? "active"
+      const normalizedStatus = "active";
         : "canceled";
 
       await supabaseClient.from("user_subscriptions").upsert({
