@@ -87,15 +87,39 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Helper: return DB-stored subscription (manual liberation fallback)
+    const returnFromDb = async (reason: string) => {
+      const { data: dbSub } = await supabaseClient
+        .from("user_subscriptions")
+        .select("plan_name, status, stripe_price_id, current_period_end")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const isActive = dbSub && (
+        dbSub.status === "active" ||
+        dbSub.status === "trialing" ||
+        (dbSub.status === "canceled" && dbSub.current_period_end && new Date(dbSub.current_period_end) > new Date())
+      );
+
+      logStep("Returning from DB fallback", { reason, planName: dbSub?.plan_name, isActive });
+
+      return new Response(JSON.stringify({
+        subscribed: Boolean(isActive),
+        product_id: null,
+        price_id: dbSub?.stripe_price_id || null,
+        plan_name: isActive ? (dbSub?.plan_name || "free") : "free",
+        subscription_end: dbSub?.current_period_end || null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    };
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, updating unsubscribed state");
-      return new Response(JSON.stringify({ subscribed: false, product_id: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return await returnFromDb("no stripe customer");
     }
 
     const customerId = customers.data[0].id;
