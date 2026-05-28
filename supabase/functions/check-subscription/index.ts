@@ -169,7 +169,7 @@ serve(async (req) => {
     // Upsert into user_subscriptions so backend PDF/feature checks recognize paid/trial users immediately
     try {
       const normalizedStatus = "active";
-        : "canceled";
+
 
       await supabaseClient.from("user_subscriptions").upsert({
         user_id: user.id,
