@@ -115,6 +115,9 @@ const App = () => (
                                 <SidebarTriggerWrapper className="-ml-1" />
                               </Suspense>
                               <h1 className="text-sm md:text-base font-semibold text-foreground truncate">DentLab Connect</h1>
+                              <Suspense fallback={null}>
+                                <CurrentPlanBadge />
+                              </Suspense>
                             </header>
                             <Suspense fallback={<PageLoader />}>
                               <Routes>
