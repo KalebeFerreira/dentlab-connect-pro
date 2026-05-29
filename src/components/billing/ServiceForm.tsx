@@ -104,7 +104,6 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setServiceName("");
       setServiceValue("");
       setClientName("");
-      setClinicName("");
       setPatientName("");
       setDentistName("");
       setWorkColor("");
