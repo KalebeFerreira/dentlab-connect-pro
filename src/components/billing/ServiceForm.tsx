@@ -138,29 +138,18 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {useManualInput ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="clinic_name">Nome da Clínica</Label>
-                  <Input
-                    id="clinic_name"
-                    value={clinicName}
-                    onChange={(e) => setClinicName(e.target.value)}
-                    placeholder="Digite o nome da clínica"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client_name_manual">Nome do Cliente</Label>
-                  <Input
-                    id="client_name_manual"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Digite o nome do cliente"
-                  />
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="clinic_name">Nome da Clínica (Cliente principal)</Label>
+                <Input
+                  id="clinic_name"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Digite o nome da clínica"
+                />
+              </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="client_name">Nome da Clínica (Cliente)</Label>
+                <Label htmlFor="client_name">Nome da Clínica (Cliente principal)</Label>
                 <ClientAutocomplete
                   id="client_name"
                   value={clientName}
