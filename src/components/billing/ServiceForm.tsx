@@ -67,10 +67,8 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         serviceValue.replace("R$", "").replace(/\./g, "").replace(",", ".")
       );
 
-      // Combine clinic name with client name if both are provided
-      const finalClientName = useManualInput 
-        ? (clinicName && clientName ? `${clinicName} - ${clientName}` : clinicName || clientName || null)
-        : (clientName || null);
+      // Clinic is always the main client. Dentist is stored separately and never combined.
+      const finalClientName = clientName?.trim() || null;
 
       // Validate input
       const validationResult = serviceFormSchema.safeParse({
