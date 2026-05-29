@@ -52,6 +52,7 @@ const AdminStripeEvents = lazy(() => import("./pages/AdminStripeEvents"));
 // Lazy load heavy components
 const AppSidebar = lazy(() => import("@/components/AppSidebar").then(m => ({ default: m.AppSidebar })));
 const FreemiumNotifications = lazy(() => import("@/components/FreemiumNotifications").then(m => ({ default: m.FreemiumNotifications })));
+const CurrentPlanBadge = lazy(() => import("@/components/CurrentPlanBadge").then(m => ({ default: m.CurrentPlanBadge })));
 
 // Lazy load sidebar provider
 const SidebarProviderWrapper = lazy(() => import("@/components/ui/sidebar").then(m => ({ 
