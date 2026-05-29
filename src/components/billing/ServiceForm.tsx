@@ -32,7 +32,6 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [serviceValue, setServiceValue] = useState("");
   const [clientName, setClientName] = useState("");
-  const [clinicName, setClinicName] = useState("");
   const [patientName, setPatientName] = useState("");
   const [dentistName, setDentistName] = useState("");
   const [workColor, setWorkColor] = useState("");
@@ -68,10 +67,8 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         serviceValue.replace("R$", "").replace(/\./g, "").replace(",", ".")
       );
 
-      // Combine clinic name with client name if both are provided
-      const finalClientName = useManualInput 
-        ? (clinicName && clientName ? `${clinicName} - ${clientName}` : clinicName || clientName || null)
-        : (clientName || null);
+      // Clinic is always the main client. Dentist is stored separately and never combined.
+      const finalClientName = clientName?.trim() || null;
 
       // Validate input
       const validationResult = serviceFormSchema.safeParse({
@@ -107,7 +104,6 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setServiceName("");
       setServiceValue("");
       setClientName("");
-      setClinicName("");
       setPatientName("");
       setDentistName("");
       setWorkColor("");
@@ -142,29 +138,18 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {useManualInput ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="clinic_name">Nome da Clínica</Label>
-                  <Input
-                    id="clinic_name"
-                    value={clinicName}
-                    onChange={(e) => setClinicName(e.target.value)}
-                    placeholder="Digite o nome da clínica"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client_name_manual">Nome do Cliente</Label>
-                  <Input
-                    id="client_name_manual"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Digite o nome do cliente"
-                  />
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="clinic_name">Nome da Clínica (Cliente principal)</Label>
+                <Input
+                  id="clinic_name"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Digite o nome da clínica"
+                />
+              </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="client_name">Nome da Clínica (Cliente)</Label>
+                <Label htmlFor="client_name">Nome da Clínica (Cliente principal)</Label>
                 <ClientAutocomplete
                   id="client_name"
                   value={clientName}
@@ -196,7 +181,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dentist_name">Nome do Dentista</Label>
+              <Label htmlFor="dentist_name">Nome do Dentista (apenas informativo)</Label>
               <Input
                 id="dentist_name"
                 value={dentistName}
