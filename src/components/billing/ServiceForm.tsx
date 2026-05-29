@@ -181,7 +181,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dentist_name">Nome do Dentista</Label>
+              <Label htmlFor="dentist_name">Nome do Dentista (apenas informativo)</Label>
               <Input
                 id="dentist_name"
                 value={dentistName}
