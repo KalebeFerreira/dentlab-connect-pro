@@ -32,7 +32,6 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [serviceValue, setServiceValue] = useState("");
   const [clientName, setClientName] = useState("");
-  const [clinicName, setClinicName] = useState("");
   const [patientName, setPatientName] = useState("");
   const [dentistName, setDentistName] = useState("");
   const [workColor, setWorkColor] = useState("");
