@@ -1,0 +1,1 @@
+ALTER TABLE public.ai_agent_settings ADD COLUMN IF NOT EXISTS whatsapp_number text;
