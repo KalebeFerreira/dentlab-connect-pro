@@ -714,6 +714,30 @@ export default function AIAgent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2 rounded-lg border p-3 bg-muted/30">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Número do WhatsApp do agente
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={settings.whatsapp_number || ''}
+                    onChange={e => setSettings(s => ({ ...s, whatsapp_number: e.target.value }))}
+                    onBlur={e => setSettings(s => ({ ...s, whatsapp_number: normalizeWhatsAppNumber(e.target.value) || null }))}
+                  />
+                  <Button onClick={saveSettings} disabled={saving} variant="outline" className="gap-1 shrink-0">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Salvar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Número (com DDD) que será conectado ao WhatsApp. Será normalizado para o formato internacional (ex: 5511999999999).
+                </p>
+              </div>
+
+
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-3">
                   <div className={`h-2.5 w-2.5 rounded-full ${waState === 'open' ? 'bg-green-500' : waState === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
