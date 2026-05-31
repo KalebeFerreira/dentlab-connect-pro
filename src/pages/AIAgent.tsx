@@ -30,6 +30,7 @@ interface AgentSettings {
   is_whatsapp_enabled: boolean;
   evolution_api_url: string | null;
   evolution_instance_name: string | null;
+  whatsapp_number: string | null;
   working_hours_start: string | null;
   working_hours_end: string | null;
   work_on_weekends: boolean;
@@ -44,12 +45,23 @@ const defaultSettings: AgentSettings = {
   is_whatsapp_enabled: true,
   evolution_api_url: null,
   evolution_instance_name: null,
+  whatsapp_number: null,
   working_hours_start: '08:00',
   working_hours_end: '18:00',
   work_on_weekends: false,
   auto_reply_outside_hours: true,
   outside_hours_message: 'No momento estamos fora do horário de atendimento. Retornaremos em breve! 😊',
 };
+
+// Normalize: digits only, force Brazil country code if missing
+function normalizeWhatsAppNumber(input: string): string {
+  const digits = (input || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('55')) return digits;
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  return digits;
+}
+
 
 export default function AIAgent() {
   const { user } = useAuth();
@@ -100,6 +112,7 @@ export default function AIAgent() {
           is_whatsapp_enabled: data.is_whatsapp_enabled ?? false,
           evolution_api_url: data.evolution_api_url,
           evolution_instance_name: data.evolution_instance_name,
+          whatsapp_number: (data as any).whatsapp_number ?? null,
           working_hours_start: data.working_hours_start,
           working_hours_end: data.working_hours_end,
           work_on_weekends: data.work_on_weekends ?? false,
@@ -155,6 +168,7 @@ export default function AIAgent() {
         work_on_weekends: false,
         auto_reply_outside_hours: true,
         outside_hours_message: `Olá! No momento estamos fora do horário de atendimento (seg-sex, 8h às 18h). Deixe sua mensagem que ${setupName} responderá assim que possível! 😊`,
+        whatsapp_number: normalizeWhatsAppNumber(setupPhone),
         trial_started_at: now,
       };
 
@@ -175,6 +189,7 @@ export default function AIAgent() {
         is_whatsapp_enabled: data.is_whatsapp_enabled ?? true,
         evolution_api_url: data.evolution_api_url,
         evolution_instance_name: data.evolution_instance_name,
+        whatsapp_number: (data as any).whatsapp_number ?? null,
         working_hours_start: data.working_hours_start,
         working_hours_end: data.working_hours_end,
         work_on_weekends: data.work_on_weekends ?? false,
@@ -213,6 +228,7 @@ export default function AIAgent() {
         is_whatsapp_enabled: settings.is_whatsapp_enabled,
         evolution_api_url: settings.evolution_api_url,
         evolution_instance_name: settings.evolution_instance_name,
+        whatsapp_number: settings.whatsapp_number ? normalizeWhatsAppNumber(settings.whatsapp_number) : null,
         working_hours_start: settings.working_hours_start,
         working_hours_end: settings.working_hours_end,
         work_on_weekends: settings.work_on_weekends,
@@ -698,6 +714,30 @@ export default function AIAgent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2 rounded-lg border p-3 bg-muted/30">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Número do WhatsApp do agente
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={settings.whatsapp_number || ''}
+                    onChange={e => setSettings(s => ({ ...s, whatsapp_number: e.target.value }))}
+                    onBlur={e => setSettings(s => ({ ...s, whatsapp_number: normalizeWhatsAppNumber(e.target.value) || null }))}
+                  />
+                  <Button onClick={saveSettings} disabled={saving} variant="outline" className="gap-1 shrink-0">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Salvar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Número (com DDD) que será conectado ao WhatsApp. Será normalizado para o formato internacional (ex: 5511999999999).
+                </p>
+              </div>
+
+
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-3">
                   <div className={`h-2.5 w-2.5 rounded-full ${waState === 'open' ? 'bg-green-500' : waState === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-muted-foreground/40'}`} />

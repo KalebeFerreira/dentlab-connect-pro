@@ -29,6 +29,7 @@ export type Database = {
           updated_at: string
           user_id: string
           welcome_message: string | null
+          whatsapp_number: string | null
           work_on_weekends: boolean | null
           working_hours_end: string | null
           working_hours_start: string | null
@@ -47,6 +48,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           welcome_message?: string | null
+          whatsapp_number?: string | null
           work_on_weekends?: boolean | null
           working_hours_end?: string | null
           working_hours_start?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           welcome_message?: string | null
+          whatsapp_number?: string | null
           work_on_weekends?: boolean | null
           working_hours_end?: string | null
           working_hours_start?: string | null
