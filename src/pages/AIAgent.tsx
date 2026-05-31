@@ -228,6 +228,7 @@ export default function AIAgent() {
         is_whatsapp_enabled: settings.is_whatsapp_enabled,
         evolution_api_url: settings.evolution_api_url,
         evolution_instance_name: settings.evolution_instance_name,
+        whatsapp_number: settings.whatsapp_number ? normalizeWhatsAppNumber(settings.whatsapp_number) : null,
         working_hours_start: settings.working_hours_start,
         working_hours_end: settings.working_hours_end,
         work_on_weekends: settings.work_on_weekends,
