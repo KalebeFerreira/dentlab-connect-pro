@@ -30,6 +30,7 @@ interface AgentSettings {
   is_whatsapp_enabled: boolean;
   evolution_api_url: string | null;
   evolution_instance_name: string | null;
+  whatsapp_number: string | null;
   working_hours_start: string | null;
   working_hours_end: string | null;
   work_on_weekends: boolean;
@@ -44,12 +45,23 @@ const defaultSettings: AgentSettings = {
   is_whatsapp_enabled: true,
   evolution_api_url: null,
   evolution_instance_name: null,
+  whatsapp_number: null,
   working_hours_start: '08:00',
   working_hours_end: '18:00',
   work_on_weekends: false,
   auto_reply_outside_hours: true,
   outside_hours_message: 'No momento estamos fora do horário de atendimento. Retornaremos em breve! 😊',
 };
+
+// Normalize: digits only, force Brazil country code if missing
+function normalizeWhatsAppNumber(input: string): string {
+  const digits = (input || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('55')) return digits;
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  return digits;
+}
+
 
 export default function AIAgent() {
   const { user } = useAuth();
