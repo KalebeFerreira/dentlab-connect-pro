@@ -112,6 +112,7 @@ export default function AIAgent() {
           is_whatsapp_enabled: data.is_whatsapp_enabled ?? false,
           evolution_api_url: data.evolution_api_url,
           evolution_instance_name: data.evolution_instance_name,
+          whatsapp_number: (data as any).whatsapp_number ?? null,
           working_hours_start: data.working_hours_start,
           working_hours_end: data.working_hours_end,
           work_on_weekends: data.work_on_weekends ?? false,
