@@ -85,11 +85,48 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { action } = body;
+    let { action } = body;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ============================================================
+    // Evolution API native webhook (MESSAGES_UPSERT) → translate to process_message
+    // Evolution posts: { event: 'messages.upsert', instance, data: { key, message, pushName } }
+    // ============================================================
+    const evoEvent = (body.event || '').toString().toLowerCase().replace(/_/g, '.');
+    if (!action && (evoEvent === 'messages.upsert' || body.data?.key)) {
+      const data = body.data || {};
+      const key = data.key || {};
+      if (key.fromMe === true) {
+        return new Response(JSON.stringify({ ignored: 'fromMe' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const remoteJid: string = key.remoteJid || '';
+      if (remoteJid.endsWith('@g.us') || remoteJid.includes('broadcast')) {
+        return new Response(JSON.stringify({ ignored: 'group_or_broadcast' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const phoneNumber = remoteJid.split('@')[0];
+      const msg = data.message || {};
+      const text =
+        msg.conversation ||
+        msg.extendedTextMessage?.text ||
+        msg.imageMessage?.caption ||
+        msg.videoMessage?.caption ||
+        msg.buttonsResponseMessage?.selectedDisplayText ||
+        msg.listResponseMessage?.title ||
+        '';
+      if (!text || !phoneNumber) {
+        return new Response(JSON.stringify({ ignored: 'no_text' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      body.action = 'process_message';
+      body.phone_number = phoneNumber;
+      body.message = text;
+      body.patient_name = data.pushName || null;
+      body.instance_name = body.instance || body.instanceName || null;
+      action = 'process_message';
+      console.log('[evolution-webhook] translated MESSAGES_UPSERT', { instance: body.instance_name, phoneNumber, textLen: text.length });
+    }
 
     // ============================================================
     // Per-user Evolution instance management (multi-tenant)
