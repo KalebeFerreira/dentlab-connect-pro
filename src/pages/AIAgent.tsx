@@ -168,6 +168,7 @@ export default function AIAgent() {
         work_on_weekends: false,
         auto_reply_outside_hours: true,
         outside_hours_message: `Olá! No momento estamos fora do horário de atendimento (seg-sex, 8h às 18h). Deixe sua mensagem que ${setupName} responderá assim que possível! 😊`,
+        whatsapp_number: normalizeWhatsAppNumber(setupPhone),
         trial_started_at: now,
       };
 
