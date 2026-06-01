@@ -7,9 +7,10 @@ import { SupportChatWidget } from "@/components/SupportChatWidget";
  */
 export const FloatingWidgets = () => {
   const location = useLocation();
-  const isLanding = location.pathname === "/";
+  const publicRoutes = ["/", "/auth", "/employee-login"];
+  const isPublic = publicRoutes.includes(location.pathname);
 
-  if (isLanding) return null;
+  if (isPublic) return null;
 
   return (
     <>
