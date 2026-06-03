@@ -21,6 +21,7 @@ import {
   Smartphone, QrCode, RefreshCw, LogOut
 } from 'lucide-react';
 import WhatsAppInbox from '@/components/ai-agent/WhatsAppInbox';
+import WhatsAppConnection from '@/components/ai-agent/WhatsAppConnection';
 
 interface AgentSettings {
   id?: string;
@@ -582,9 +583,12 @@ export default function AIAgent() {
       </Card>
 
       <Tabs defaultValue="agent" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="agent" className="gap-1.5 text-xs sm:text-sm">
             <Bot className="h-4 w-4" /> Agente
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="gap-1.5 text-xs sm:text-sm">
+            <Smartphone className="h-4 w-4" /> WhatsApp
           </TabsTrigger>
           <TabsTrigger value="inbox" className="gap-1.5 text-xs sm:text-sm">
             <Inbox className="h-4 w-4" /> Conversas
@@ -641,6 +645,12 @@ export default function AIAgent() {
         <TabsContent value="inbox" className="space-y-4">
           <WhatsAppInbox />
         </TabsContent>
+
+        {/* Tab WhatsApp Connection */}
+        <TabsContent value="whatsapp" className="space-y-4">
+          <WhatsAppConnection />
+        </TabsContent>
+
 
         {/* Tab Horário */}
         <TabsContent value="horario" className="space-y-4">
