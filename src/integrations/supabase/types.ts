@@ -19,6 +19,8 @@ export type Database = {
           agent_name: string
           agent_personality: string | null
           auto_reply_outside_hours: boolean | null
+          connected_at: string | null
+          connection_status: string
           created_at: string
           evolution_api_url: string | null
           evolution_instance_name: string | null
@@ -28,6 +30,7 @@ export type Database = {
           trial_started_at: string | null
           updated_at: string
           user_id: string
+          webhook_url: string | null
           welcome_message: string | null
           whatsapp_number: string | null
           work_on_weekends: boolean | null
@@ -38,6 +41,8 @@ export type Database = {
           agent_name?: string
           agent_personality?: string | null
           auto_reply_outside_hours?: boolean | null
+          connected_at?: string | null
+          connection_status?: string
           created_at?: string
           evolution_api_url?: string | null
           evolution_instance_name?: string | null
@@ -47,6 +52,7 @@ export type Database = {
           trial_started_at?: string | null
           updated_at?: string
           user_id: string
+          webhook_url?: string | null
           welcome_message?: string | null
           whatsapp_number?: string | null
           work_on_weekends?: boolean | null
@@ -57,6 +63,8 @@ export type Database = {
           agent_name?: string
           agent_personality?: string | null
           auto_reply_outside_hours?: boolean | null
+          connected_at?: string | null
+          connection_status?: string
           created_at?: string
           evolution_api_url?: string | null
           evolution_instance_name?: string | null
@@ -66,6 +74,7 @@ export type Database = {
           trial_started_at?: string | null
           updated_at?: string
           user_id?: string
+          webhook_url?: string | null
           welcome_message?: string | null
           whatsapp_number?: string | null
           work_on_weekends?: boolean | null
