@@ -41,7 +41,7 @@ const parseCurrencyInput = (value: string) => {
 export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
-  const [quantity, setQuantity] = useState<number>(0);
+  const [quantity, setQuantity] = useState("");
   const [unitValue, setUnitValue] = useState("");
   const [unitNumeric, setUnitNumeric] = useState<number>(0);
   const [clientName, setClientName] = useState("");
@@ -51,9 +51,10 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
 
+  const quantityNumber = Number.parseInt(quantity, 10) || 0;
   const totalValue = useMemo(
-    () => (quantity > 0 ? unitNumeric * quantity : 0),
-    [unitNumeric, quantity]
+    () => (quantityNumber > 0 ? unitNumeric * quantityNumber : 0),
+    [unitNumeric, quantityNumber]
   );
 
   const handleUnitValueChange = (value: string) => {
@@ -73,7 +74,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         return;
       }
 
-      const qty = quantity > 0 ? quantity : 1;
+      const qty = quantityNumber > 0 ? quantityNumber : 1;
       const numericTotal = unitNumeric * qty;
       const finalClientName = clientName?.trim() || null;
 
@@ -112,7 +113,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       toast.success("Serviço adicionado com sucesso!");
       setServiceName("");
       setOrderNumber("");
-      setQuantity(1);
+      setQuantity("");
       setUnitValue("");
       setUnitNumeric(0);
       setClientName("");
@@ -232,11 +233,12 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
               <Label htmlFor="quantity">Quantidade de Trabalhos *</Label>
               <Input
                 id="quantity"
-                type="number"
-                min={1}
-                step={1}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
+                placeholder="Digite a quantidade"
                 required
               />
             </div>
