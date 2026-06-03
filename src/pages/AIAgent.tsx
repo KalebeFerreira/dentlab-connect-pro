@@ -646,6 +646,12 @@ export default function AIAgent() {
           <WhatsAppInbox />
         </TabsContent>
 
+        {/* Tab WhatsApp Connection */}
+        <TabsContent value="whatsapp" className="space-y-4">
+          <WhatsAppConnection />
+        </TabsContent>
+
+
         {/* Tab Horário */}
         <TabsContent value="horario" className="space-y-4">
           <Card>
