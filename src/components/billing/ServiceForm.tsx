@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,9 +28,22 @@ interface ServiceFormProps {
   onServiceAdd: () => Promise<void>;
 }
 
+const formatBRL = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const parseCurrencyInput = (value: string) => {
+  const numbers = value.replace(/\D/g, "");
+  if (!numbers) return { numeric: 0, formatted: "" };
+  const numeric = parseFloat(numbers) / 100;
+  return { numeric, formatted: formatBRL(numeric) };
+};
+
 export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
-  const [serviceValue, setServiceValue] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [quantity, setQuantity] = useState<number>(1);
+  const [unitValue, setUnitValue] = useState("");
+  const [unitNumeric, setUnitNumeric] = useState<number>(0);
   const [clientName, setClientName] = useState("");
   const [patientName, setPatientName] = useState("");
   const [dentistName, setDentistName] = useState("");
@@ -38,18 +51,15 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
 
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    const amount = parseFloat(numbers) / 100;
-    return amount.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  };
+  const totalValue = useMemo(
+    () => (quantity > 0 ? unitNumeric * quantity : 0),
+    [unitNumeric, quantity]
+  );
 
-  const handleValueChange = (value: string) => {
-    const formatted = formatCurrency(value);
-    setServiceValue(formatted);
+  const handleUnitValueChange = (value: string) => {
+    const { numeric, formatted } = parseCurrencyInput(value);
+    setUnitValue(formatted);
+    setUnitNumeric(numeric);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,17 +73,13 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         return;
       }
 
-      const numericValue = parseFloat(
-        serviceValue.replace("R$", "").replace(/\./g, "").replace(",", ".")
-      );
-
-      // Clinic is always the main client. Dentist is stored separately and never combined.
+      const qty = quantity > 0 ? quantity : 1;
+      const numericTotal = unitNumeric * qty;
       const finalClientName = clientName?.trim() || null;
 
-      // Validate input
       const validationResult = serviceFormSchema.safeParse({
         service_name: serviceName,
-        service_value: numericValue,
+        service_value: numericTotal,
         client_name: finalClientName,
         patient_name: patientName || null,
       });
@@ -88,7 +94,10 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         {
           user_id: user.id,
           service_name: serviceName.trim(),
-          service_value: numericValue,
+          service_value: numericTotal,
+          unit_value: unitNumeric,
+          quantity: qty,
+          order_number: orderNumber.trim() || null,
           client_name: finalClientName?.trim() || null,
           patient_name: patientName?.trim() || null,
           dentist_name: dentistName?.trim() || null,
@@ -102,7 +111,10 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
 
       toast.success("Serviço adicionado com sucesso!");
       setServiceName("");
-      setServiceValue("");
+      setOrderNumber("");
+      setQuantity(1);
+      setUnitValue("");
+      setUnitNumeric(0);
       setClientName("");
       setPatientName("");
       setDentistName("");
@@ -160,6 +172,16 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
             )}
 
             <div className="space-y-2">
+              <Label htmlFor="order_number">Nº da Ordem de Serviço</Label>
+              <Input
+                id="order_number"
+                value={orderNumber}
+                onChange={(e) => setOrderNumber(e.target.value)}
+                placeholder="Ex: OS-001"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="service_name">Trabalho Realizado *</Label>
               <Input
                 id="service_name"
@@ -207,13 +229,36 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="service_value">Valor do Serviço *</Label>
+              <Label htmlFor="quantity">Quantidade de Trabalhos *</Label>
               <Input
-                id="service_value"
-                value={serviceValue}
-                onChange={(e) => handleValueChange(e.target.value)}
+                id="quantity"
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit_value">Valor Unitário *</Label>
+              <Input
+                id="unit_value"
+                value={unitValue}
+                onChange={(e) => handleUnitValueChange(e.target.value)}
                 placeholder="R$ 0,00"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="total_value">Valor Total</Label>
+              <Input
+                id="total_value"
+                value={formatBRL(totalValue)}
+                readOnly
+                className="bg-muted font-semibold"
               />
             </div>
           </div>

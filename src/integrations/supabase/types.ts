@@ -1799,11 +1799,14 @@ export type Database = {
           created_at: string
           dentist_name: string | null
           id: string
+          order_number: string | null
           patient_name: string | null
+          quantity: number
           service_date: string
           service_name: string
           service_value: number
           status: string
+          unit_value: number | null
           updated_at: string
           user_id: string
           work_type: string | null
@@ -1814,11 +1817,14 @@ export type Database = {
           created_at?: string
           dentist_name?: string | null
           id?: string
+          order_number?: string | null
           patient_name?: string | null
+          quantity?: number
           service_date?: string
           service_name: string
           service_value: number
           status?: string
+          unit_value?: number | null
           updated_at?: string
           user_id: string
           work_type?: string | null
@@ -1829,11 +1835,14 @@ export type Database = {
           created_at?: string
           dentist_name?: string | null
           id?: string
+          order_number?: string | null
           patient_name?: string | null
+          quantity?: number
           service_date?: string
           service_name?: string
           service_value?: number
           status?: string
+          unit_value?: number | null
           updated_at?: string
           user_id?: string
           work_type?: string | null
