@@ -41,7 +41,7 @@ const parseCurrencyInput = (value: string) => {
 export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number>(0);
   const [unitValue, setUnitValue] = useState("");
   const [unitNumeric, setUnitNumeric] = useState<number>(0);
   const [clientName, setClientName] = useState("");
