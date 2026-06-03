@@ -21,6 +21,7 @@ import {
   Smartphone, QrCode, RefreshCw, LogOut
 } from 'lucide-react';
 import WhatsAppInbox from '@/components/ai-agent/WhatsAppInbox';
+import WhatsAppConnection from '@/components/ai-agent/WhatsAppConnection';
 
 interface AgentSettings {
   id?: string;
