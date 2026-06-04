@@ -195,13 +195,25 @@ export const TransactionHistory = () => {
             <Calendar className="h-5 w-5" />
             Histórico de Transações
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Exportar Excel
-          </Button>
+          <div className="flex items-center gap-2">
+            <HideValuesToggle hidden={hidden} onToggle={toggle} />
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por descrição, categoria ou valor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         {/* Filters */}
         <div className="flex flex-wrap gap-2">
           <Select value={filterPeriod} onValueChange={(v) => setFilterPeriod(v as FilterPeriod)}>
