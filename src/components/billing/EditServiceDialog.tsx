@@ -120,9 +120,11 @@ export const EditServiceDialog = ({
             <Label htmlFor="edit_service_value">Valor do Serviço</Label>
             <Input
               id="edit_service_value"
+              type="text"
+              inputMode="decimal"
               value={serviceValue}
-              onChange={(e) => handleValueChange(e.target.value)}
-              placeholder="R$ 0,00"
+              onChange={(e) => setServiceValue(e.target.value)}
+              placeholder="Ex: 150 ou 150,50"
               required
             />
           </div>
