@@ -38,6 +38,10 @@ const parseCurrencyInput = (value: string) => {
   return { numeric, formatted: formatBRL(numeric) };
 };
 
+// FDI tooth numbering (upper right -> upper left, lower left -> lower right)
+const UPPER_TEETH = ["18","17","16","15","14","13","12","11","21","22","23","24","25","26","27","28"];
+const LOWER_TEETH = ["48","47","46","45","44","43","42","41","31","32","33","34","35","36","37","38"];
+
 export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
@@ -51,16 +55,40 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
 
-  const quantityNumber = Number.parseInt(quantity, 10) || 0;
-  const totalValue = useMemo(
-    () => (quantityNumber > 0 ? unitNumeric * quantityNumber : 0),
-    [unitNumeric, quantityNumber]
+  // Per-tooth pricing
+  const [perToothMode, setPerToothMode] = useState(false);
+  const [toothValues, setToothValues] = useState<Record<string, { value: string; numeric: number }>>({});
+
+  const selectedTeeth = Object.keys(toothValues);
+  const teethTotal = useMemo(
+    () => selectedTeeth.reduce((sum, t) => sum + (toothValues[t]?.numeric || 0), 0),
+    [toothValues, selectedTeeth]
   );
 
-  const handleUnitValueChange = (value: string) => {
+  const quantityNumber = Number.parseInt(quantity, 10) || 0;
+  const totalValue = useMemo(
+    () =>
+      perToothMode
+        ? teethTotal
+        : quantityNumber > 0
+          ? unitNumeric * quantityNumber
+          : 0,
+    [perToothMode, teethTotal, unitNumeric, quantityNumber]
+  );
+
+  const toggleTooth = (tooth: string) => {
+    setToothValues((prev) => {
+      if (prev[tooth]) {
+        const { [tooth]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [tooth]: { value: "", numeric: 0 } };
+    });
+  };
+
+  const handleToothValueChange = (tooth: string, value: string) => {
     const { numeric, formatted } = parseCurrencyInput(value);
-    setUnitValue(formatted);
-    setUnitNumeric(numeric);
+    setToothValues((prev) => ({ ...prev, [tooth]: { value: formatted, numeric } }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
