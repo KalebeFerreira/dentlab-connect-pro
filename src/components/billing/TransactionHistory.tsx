@@ -341,7 +341,7 @@ export const TransactionHistory = () => {
                   }`}
                 >
                   {transaction.transaction_type === "receipt" || transaction.transaction_type === "income" ? "+" : "-"}
-                  {formatCurrency(transaction.amount)}
+                  {mask(formatCurrency(transaction.amount))}
                 </p>
               </div>
             ))}
