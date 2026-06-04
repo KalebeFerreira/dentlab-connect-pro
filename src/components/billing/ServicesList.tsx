@@ -31,6 +31,18 @@ interface ServicesListProps {
 export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo }: ServicesListProps) => {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const { hidden, toggle } = useHideValues();
+  const maskValue = (v: string) => (hidden ? "••••••" : v);
+  const filteredServices = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter((s) =>
+      [s.service_name, s.client_name, s.patient_name]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q))
+    );
+  }, [services, search]);
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
