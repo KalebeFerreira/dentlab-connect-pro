@@ -33,6 +33,9 @@ export const TransactionHistory = () => {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
+  const [search, setSearch] = useState("");
+  const { hidden, toggle } = useHideValues();
+  const mask = (v: string) => (hidden ? "••••••" : v);
 
   useEffect(() => {
     loadTransactions();
