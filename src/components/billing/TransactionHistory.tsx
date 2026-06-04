@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, TrendingDown, Calendar, Filter, FileSpreadsheet, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Filter, FileSpreadsheet, Download, Search } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ExcelJS from 'exceljs';
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 
 interface Transaction {
   id: string;
@@ -30,6 +33,9 @@ export const TransactionHistory = () => {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
+  const [search, setSearch] = useState("");
+  const { hidden, toggle } = useHideValues();
+  const mask = (v: string) => (hidden ? "••••••" : v);
 
   useEffect(() => {
     loadTransactions();
@@ -128,6 +134,16 @@ export const TransactionHistory = () => {
 
   const { receipts, expenses, balance } = calculateTotals();
 
+  const filteredTransactions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return transactions;
+    return transactions.filter((t) =>
+      (t.description || "").toLowerCase().includes(q) ||
+      (t.category || "").toLowerCase().includes(q) ||
+      String(t.amount).includes(q)
+    );
+  }, [transactions, search]);
+
   const handleExportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Histórico de Transações');
@@ -179,13 +195,25 @@ export const TransactionHistory = () => {
             <Calendar className="h-5 w-5" />
             Histórico de Transações
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Exportar Excel
-          </Button>
+          <div className="flex items-center gap-2">
+            <HideValuesToggle hidden={hidden} onToggle={toggle} />
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por descrição, categoria ou valor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         {/* Filters */}
         <div className="flex flex-wrap gap-2">
           <Select value={filterPeriod} onValueChange={(v) => setFilterPeriod(v as FilterPeriod)}>
@@ -247,16 +275,16 @@ export const TransactionHistory = () => {
         <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Receitas</p>
-            <p className="text-lg font-bold text-green-600">{formatCurrency(receipts)}</p>
+            <p className="text-lg font-bold text-green-600">{mask(formatCurrency(receipts))}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Despesas</p>
-            <p className="text-lg font-bold text-red-600">{formatCurrency(expenses)}</p>
+            <p className="text-lg font-bold text-red-600">{mask(formatCurrency(expenses))}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Saldo</p>
             <p className={`text-lg font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(balance)}
+              {mask(formatCurrency(balance))}
             </p>
           </div>
         </div>
@@ -266,13 +294,13 @@ export const TransactionHistory = () => {
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
-        ) : transactions.length === 0 ? (
+        ) : filteredTransactions.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
             Nenhuma transação encontrada para o período selecionado.
           </p>
         ) : (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {transactions.map((transaction) => (
+            {filteredTransactions.map((transaction) => (
               <div
                 key={transaction.id}
                 className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
@@ -313,7 +341,7 @@ export const TransactionHistory = () => {
                   }`}
                 >
                   {transaction.transaction_type === "receipt" || transaction.transaction_type === "income" ? "+" : "-"}
-                  {formatCurrency(transaction.amount)}
+                  {mask(formatCurrency(transaction.amount))}
                 </p>
               </div>
             ))}

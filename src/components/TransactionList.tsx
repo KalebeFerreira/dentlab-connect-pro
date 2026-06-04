@@ -1,8 +1,11 @@
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Trash2, TrendingUp, TrendingDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Edit, Trash2, TrendingUp, TrendingDown, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useHideValues } from "@/hooks/useHideValues";
 
 interface Transaction {
   id: string;
@@ -22,6 +25,17 @@ interface TransactionListProps {
 }
 
 export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionListProps) => {
+  const [search, setSearch] = useState("");
+  const { hidden } = useHideValues();
+  const maskAmount = (v: string) => (hidden ? "••••••" : v);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return transactions;
+    return transactions.filter((t) =>
+      (t.description || "").toLowerCase().includes(q) ||
+      String(t.amount).includes(q)
+    );
+  }, [transactions, search]);
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
 
@@ -75,12 +89,25 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
 
   return (
     <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle>Transações ({transactions.length})</CardTitle>
+      <CardHeader className="space-y-3">
+        <CardTitle>Transações ({filtered.length})</CardTitle>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por descrição ou valor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {transactions.map((transaction) => (
+          {filtered.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-6">
+              Nenhuma transação encontrada.
+            </p>
+          ) : filtered.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
@@ -119,8 +146,7 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
                         : "text-red-600"
                     }`}
                   >
-                    {transaction.transaction_type === "receipt" ? "+" : "-"} R${" "}
-                    {transaction.amount.toFixed(2)}
+                    {transaction.transaction_type === "receipt" ? "+" : "-"} {maskAmount(`R$ ${transaction.amount.toFixed(2)}`)}
                   </p>
                 </div>
               </div>

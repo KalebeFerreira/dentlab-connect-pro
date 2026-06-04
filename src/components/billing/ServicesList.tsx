@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -9,10 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 import { supabase } from "@/integrations/supabase/client";
 import ExcelJS from 'exceljs';
 import { EditServiceDialog } from "./EditServiceDialog";
@@ -28,6 +31,18 @@ interface ServicesListProps {
 export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo }: ServicesListProps) => {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const { hidden, toggle } = useHideValues();
+  const maskValue = (v: string) => (hidden ? "••••••" : v);
+  const filteredServices = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter((s) =>
+      [s.service_name, s.client_name, s.patient_name]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q))
+    );
+  }, [services, search]);
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -185,20 +200,32 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Serviços Cadastrados</CardTitle>
-          {services.length > 0 && (
-            <div className="flex gap-2">
-              <Button onClick={handleExportAllPDF} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
-              <Button onClick={handleExportAllExcel} variant="outline" size="sm">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Exportar Excel
-              </Button>
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <HideValuesToggle hidden={hidden} onToggle={toggle} />
+            {services.length > 0 && (
+              <>
+                <Button onClick={handleExportAllPDF} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </Button>
+                <Button onClick={handleExportAllExcel} variant="outline" size="sm">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Exportar Excel
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="relative mt-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por serviço, cliente ou paciente..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -214,12 +241,18 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {services.map((service) => (
+            {filteredServices.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  Nenhum serviço encontrado.
+                </TableCell>
+              </TableRow>
+            ) : filteredServices.map((service) => (
               <TableRow key={service.id}>
                 <TableCell className="font-medium">{service.service_name}</TableCell>
                 <TableCell>{service.client_name || "-"}</TableCell>
                 <TableCell>{service.patient_name || "-"}</TableCell>
-                <TableCell>{formatCurrency(Number(service.service_value))}</TableCell>
+                <TableCell>{maskValue(formatCurrency(Number(service.service_value)))}</TableCell>
                 <TableCell>
                   {format(new Date(service.service_date), "dd/MM/yyyy", {
                     locale: ptBR,
