@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -9,10 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search } from "lucide-react";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 import { supabase } from "@/integrations/supabase/client";
 import ExcelJS from 'exceljs';
 import { EditServiceDialog } from "./EditServiceDialog";
