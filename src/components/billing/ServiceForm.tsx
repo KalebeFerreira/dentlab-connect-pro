@@ -415,9 +415,11 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
                           {t}
                         </span>
                         <Input
+                          type="text"
+                          inputMode="decimal"
                           value={toothValues[t].value}
                           onChange={(e) => handleToothValueChange(t, e.target.value)}
-                          placeholder="R$ 0,00"
+                          placeholder="Ex: 150"
                         />
                         <Button
                           type="button"
