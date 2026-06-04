@@ -17,6 +17,8 @@ import { TransactionHistory } from "@/components/billing/TransactionHistory";
 import { FinancialInsights } from "@/components/FinancialInsights";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 
 interface Transaction {
   id: string;
@@ -43,6 +45,8 @@ const Financial = () => {
   const [scanHistoryRefresh, setScanHistoryRefresh] = useState(0);
   const [pixDialogOpen, setPixDialogOpen] = useState(false);
   const { isSubscribed } = useFreemiumLimits();
+  const { hidden: valuesHidden, toggle: toggleValuesHidden } = useHideValues();
+  const maskMoney = (v: number) => (valuesHidden ? "••••••" : `R$ ${v.toFixed(2)}`);
 
   useEffect(() => {
     checkAuth();
