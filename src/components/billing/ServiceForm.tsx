@@ -91,6 +91,12 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
     setToothValues((prev) => ({ ...prev, [tooth]: { value: formatted, numeric } }));
   };
 
+  const handleUnitValueChange = (value: string) => {
+    const { numeric, formatted } = parseCurrencyInput(value);
+    setUnitValue(formatted);
+    setUnitNumeric(numeric);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
