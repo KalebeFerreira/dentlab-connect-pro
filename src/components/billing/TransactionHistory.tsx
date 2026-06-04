@@ -275,16 +275,16 @@ export const TransactionHistory = () => {
         <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Receitas</p>
-            <p className="text-lg font-bold text-green-600">{formatCurrency(receipts)}</p>
+            <p className="text-lg font-bold text-green-600">{mask(formatCurrency(receipts))}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Despesas</p>
-            <p className="text-lg font-bold text-red-600">{formatCurrency(expenses)}</p>
+            <p className="text-lg font-bold text-red-600">{mask(formatCurrency(expenses))}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Saldo</p>
             <p className={`text-lg font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(balance)}
+              {mask(formatCurrency(balance))}
             </p>
           </div>
         </div>
