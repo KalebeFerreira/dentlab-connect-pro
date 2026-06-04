@@ -303,30 +303,34 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantidade de Trabalhos *</Label>
-              <Input
-                id="quantity"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
-                placeholder="Digite a quantidade"
-                required
-              />
-            </div>
+            {!perToothMode && (
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantidade de Trabalhos *</Label>
+                <Input
+                  id="quantity"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Digite a quantidade"
+                  required={!perToothMode}
+                />
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="unit_value">Valor Unitário *</Label>
-              <Input
-                id="unit_value"
-                value={unitValue}
-                onChange={(e) => handleUnitValueChange(e.target.value)}
-                placeholder="R$ 0,00"
-                required
-              />
-            </div>
+            {!perToothMode && (
+              <div className="space-y-2">
+                <Label htmlFor="unit_value">Valor Unitário *</Label>
+                <Input
+                  id="unit_value"
+                  value={unitValue}
+                  onChange={(e) => handleUnitValueChange(e.target.value)}
+                  placeholder="R$ 0,00"
+                  required={!perToothMode}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="total_value">Valor Total</Label>
@@ -338,6 +342,91 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
               />
             </div>
           </div>
+
+          {perToothMode && (
+            <div className="space-y-4 rounded-md border p-4">
+              <div className="space-y-1">
+                <Label className="text-base">Selecione os dentes (FDI)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Clique nos dentes para incluir e informe o valor unitário de cada um. O total será somado automaticamente.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Superiores</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {UPPER_TEETH.map((t) => {
+                    const selected = !!toothValues[t];
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => toggleTooth(t)}
+                        className={`h-9 w-9 rounded-md border text-xs font-semibold transition-colors ${
+                          selected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs font-medium text-muted-foreground mt-2">Inferiores</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {LOWER_TEETH.map((t) => {
+                    const selected = !!toothValues[t];
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => toggleTooth(t)}
+                        className={`h-9 w-9 rounded-md border text-xs font-semibold transition-colors ${
+                          selected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedTeeth.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Valor por dente</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {[...selectedTeeth].sort().map((t) => (
+                      <div key={t} className="flex items-center gap-2">
+                        <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground">
+                          {t}
+                        </span>
+                        <Input
+                          value={toothValues[t].value}
+                          onChange={(e) => handleToothValueChange(t, e.target.value)}
+                          placeholder="R$ 0,00"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleTooth(t)}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedTeeth.length} dente(s) — Total: <span className="font-semibold text-foreground">{formatBRL(teethTotal)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <Button type="submit" disabled={loading} className="w-full md:w-auto">
             <Plus className="h-4 w-4 mr-2" />
