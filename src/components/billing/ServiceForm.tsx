@@ -108,12 +108,36 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         return;
       }
 
-      const qty = quantityNumber > 0 ? quantityNumber : 1;
-      const numericTotal = unitNumeric * qty;
+      let qty: number;
+      let numericTotal: number;
+      let perUnit: number;
+      let finalServiceName = serviceName.trim();
+
+      if (perToothMode) {
+        if (selectedTeeth.length === 0) {
+          toast.error("Selecione ao menos um dente");
+          return;
+        }
+        const invalid = selectedTeeth.find((t) => !(toothValues[t].numeric > 0));
+        if (invalid) {
+          toast.error(`Informe o valor do dente ${invalid}`);
+          return;
+        }
+        qty = selectedTeeth.length;
+        numericTotal = teethTotal;
+        perUnit = numericTotal / qty;
+        const sortedTeeth = [...selectedTeeth].sort();
+        finalServiceName = `${finalServiceName} (dentes: ${sortedTeeth.join(", ")})`;
+      } else {
+        qty = quantityNumber > 0 ? quantityNumber : 1;
+        numericTotal = unitNumeric * qty;
+        perUnit = unitNumeric;
+      }
+
       const finalClientName = clientName?.trim() || null;
 
       const validationResult = serviceFormSchema.safeParse({
-        service_name: serviceName,
+        service_name: finalServiceName,
         service_value: numericTotal,
         client_name: finalClientName,
         patient_name: patientName || null,
@@ -128,9 +152,9 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       const { error } = await supabase.from("services").insert([
         {
           user_id: user.id,
-          service_name: serviceName.trim(),
+          service_name: finalServiceName,
           service_value: numericTotal,
-          unit_value: unitNumeric,
+          unit_value: perUnit,
           quantity: qty,
           order_number: orderNumber.trim() || null,
           client_name: finalClientName?.trim() || null,
@@ -154,6 +178,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setPatientName("");
       setDentistName("");
       setWorkColor("");
+      setToothValues({});
       await onServiceAdd();
     } catch (error) {
       console.error(error);
