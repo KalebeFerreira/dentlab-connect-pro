@@ -89,12 +89,25 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
 
   return (
     <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle>Transações ({transactions.length})</CardTitle>
+      <CardHeader className="space-y-3">
+        <CardTitle>Transações ({filtered.length})</CardTitle>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por descrição ou valor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {transactions.map((transaction) => (
+          {filtered.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-6">
+              Nenhuma transação encontrada.
+            </p>
+          ) : filtered.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
