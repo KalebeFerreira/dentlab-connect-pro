@@ -34,15 +34,16 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
   const [search, setSearch] = useState("");
   const { hidden, toggle } = useHideValues();
   const maskValue = (v: string) => (hidden ? "••••••" : v);
+  const deferredSearch = useDeferredValue(search);
   const filteredServices = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return services;
     return services.filter((s) =>
       [s.service_name, s.client_name, s.patient_name]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q))
     );
-  }, [services, search]);
+  }, [services, deferredSearch]);
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
