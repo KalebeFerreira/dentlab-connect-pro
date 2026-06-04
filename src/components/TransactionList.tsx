@@ -25,6 +25,17 @@ interface TransactionListProps {
 }
 
 export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionListProps) => {
+  const [search, setSearch] = useState("");
+  const { hidden } = useHideValues();
+  const maskAmount = (v: string) => (hidden ? "••••••" : v);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return transactions;
+    return transactions.filter((t) =>
+      (t.description || "").toLowerCase().includes(q) ||
+      String(t.amount).includes(q)
+    );
+  }, [transactions, search]);
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
 
