@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, TrendingDown, Calendar, Filter, FileSpreadsheet, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Filter, FileSpreadsheet, Download, Search } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ExcelJS from 'exceljs';
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 
 interface Transaction {
   id: string;
