@@ -332,9 +332,11 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
                 <Label htmlFor="unit_value">Valor Unitário *</Label>
                 <Input
                   id="unit_value"
+                  type="text"
+                  inputMode="decimal"
                   value={unitValue}
                   onChange={(e) => handleUnitValueChange(e.target.value)}
-                  placeholder="R$ 0,00"
+                  placeholder="Ex: 150 ou 150,50"
                   required={!perToothMode}
                 />
               </div>
