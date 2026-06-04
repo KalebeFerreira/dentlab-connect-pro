@@ -38,6 +38,10 @@ const parseCurrencyInput = (value: string) => {
   return { numeric, formatted: formatBRL(numeric) };
 };
 
+// FDI tooth numbering (upper right -> upper left, lower left -> lower right)
+const UPPER_TEETH = ["18","17","16","15","14","13","12","11","21","22","23","24","25","26","27","28"];
+const LOWER_TEETH = ["48","47","46","45","44","43","42","41","31","32","33","34","35","36","37","38"];
+
 export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [serviceName, setServiceName] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
@@ -51,11 +55,41 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
 
+  // Per-tooth pricing
+  const [perToothMode, setPerToothMode] = useState(false);
+  const [toothValues, setToothValues] = useState<Record<string, { value: string; numeric: number }>>({});
+
+  const selectedTeeth = Object.keys(toothValues);
+  const teethTotal = useMemo(
+    () => selectedTeeth.reduce((sum, t) => sum + (toothValues[t]?.numeric || 0), 0),
+    [toothValues, selectedTeeth]
+  );
+
   const quantityNumber = Number.parseInt(quantity, 10) || 0;
   const totalValue = useMemo(
-    () => (quantityNumber > 0 ? unitNumeric * quantityNumber : 0),
-    [unitNumeric, quantityNumber]
+    () =>
+      perToothMode
+        ? teethTotal
+        : quantityNumber > 0
+          ? unitNumeric * quantityNumber
+          : 0,
+    [perToothMode, teethTotal, unitNumeric, quantityNumber]
   );
+
+  const toggleTooth = (tooth: string) => {
+    setToothValues((prev) => {
+      if (prev[tooth]) {
+        const { [tooth]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [tooth]: { value: "", numeric: 0 } };
+    });
+  };
+
+  const handleToothValueChange = (tooth: string, value: string) => {
+    const { numeric, formatted } = parseCurrencyInput(value);
+    setToothValues((prev) => ({ ...prev, [tooth]: { value: formatted, numeric } }));
+  };
 
   const handleUnitValueChange = (value: string) => {
     const { numeric, formatted } = parseCurrencyInput(value);
@@ -74,12 +108,36 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
         return;
       }
 
-      const qty = quantityNumber > 0 ? quantityNumber : 1;
-      const numericTotal = unitNumeric * qty;
+      let qty: number;
+      let numericTotal: number;
+      let perUnit: number;
+      let finalServiceName = serviceName.trim();
+
+      if (perToothMode) {
+        if (selectedTeeth.length === 0) {
+          toast.error("Selecione ao menos um dente");
+          return;
+        }
+        const invalid = selectedTeeth.find((t) => !(toothValues[t].numeric > 0));
+        if (invalid) {
+          toast.error(`Informe o valor do dente ${invalid}`);
+          return;
+        }
+        qty = selectedTeeth.length;
+        numericTotal = teethTotal;
+        perUnit = numericTotal / qty;
+        const sortedTeeth = [...selectedTeeth].sort();
+        finalServiceName = `${finalServiceName} (dentes: ${sortedTeeth.join(", ")})`;
+      } else {
+        qty = quantityNumber > 0 ? quantityNumber : 1;
+        numericTotal = unitNumeric * qty;
+        perUnit = unitNumeric;
+      }
+
       const finalClientName = clientName?.trim() || null;
 
       const validationResult = serviceFormSchema.safeParse({
-        service_name: serviceName,
+        service_name: finalServiceName,
         service_value: numericTotal,
         client_name: finalClientName,
         patient_name: patientName || null,
@@ -94,9 +152,9 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       const { error } = await supabase.from("services").insert([
         {
           user_id: user.id,
-          service_name: serviceName.trim(),
+          service_name: finalServiceName,
           service_value: numericTotal,
-          unit_value: unitNumeric,
+          unit_value: perUnit,
           quantity: qty,
           order_number: orderNumber.trim() || null,
           client_name: finalClientName?.trim() || null,
@@ -120,6 +178,7 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
       setPatientName("");
       setDentistName("");
       setWorkColor("");
+      setToothValues({});
       await onServiceAdd();
     } catch (error) {
       console.error(error);
@@ -132,18 +191,33 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle>Adicionar Serviço</CardTitle>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="manual-input" className="text-sm text-muted-foreground">
-              Digitação manual
-            </Label>
-            <Switch
-              id="manual-input"
-              checked={useManualInput}
-              onCheckedChange={setUseManualInput}
-            />
-            <Keyboard className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="per-tooth" className="text-sm text-muted-foreground">
+                Cobrar por dente
+              </Label>
+              <Switch
+                id="per-tooth"
+                checked={perToothMode}
+                onCheckedChange={(v) => {
+                  setPerToothMode(v);
+                  if (!v) setToothValues({});
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="manual-input" className="text-sm text-muted-foreground">
+                Digitação manual
+              </Label>
+              <Switch
+                id="manual-input"
+                checked={useManualInput}
+                onCheckedChange={setUseManualInput}
+              />
+              <Keyboard className="h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -229,30 +303,34 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantidade de Trabalhos *</Label>
-              <Input
-                id="quantity"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
-                placeholder="Digite a quantidade"
-                required
-              />
-            </div>
+            {!perToothMode && (
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantidade de Trabalhos *</Label>
+                <Input
+                  id="quantity"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Digite a quantidade"
+                  required={!perToothMode}
+                />
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="unit_value">Valor Unitário *</Label>
-              <Input
-                id="unit_value"
-                value={unitValue}
-                onChange={(e) => handleUnitValueChange(e.target.value)}
-                placeholder="R$ 0,00"
-                required
-              />
-            </div>
+            {!perToothMode && (
+              <div className="space-y-2">
+                <Label htmlFor="unit_value">Valor Unitário *</Label>
+                <Input
+                  id="unit_value"
+                  value={unitValue}
+                  onChange={(e) => handleUnitValueChange(e.target.value)}
+                  placeholder="R$ 0,00"
+                  required={!perToothMode}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="total_value">Valor Total</Label>
@@ -264,6 +342,91 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
               />
             </div>
           </div>
+
+          {perToothMode && (
+            <div className="space-y-4 rounded-md border p-4">
+              <div className="space-y-1">
+                <Label className="text-base">Selecione os dentes (FDI)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Clique nos dentes para incluir e informe o valor unitário de cada um. O total será somado automaticamente.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Superiores</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {UPPER_TEETH.map((t) => {
+                    const selected = !!toothValues[t];
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => toggleTooth(t)}
+                        className={`h-9 w-9 rounded-md border text-xs font-semibold transition-colors ${
+                          selected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs font-medium text-muted-foreground mt-2">Inferiores</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {LOWER_TEETH.map((t) => {
+                    const selected = !!toothValues[t];
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => toggleTooth(t)}
+                        className={`h-9 w-9 rounded-md border text-xs font-semibold transition-colors ${
+                          selected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedTeeth.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Valor por dente</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {[...selectedTeeth].sort().map((t) => (
+                      <div key={t} className="flex items-center gap-2">
+                        <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground">
+                          {t}
+                        </span>
+                        <Input
+                          value={toothValues[t].value}
+                          onChange={(e) => handleToothValueChange(t, e.target.value)}
+                          placeholder="R$ 0,00"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleTooth(t)}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedTeeth.length} dente(s) — Total: <span className="font-semibold text-foreground">{formatBRL(teethTotal)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <Button type="submit" disabled={loading} className="w-full md:w-auto">
             <Plus className="h-4 w-4 mr-2" />

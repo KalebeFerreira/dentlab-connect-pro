@@ -17,6 +17,8 @@ import { TransactionHistory } from "@/components/billing/TransactionHistory";
 import { FinancialInsights } from "@/components/FinancialInsights";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 
 interface Transaction {
   id: string;
@@ -43,6 +45,8 @@ const Financial = () => {
   const [scanHistoryRefresh, setScanHistoryRefresh] = useState(0);
   const [pixDialogOpen, setPixDialogOpen] = useState(false);
   const { isSubscribed } = useFreemiumLimits();
+  const { hidden: valuesHidden, toggle: toggleValuesHidden } = useHideValues();
+  const maskMoney = (v: number) => (valuesHidden ? "••••••" : `R$ ${v.toFixed(2)}`);
 
   useEffect(() => {
     checkAuth();
@@ -199,6 +203,7 @@ const Financial = () => {
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <HideValuesToggle hidden={valuesHidden} onToggle={toggleValuesHidden} />
               <Button
                 onClick={() => setPixDialogOpen(true)}
                 size="sm"
@@ -279,7 +284,7 @@ const Financial = () => {
             </CardHeader>
             <CardContent className="px-3 md:px-6">
               <div className="text-lg md:text-2xl font-bold text-green-600">
-                R$ {income.toFixed(2)}
+                {maskMoney(income)}
               </div>
               <p className="text-xs text-muted-foreground hidden sm:block">Confirmadas</p>
             </CardContent>
@@ -292,7 +297,7 @@ const Financial = () => {
             </CardHeader>
             <CardContent className="px-3 md:px-6">
               <div className="text-lg md:text-2xl font-bold text-red-600">
-                R$ {expense.toFixed(2)}
+                {maskMoney(expense)}
               </div>
               <p className="text-xs text-muted-foreground hidden sm:block">Confirmadas</p>
             </CardContent>
@@ -305,7 +310,7 @@ const Financial = () => {
             </CardHeader>
             <CardContent className="px-3 md:px-6">
               <div className={`text-lg md:text-2xl font-bold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                R$ {profit.toFixed(2)}
+                {maskMoney(profit)}
               </div>
               <p className="text-xs text-muted-foreground hidden sm:block">Líquido</p>
             </CardContent>
@@ -318,7 +323,7 @@ const Financial = () => {
             </CardHeader>
             <CardContent className="px-3 md:px-6">
               <div className="text-lg md:text-2xl font-bold text-yellow-600">
-                R$ {pending.toFixed(2)}
+                {maskMoney(pending)}
               </div>
               <p className="text-xs text-muted-foreground hidden sm:block">Aguardando</p>
             </CardContent>
