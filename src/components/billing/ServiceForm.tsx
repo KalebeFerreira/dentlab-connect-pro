@@ -31,11 +31,20 @@ interface ServiceFormProps {
 const formatBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const parseCurrencyInput = (value: string) => {
-  const numbers = value.replace(/\D/g, "");
-  if (!numbers) return { numeric: 0, formatted: "" };
-  const numeric = parseFloat(numbers) / 100;
-  return { numeric, formatted: formatBRL(numeric) };
+// Accepts free-typing: "150", "150,50", "150.50", "1.234,56"
+const parseLooseNumber = (value: string): number => {
+  if (!value) return 0;
+  let v = value.replace(/[^\d.,-]/g, "").trim();
+  if (!v) return 0;
+  const lastComma = v.lastIndexOf(",");
+  const lastDot = v.lastIndexOf(".");
+  if (lastComma > -1 && lastComma > lastDot) {
+    v = v.replace(/\./g, "").replace(",", ".");
+  } else {
+    v = v.replace(/,/g, "");
+  }
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
 };
 
 // FDI tooth numbering (upper right -> upper left, lower left -> lower right)
@@ -87,14 +96,13 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   };
 
   const handleToothValueChange = (tooth: string, value: string) => {
-    const { numeric, formatted } = parseCurrencyInput(value);
-    setToothValues((prev) => ({ ...prev, [tooth]: { value: formatted, numeric } }));
+    const numeric = parseLooseNumber(value);
+    setToothValues((prev) => ({ ...prev, [tooth]: { value, numeric } }));
   };
 
   const handleUnitValueChange = (value: string) => {
-    const { numeric, formatted } = parseCurrencyInput(value);
-    setUnitValue(formatted);
-    setUnitNumeric(numeric);
+    setUnitValue(value);
+    setUnitNumeric(parseLooseNumber(value));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -324,9 +332,11 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
                 <Label htmlFor="unit_value">Valor Unitário *</Label>
                 <Input
                   id="unit_value"
+                  type="text"
+                  inputMode="decimal"
                   value={unitValue}
                   onChange={(e) => handleUnitValueChange(e.target.value)}
-                  placeholder="R$ 0,00"
+                  placeholder="Ex: 150 ou 150,50"
                   required={!perToothMode}
                 />
               </div>
@@ -405,9 +415,11 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
                           {t}
                         </span>
                         <Input
+                          type="text"
+                          inputMode="decimal"
                           value={toothValues[t].value}
                           onChange={(e) => handleToothValueChange(t, e.target.value)}
-                          placeholder="R$ 0,00"
+                          placeholder="Ex: 150"
                         />
                         <Button
                           type="button"

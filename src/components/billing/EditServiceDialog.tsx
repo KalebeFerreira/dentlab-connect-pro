@@ -36,26 +36,28 @@ export const EditServiceDialog = ({
   useEffect(() => {
     if (service) {
       setServiceName(service.service_name);
-      setServiceValue(formatCurrency(service.service_value.toString()));
+      setServiceValue(
+        service.service_value.toString().replace(".", ",")
+      );
       setClientName(service.client_name || "");
       setPatientName(service.patient_name || "");
       setServiceDate(service.service_date);
     }
   }, [service]);
 
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    const amount = parseFloat(numbers) / 100;
-    if (isNaN(amount)) return "R$ 0,00";
-    return amount.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  };
-
-  const handleValueChange = (value: string) => {
-    const formatted = formatCurrency(value);
-    setServiceValue(formatted);
+  const parseLooseNumber = (value: string): number => {
+    if (!value) return 0;
+    let v = value.replace(/[^\d.,-]/g, "").trim();
+    if (!v) return 0;
+    const lastComma = v.lastIndexOf(",");
+    const lastDot = v.lastIndexOf(".");
+    if (lastComma > -1 && lastComma > lastDot) {
+      v = v.replace(/\./g, "").replace(",", ".");
+    } else {
+      v = v.replace(/,/g, "");
+    }
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,9 +67,7 @@ export const EditServiceDialog = ({
     setLoading(true);
 
     try {
-      const numericValue = parseFloat(
-        serviceValue.replace("R$", "").replace(/\./g, "").replace(",", ".")
-      );
+      const numericValue = parseLooseNumber(serviceValue);
 
       if (isNaN(numericValue) || numericValue <= 0) {
         toast.error("Valor inválido");
@@ -120,9 +120,11 @@ export const EditServiceDialog = ({
             <Label htmlFor="edit_service_value">Valor do Serviço</Label>
             <Input
               id="edit_service_value"
+              type="text"
+              inputMode="decimal"
               value={serviceValue}
-              onChange={(e) => handleValueChange(e.target.value)}
-              placeholder="R$ 0,00"
+              onChange={(e) => setServiceValue(e.target.value)}
+              placeholder="Ex: 150 ou 150,50"
               required
             />
           </div>
