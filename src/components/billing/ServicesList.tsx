@@ -200,20 +200,32 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Serviços Cadastrados</CardTitle>
-          {services.length > 0 && (
-            <div className="flex gap-2">
-              <Button onClick={handleExportAllPDF} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
-              <Button onClick={handleExportAllExcel} variant="outline" size="sm">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Exportar Excel
-              </Button>
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <HideValuesToggle hidden={hidden} onToggle={toggle} />
+            {services.length > 0 && (
+              <>
+                <Button onClick={handleExportAllPDF} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </Button>
+                <Button onClick={handleExportAllExcel} variant="outline" size="sm">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Exportar Excel
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="relative mt-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por serviço, cliente ou paciente..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
       </CardHeader>
       <CardContent>
