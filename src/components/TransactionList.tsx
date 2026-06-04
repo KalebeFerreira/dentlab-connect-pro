@@ -146,8 +146,7 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
                         : "text-red-600"
                     }`}
                   >
-                    {transaction.transaction_type === "receipt" ? "+" : "-"} R${" "}
-                    {transaction.amount.toFixed(2)}
+                    {transaction.transaction_type === "receipt" ? "+" : "-"} {maskAmount(`R$ ${transaction.amount.toFixed(2)}`)}
                   </p>
                 </div>
               </div>
