@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useDeferredValue } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,14 +28,15 @@ export const TransactionList = ({ transactions, onEdit, onDelete }: TransactionL
   const [search, setSearch] = useState("");
   const { hidden } = useHideValues();
   const maskAmount = (v: string) => (hidden ? "••••••" : v);
+  const deferredSearch = useDeferredValue(search);
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return transactions;
     return transactions.filter((t) =>
       (t.description || "").toLowerCase().includes(q) ||
       String(t.amount).includes(q)
     );
-  }, [transactions, search]);
+  }, [transactions, deferredSearch]);
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
 

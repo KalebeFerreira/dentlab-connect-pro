@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useDeferredValue } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,15 +134,16 @@ export const TransactionHistory = () => {
 
   const { receipts, expenses, balance } = calculateTotals();
 
+  const deferredSearch = useDeferredValue(search);
   const filteredTransactions = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return transactions;
     return transactions.filter((t) =>
       (t.description || "").toLowerCase().includes(q) ||
       (t.category || "").toLowerCase().includes(q) ||
       String(t.amount).includes(q)
     );
-  }, [transactions, search]);
+  }, [transactions, deferredSearch]);
 
   const handleExportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
