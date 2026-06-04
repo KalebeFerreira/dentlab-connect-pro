@@ -1,12 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, FileText, TrendingUp } from "lucide-react";
 import { Service } from "@/pages/Billing";
+import { useHideValues } from "@/hooks/useHideValues";
+import { HideValuesToggle } from "@/components/HideValuesToggle";
 
 interface BillingStatsProps {
   services: Service[];
 }
 
 export const BillingStats = ({ services }: BillingStatsProps) => {
+  const { hidden, toggle } = useHideValues();
   const totalFaturado = services.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
