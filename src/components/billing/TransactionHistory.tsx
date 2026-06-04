@@ -294,13 +294,13 @@ export const TransactionHistory = () => {
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
-        ) : transactions.length === 0 ? (
+        ) : filteredTransactions.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
             Nenhuma transação encontrada para o período selecionado.
           </p>
         ) : (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {transactions.map((transaction) => (
+            {filteredTransactions.map((transaction) => (
               <div
                 key={transaction.id}
                 className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
