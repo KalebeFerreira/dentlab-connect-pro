@@ -134,6 +134,16 @@ export const TransactionHistory = () => {
 
   const { receipts, expenses, balance } = calculateTotals();
 
+  const filteredTransactions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return transactions;
+    return transactions.filter((t) =>
+      (t.description || "").toLowerCase().includes(q) ||
+      (t.category || "").toLowerCase().includes(q) ||
+      String(t.amount).includes(q)
+    );
+  }, [transactions, search]);
+
   const handleExportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Histórico de Transações');
