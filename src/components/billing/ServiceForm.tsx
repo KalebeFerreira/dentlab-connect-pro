@@ -191,18 +191,33 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle>Adicionar Serviço</CardTitle>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="manual-input" className="text-sm text-muted-foreground">
-              Digitação manual
-            </Label>
-            <Switch
-              id="manual-input"
-              checked={useManualInput}
-              onCheckedChange={setUseManualInput}
-            />
-            <Keyboard className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="per-tooth" className="text-sm text-muted-foreground">
+                Cobrar por dente
+              </Label>
+              <Switch
+                id="per-tooth"
+                checked={perToothMode}
+                onCheckedChange={(v) => {
+                  setPerToothMode(v);
+                  if (!v) setToothValues({});
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="manual-input" className="text-sm text-muted-foreground">
+                Digitação manual
+              </Label>
+              <Switch
+                id="manual-input"
+                checked={useManualInput}
+                onCheckedChange={setUseManualInput}
+              />
+              <Keyboard className="h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
         </div>
       </CardHeader>
