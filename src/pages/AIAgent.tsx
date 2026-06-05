@@ -83,6 +83,8 @@ export default function AIAgent() {
   const [waInstance, setWaInstance] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+
 
   // Quick setup fields
   const [setupName, setSetupName] = useState('');
