@@ -93,7 +93,9 @@ export default function AIAgent() {
   const [setupPhone, setSetupPhone] = useState('');
   const [setupStep, setSetupStep] = useState<'form' | 'activating' | 'done'>('form');
 
-  const isPremium = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+  const { GRANT_ALL_PREMIUM } = require('@/lib/featureOverride');
+  const isPremium = GRANT_ALL_PREMIUM || currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;
   const shouldAutoConnectWhatsApp = new URLSearchParams(location.search).get('connect_whatsapp') === '1';
 
