@@ -785,19 +785,8 @@ export default function AIAgent() {
                 />
               </div>
 
-              {qrCode && waState !== 'open' && (
-                <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 flex flex-col items-center gap-3">
-                  <img src={qrCode} alt="QR Code WhatsApp" className="w-56 h-56 rounded bg-white p-2" />
-                  <div className="text-center text-sm">
-                    <p className="font-medium flex items-center justify-center gap-1">
-                      <QrCode className="h-4 w-4" /> Escaneie com o WhatsApp do seu celular
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Abra o WhatsApp → Aparelhos conectados → Conectar um aparelho
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* QR rendering happens inside the Dialog modal below */}
+
 
               {waState === 'open' ? (
                 <Button onClick={disconnectWhatsApp} variant="outline" className="w-full gap-2">
