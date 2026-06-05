@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,6 +83,8 @@ export default function AIAgent() {
   const [waInstance, setWaInstance] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+
 
   // Quick setup fields
   const [setupName, setSetupName] = useState('');
@@ -315,6 +319,7 @@ export default function AIAgent() {
   const connectWhatsApp = async () => {
     setLoadingQr(true);
     setQrCode(null);
+    setQrModalOpen(true); // open modal immediately so user sees spinner
     try {
       const { data, error } = await supabase.functions.invoke('n8n-whatsapp-webhook', {
         body: { action: 'create_instance' },
@@ -322,6 +327,7 @@ export default function AIAgent() {
       if (error) throw error;
       if (data?.upgrade_required) {
         toast.error('Faça upgrade para o plano Premium para conectar seu WhatsApp.');
+        setQrModalOpen(false);
         navigate('/planos?highlight=premium');
         return;
       }
@@ -333,7 +339,7 @@ export default function AIAgent() {
       } else {
         toast.info('Instância criada. Aguarde alguns segundos e atualize o status.');
       }
-      // Auto-poll status every 4s while QR is shown
+      // Auto-poll status every 4s; close modal on success
       const poll = setInterval(async () => {
         await refreshWaStatus();
       }, 4000);
@@ -341,10 +347,12 @@ export default function AIAgent() {
     } catch (err) {
       console.error(err);
       toast.error('Erro ao conectar WhatsApp');
+      setQrModalOpen(false);
     } finally {
       setLoadingQr(false);
     }
   };
+
 
   const disconnectWhatsApp = async () => {
     try {
@@ -361,6 +369,16 @@ export default function AIAgent() {
     if (user && hasAccess) refreshWaStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, hasAccess]);
+
+  // Auto-close QR modal once WhatsApp is connected
+  useEffect(() => {
+    if (waState === 'open' && qrModalOpen) {
+      setQrModalOpen(false);
+      setQrCode(null);
+      toast.success('WhatsApp conectado com sucesso!');
+    }
+  }, [waState, qrModalOpen]);
+
 
 
   if (subLoading || loading) {
@@ -777,19 +795,8 @@ export default function AIAgent() {
                 />
               </div>
 
-              {qrCode && waState !== 'open' && (
-                <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 flex flex-col items-center gap-3">
-                  <img src={qrCode} alt="QR Code WhatsApp" className="w-56 h-56 rounded bg-white p-2" />
-                  <div className="text-center text-sm">
-                    <p className="font-medium flex items-center justify-center gap-1">
-                      <QrCode className="h-4 w-4" /> Escaneie com o WhatsApp do seu celular
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Abra o WhatsApp → Aparelhos conectados → Conectar um aparelho
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* QR rendering happens inside the Dialog modal below */}
+
 
               {waState === 'open' ? (
                 <Button onClick={disconnectWhatsApp} variant="outline" className="w-full gap-2">
@@ -865,6 +872,50 @@ export default function AIAgent() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* QR Code Modal — interno, sem redirecionar */}
+      <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-primary" /> Conectar WhatsApp
+            </DialogTitle>
+            <DialogDescription>
+              Abra o WhatsApp no celular &gt; Aparelhos conectados &gt; Conectar um aparelho e escaneie o código.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3 py-2">
+            {qrCode ? (
+              <img
+                src={qrCode}
+                alt="QR Code WhatsApp"
+                className="w-64 h-64 rounded-md bg-white p-2 border"
+                draggable={false}
+              />
+            ) : (
+              <div className="w-64 h-64 flex flex-col items-center justify-center bg-muted rounded-md gap-2">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Gerando QR Code...</p>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Verificando conexão automaticamente...
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={connectWhatsApp}
+              disabled={loadingQr}
+              className="gap-1"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Gerar novo QR Code
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
