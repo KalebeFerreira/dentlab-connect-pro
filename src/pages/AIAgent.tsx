@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import {
   Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
   CheckCircle2, XCircle, Crown, Phone, Globe, Clock,
@@ -70,6 +70,7 @@ export default function AIAgent() {
   const { user } = useAuth();
   const { currentPlan, loading: subLoading } = useSubscription();
   const navigate = useNavigate();
+  const location = useLocation();
   const [settings, setSettings] = useState<AgentSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,6 +95,7 @@ export default function AIAgent() {
 
   const isPremium = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;
+  const shouldAutoConnectWhatsApp = new URLSearchParams(location.search).get('connect_whatsapp') === '1';
 
   useEffect(() => {
     if (user) loadSettings();
@@ -603,7 +605,7 @@ export default function AIAgent() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="agent" className="space-y-4">
+      <Tabs defaultValue={shouldAutoConnectWhatsApp ? "whatsapp" : "agent"} className="space-y-4">
         <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="agent" className="gap-1.5 text-xs sm:text-sm">
             <Bot className="h-4 w-4" /> Agente
@@ -669,7 +671,7 @@ export default function AIAgent() {
 
         {/* Tab WhatsApp Connection */}
         <TabsContent value="whatsapp" className="space-y-4">
-          <WhatsAppConnection />
+          <WhatsAppConnection autoConnect={shouldAutoConnectWhatsApp} />
         </TabsContent>
 
 
