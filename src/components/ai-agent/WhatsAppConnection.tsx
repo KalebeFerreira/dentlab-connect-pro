@@ -108,17 +108,27 @@ export default function WhatsAppConnection() {
 
   const requestQrCode = async () => {
     setError(null);
-    const data = await call("connect");
-    if (data?.qrcode) {
-      const qr = String(data.qrcode);
-      setQrcode(qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`);
-      setQrOpen(true);
-      startPolling();
-      return true;
+    setQrcode(null);
+    setQrOpen(true); // open modal immediately so user sees spinner
+    try {
+      const data = await call("connect");
+      if (data?.qrcode) {
+        const qr = String(data.qrcode);
+        setQrcode(qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`);
+        startPolling();
+        return true;
+      }
+      toast.error("QR Code não retornado pela API. Tente novamente.");
+      setQrOpen(false);
+      return false;
+    } catch (e: any) {
+      setError(e.message);
+      toast.error(e.message);
+      setQrOpen(false);
+      return false;
     }
-    toast.error("QR Code não retornado pela API. Tente novamente.");
-    return false;
   };
+
 
   const handleCreate = async () => {
     setBusy("create");
