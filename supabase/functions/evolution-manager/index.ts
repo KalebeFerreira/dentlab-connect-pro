@@ -124,9 +124,11 @@ Deno.serve(async (req) => {
 
     if (action === "connect") {
       const data = await evo(`/instance/connect/${encodeURIComponent(instanceName)}`, { method: "GET" });
-      const qrcode = data?.base64 || data?.qrcode?.base64 || data?.qrcode || data?.code || null;
+      // Strictly the base64 PNG of the pairing QR — never the raw `code` text
+      // (which is a Baileys pairing token, not an image, and produces broken QRs).
+      const qrcode = data?.base64 || data?.qrcode?.base64 || null;
       await updateRow({ connection_status: "connecting" });
-      return json(200, { qrcode, raw: data });
+      return json(200, { qrcode, pairing_code: data?.pairingCode || data?.qrcode?.pairingCode || null });
     }
 
     if (action === "status") {

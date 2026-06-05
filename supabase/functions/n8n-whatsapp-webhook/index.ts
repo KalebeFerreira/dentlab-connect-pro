@@ -202,17 +202,20 @@ serve(async (req) => {
           is_whatsapp_enabled: true,
         }, { onConflict: 'user_id' });
 
-        const directQr = createData?.qrcode?.base64 || createData?.qrcode?.code || null;
-        if (directQr) {
-          return new Response(JSON.stringify({ ok: true, instance_name: instanceName, qrcode: directQr }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        // ONLY accept the real base64 PNG of the pairing QR — never the raw text/code,
+        // and never any wa.me/api.whatsapp URL. Frontend renders this as a static <img>.
+        const directBase64 = createData?.qrcode?.base64 || createData?.base64 || null;
+        if (directBase64) {
+          return new Response(JSON.stringify({ ok: true, instance_name: instanceName, qrcode: directBase64, pairing_code: createData?.qrcode?.pairingCode || null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         const qrResp = await fetch(`${baseUrl}/instance/connect/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
         const qrData = await qrResp.json().catch(() => ({}));
+        const base64 = qrData?.base64 || qrData?.qrcode?.base64 || null;
         return new Response(JSON.stringify({
           ok: true,
           instance_name: instanceName,
-          qrcode: qrData?.base64 || qrData?.code || qrData?.qrcode?.base64 || null,
-          pairing_code: qrData?.pairingCode || null,
+          qrcode: base64,
+          pairing_code: qrData?.pairingCode || qrData?.qrcode?.pairingCode || null,
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (e) {
         console.error('[create_instance] error', e);
