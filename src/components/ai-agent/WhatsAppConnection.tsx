@@ -112,9 +112,12 @@ export default function WhatsAppConnection() {
     setQrOpen(true); // open modal immediately so user sees spinner
     try {
       const data = await call("connect");
-      if (data?.qrcode) {
-        const qr = String(data.qrcode);
-        setQrcode(qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`);
+      const raw: unknown = data?.qrcode;
+      // Accept ONLY a real base64 PNG of the pairing QR. Reject short pairing tokens
+      // (e.g. Baileys "2@...") and any wa.me/api.whatsapp URLs.
+      if (typeof raw === "string" && raw.length > 100) {
+        const qr = raw.startsWith("data:image") ? raw : `data:image/png;base64,${raw}`;
+        setQrcode(qr);
         startPolling();
         return true;
       }
