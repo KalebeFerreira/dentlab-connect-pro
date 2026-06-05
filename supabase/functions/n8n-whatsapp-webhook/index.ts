@@ -34,12 +34,15 @@ function isTrialExpired(trialStartedAt: string | null): boolean {
   return diffDays > TRIAL_DAYS;
 }
 
+const HARDCODED_EVOLUTION_URL = "https://dentlab-evolution-api.sfwgy9.easypanel.host";
 function normalizeEvolutionApiUrl(rawUrl: string): string {
   const trimmed = (rawUrl || '').trim();
   const markdownUrl = trimmed.match(/\]\((https?:\/\/[^)]+)\)/i)?.[1];
-  const plainUrl = markdownUrl || trimmed.match(/https?:\/\/[^\s)\]]+/i)?.[0] || trimmed;
-  return plainUrl.replace(/\/+$/, '');
+  const plainUrl = markdownUrl || trimmed.match(/https?:\/\/[^\s)\]]+/i)?.[0] || '';
+  const cleaned = plainUrl.replace(/\/+$/, '');
+  return cleaned && /^https?:\/\/[^\s]+\.[^\s]+$/.test(cleaned) ? cleaned : HARDCODED_EVOLUTION_URL;
 }
+
 
 async function sendWhatsAppReply(
   evolutionApiUrl: string,
