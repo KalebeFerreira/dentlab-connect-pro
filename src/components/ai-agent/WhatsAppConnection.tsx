@@ -328,8 +328,9 @@ export default function WhatsAppConnection() {
             {qrcode ? (
               <img
                 src={qrcode}
-                alt="QR Code WhatsApp"
-                className="w-64 h-64 rounded-md bg-white p-2 border"
+                alt="QR Code de pareamento WhatsApp"
+                className="w-64 h-64 rounded-md bg-white p-2 border pointer-events-none select-none"
+                draggable={false}
               />
             ) : (
               <div className="w-64 h-64 flex items-center justify-center bg-muted rounded-md">
