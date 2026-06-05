@@ -319,6 +319,7 @@ export default function AIAgent() {
   const connectWhatsApp = async () => {
     setLoadingQr(true);
     setQrCode(null);
+    setQrModalOpen(true); // open modal immediately so user sees spinner
     try {
       const { data, error } = await supabase.functions.invoke('n8n-whatsapp-webhook', {
         body: { action: 'create_instance' },
@@ -326,6 +327,7 @@ export default function AIAgent() {
       if (error) throw error;
       if (data?.upgrade_required) {
         toast.error('Faça upgrade para o plano Premium para conectar seu WhatsApp.');
+        setQrModalOpen(false);
         navigate('/planos?highlight=premium');
         return;
       }
@@ -337,7 +339,7 @@ export default function AIAgent() {
       } else {
         toast.info('Instância criada. Aguarde alguns segundos e atualize o status.');
       }
-      // Auto-poll status every 4s while QR is shown
+      // Auto-poll status every 4s; close modal on success
       const poll = setInterval(async () => {
         await refreshWaStatus();
       }, 4000);
@@ -345,10 +347,12 @@ export default function AIAgent() {
     } catch (err) {
       console.error(err);
       toast.error('Erro ao conectar WhatsApp');
+      setQrModalOpen(false);
     } finally {
       setLoadingQr(false);
     }
   };
+
 
   const disconnectWhatsApp = async () => {
     try {
