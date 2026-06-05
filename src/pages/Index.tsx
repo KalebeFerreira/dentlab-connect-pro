@@ -460,7 +460,7 @@ const Index = () => {
               </p>
               <button
                 type="button"
-                onClick={() => navigate("/ai-agent")}
+                onClick={() => navigate("/ai-agent?connect_whatsapp=1")}
                 className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
               >
                 <Phone className="h-4 w-4" />
@@ -477,7 +477,7 @@ const Index = () => {
       {/* Floating WhatsApp Button */}
       <button
         type="button"
-        onClick={() => navigate("/ai-agent")}
+        onClick={() => navigate("/ai-agent?connect_whatsapp=1")}
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-300"
         aria-label="Conectar meu WhatsApp ao Agente IA"
       >
