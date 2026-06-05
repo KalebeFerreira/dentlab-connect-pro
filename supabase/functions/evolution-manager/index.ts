@@ -4,7 +4,15 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const EVOLUTION_API_URL = (Deno.env.get("EVOLUTION_API_URL") || "").replace(/\/+$/, "");
+function sanitizeUrl(raw: string): string {
+  let s = (raw || "").trim();
+  // Strip markdown link wrappers like [url](url) or (url)
+  const md = s.match(/\((https?:\/\/[^\s)]+)\)/);
+  if (md) s = md[1];
+  s = s.replace(/^[\[\(]+/, "").replace(/[\]\)]+$/, "");
+  return s.replace(/\/+$/, "");
+}
+const EVOLUTION_API_URL = sanitizeUrl(Deno.env.get("EVOLUTION_API_URL") || "");
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
