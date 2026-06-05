@@ -316,7 +316,13 @@ export default function AIAgent() {
       if (error) throw error;
       setWaState(data?.state || 'unknown');
       setWaInstance(data?.instance_name || null);
-      if (data?.connected) setQrCode(null);
+      if (data?.connected) {
+        setQrCode(null);
+      } else if (typeof data?.qrcode === 'string' && data.qrcode.length > 100) {
+        const raw = data.qrcode as string;
+        const qr = raw.startsWith('data:image') ? raw : `data:image/png;base64,${raw}`;
+        setQrCode(qr);
+      }
     } catch (err) {
       console.error('status err', err);
     }
