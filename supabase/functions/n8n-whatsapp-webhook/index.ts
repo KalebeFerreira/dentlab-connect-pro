@@ -176,6 +176,25 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Servidor WhatsApp não configurado' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       const instanceName = userInstanceName(user.id);
+      const extractBase64 = (d: any): string | null => {
+        const raw = d?.qrcode?.base64 || d?.base64 || d?.qrcode || d?.qr || null;
+        if (!raw || typeof raw !== 'string') return null;
+        let s = raw.trim();
+        if (s.startsWith('data:') && s.includes(',')) s = s.split(',')[1];
+        s = s.replace(/\s/g, '');
+        if (s.length < 100) return null;
+        if (!/^[A-Za-z0-9+/]+={0,2}$/.test(s)) return null;
+        return s;
+      };
+      const fetchQr = async (): Promise<{ base64: string | null; pairing: string | null }> => {
+        try {
+          const r = await fetch(`${baseUrl}/instance/connect/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
+          const d = await r.json().catch(() => ({}));
+          return { base64: extractBase64(d), pairing: d?.pairingCode || d?.qrcode?.pairingCode || null };
+        } catch {
+          return { base64: null, pairing: null };
+        }
+      };
       try {
         const createResp = await fetch(`${baseUrl}/instance/create`, {
           method: 'POST',
@@ -202,20 +221,21 @@ serve(async (req) => {
           is_whatsapp_enabled: true,
         }, { onConflict: 'user_id' });
 
-        // ONLY accept the real base64 PNG of the pairing QR — never the raw text/code,
-        // and never any wa.me/api.whatsapp URL. Frontend renders this as a static <img>.
-        const directBase64 = createData?.qrcode?.base64 || createData?.base64 || null;
-        if (directBase64) {
-          return new Response(JSON.stringify({ ok: true, instance_name: instanceName, qrcode: directBase64, pairing_code: createData?.qrcode?.pairingCode || null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        // Try QR from create response, then poll /instance/connect a few times
+        let base64 = extractBase64(createData);
+        let pairing = createData?.qrcode?.pairingCode || null;
+        for (let i = 0; i < 4 && !base64; i++) {
+          await new Promise((r) => setTimeout(r, 700));
+          const q = await fetchQr();
+          base64 = q.base64;
+          pairing = pairing || q.pairing;
         }
-        const qrResp = await fetch(`${baseUrl}/instance/connect/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
-        const qrData = await qrResp.json().catch(() => ({}));
-        const base64 = qrData?.base64 || qrData?.qrcode?.base64 || null;
+        console.log(`[create_instance] qr=${base64 ? 'yes(' + base64.length + ')' : 'no'} pairing=${pairing ? 'yes' : 'no'}`);
         return new Response(JSON.stringify({
           ok: true,
           instance_name: instanceName,
           qrcode: base64,
-          pairing_code: qrData?.pairingCode || qrData?.qrcode?.pairingCode || null,
+          pairing_code: pairing,
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (e) {
         console.error('[create_instance] error', e);
