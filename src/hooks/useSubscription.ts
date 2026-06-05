@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { GRANT_ALL_PREMIUM } from "@/lib/featureOverride";
+
 
 export interface SubscriptionInfo {
   subscribed: boolean;
@@ -121,6 +123,19 @@ export const useSubscription = () => {
   });
 
   const checkSubscription = async () => {
+    // TEMP: liberação geral - todos como super_premium
+    if (GRANT_ALL_PREMIUM) {
+      setSubscriptionInfo({
+        subscribed: true,
+        product_id: PLANS.super_premium.product_id,
+        price_id: PLANS.super_premium.annual_price_id,
+        plan_name: "super_premium",
+        subscription_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        loading: false,
+      });
+      return;
+    }
+
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       

@@ -101,8 +101,9 @@ export const useFreemiumLimits = () => {
     queryFn: async () => {
       if (!userId) throw new Error('No user');
 
-      // Limites freemium aplicam-se APENAS a laboratórios e clínicas
-      if (role !== 'laboratory' && role !== 'clinic') {
+      // TEMP: liberação geral - todos sem limites
+      const { GRANT_ALL_PREMIUM } = await import('@/lib/featureOverride');
+      if (GRANT_ALL_PREMIUM || (role !== 'laboratory' && role !== 'clinic')) {
         return {
           orders: { current: 0, limit: -1, percentage: 0 },
           patients: { current: 0, limit: -1, percentage: 0 },
@@ -122,6 +123,7 @@ export const useFreemiumLimits = () => {
           loading: false,
         };
       }
+
 
       // Check subscription status
       const { data: subscription } = await supabase
