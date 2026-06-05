@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
-import { GRANT_ALL_PREMIUM } from '@/lib/featureOverride';
+
 
 import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -95,7 +95,7 @@ export default function AIAgent() {
   const [setupPhone, setSetupPhone] = useState('');
   const [setupStep, setSetupStep] = useState<'form' | 'activating' | 'done'>('form');
 
-  const isPremium = GRANT_ALL_PREMIUM || currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
+  const isPremium = currentPlan?.key === 'premium' || currentPlan?.key === 'super_premium';
 
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;

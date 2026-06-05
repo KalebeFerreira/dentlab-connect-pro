@@ -5,4 +5,4 @@
  *
  * Para reativar a checagem normal de assinatura, mude para `false`.
  */
-export const GRANT_ALL_PREMIUM = true;
+export const GRANT_ALL_PREMIUM = false;
