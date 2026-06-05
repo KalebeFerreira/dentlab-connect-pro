@@ -35,7 +35,11 @@ interface Info {
 
 const POLL_MS = 4000;
 
-export default function WhatsAppConnection() {
+interface WhatsAppConnectionProps {
+  autoConnect?: boolean;
+}
+
+export default function WhatsAppConnection({ autoConnect = false }: WhatsAppConnectionProps) {
   const [info, setInfo] = useState<Info | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -43,6 +47,7 @@ export default function WhatsAppConnection() {
   const [qrOpen, setQrOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<number | null>(null);
+  const autoConnectStartedRef = useRef(false);
 
   const call = useCallback(async (action: string) => {
     const { data, error } = await supabase.functions.invoke("evolution-manager", {
@@ -151,6 +156,9 @@ export default function WhatsAppConnection() {
   const handleConnect = async () => {
     setBusy("connect");
     try {
+      if (!info?.instance_name) {
+        await call("create");
+      }
       await requestQrCode();
       await refresh();
     } catch (e: any) {
@@ -160,6 +168,14 @@ export default function WhatsAppConnection() {
       setBusy(null);
     }
   };
+
+  useEffect(() => {
+    if (!autoConnect || loading || autoConnectStartedRef.current) return;
+    if ((info?.connection_status ?? "disconnected") === "open") return;
+    autoConnectStartedRef.current = true;
+    void handleConnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect, loading, info?.connection_status]);
 
   const handleDisconnect = async () => {
     setBusy("disconnect");
