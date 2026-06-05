@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { GRANT_ALL_PREMIUM } from '@/lib/featureOverride';
+
 
 const SCANNER_LIMITS = {
   free: 30,
@@ -27,13 +29,14 @@ export const useScannerLimits = () => {
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
 
-      // Non-lab/clinic roles have unlimited
-      if (role !== 'laboratory' && role !== 'clinic') {
+      // TEMP: liberação geral OU roles não-clinic/lab têm ilimitado
+      if (GRANT_ALL_PREMIUM || (role !== 'laboratory' && role !== 'clinic')) {
         setLimit(-1);
         setIsSubscribed(true);
         setLoading(false);
         return;
       }
+
 
       // Check subscription
       const { data: sub } = await supabase
