@@ -5,9 +5,11 @@ export interface SubscriptionInfo {
   subscribed: boolean;
   product_id: string | null;
   price_id: string | null;
+  plan_name?: string | null;
   subscription_end: string | null;
   loading: boolean;
 }
+
 
 export const PLANS = {
   free: {
@@ -197,17 +199,28 @@ export const useSubscription = () => {
   }, []);
 
   const getCurrentPlan = () => {
-    if (!subscriptionInfo.subscribed || !subscriptionInfo.price_id) {
+    if (!subscriptionInfo.subscribed) {
       return null;
     }
 
-    for (const [key, plan] of Object.entries(PLANS)) {
-      if (plan.price_id === subscriptionInfo.price_id || plan.annual_price_id === subscriptionInfo.price_id) {
-        return { key, ...plan };
+    // Match by price_id first (Stripe path)
+    if (subscriptionInfo.price_id) {
+      for (const [key, plan] of Object.entries(PLANS)) {
+        if (plan.price_id === subscriptionInfo.price_id || plan.annual_price_id === subscriptionInfo.price_id) {
+          return { key, ...plan };
+        }
       }
     }
+
+    // Fallback: match by plan_name (manual liberation / DB fallback)
+    if (subscriptionInfo.plan_name && PLANS[subscriptionInfo.plan_name as keyof typeof PLANS]) {
+      const key = subscriptionInfo.plan_name;
+      return { key, ...PLANS[key as keyof typeof PLANS] };
+    }
+
     return null;
   };
+
 
   return {
     ...subscriptionInfo,
