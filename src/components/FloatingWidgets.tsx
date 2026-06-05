@@ -18,7 +18,7 @@ export const FloatingWidgets = () => {
       <SupportChatWidget />
       <button
         type="button"
-        onClick={() => navigate("/ai-agent")}
+        onClick={() => navigate("/ai-agent?connect_whatsapp=1")}
         aria-label="Conectar meu WhatsApp ao Agente IA"
         title="Conectar meu WhatsApp ao Agente IA"
         className="fixed bottom-5 left-5 z-[9999] bg-primary hover:bg-primary/90 text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
