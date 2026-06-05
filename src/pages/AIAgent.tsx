@@ -331,8 +331,11 @@ export default function AIAgent() {
         navigate('/planos?highlight=premium');
         return;
       }
-      if (data?.qrcode) {
-        const qr = data.qrcode.startsWith('data:') ? data.qrcode : `data:image/png;base64,${data.qrcode}`;
+      const raw: unknown = data?.qrcode;
+      if (typeof raw === 'string' && raw.length > 100) {
+        // Accept ONLY a real base64 PNG of the pairing QR. Never a wa.me/api.whatsapp URL
+        // and never the raw Baileys pairing token (which is short and starts with "2@").
+        const qr = raw.startsWith('data:image') ? raw : `data:image/png;base64,${raw}`;
         setQrCode(qr);
         setWaInstance(data.instance_name);
         toast.success('QR Code gerado — escaneie com seu WhatsApp');
