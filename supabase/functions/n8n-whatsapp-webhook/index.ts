@@ -254,11 +254,32 @@ serve(async (req) => {
       if (!baseUrl || !apiKey) {
         return new Response(JSON.stringify({ connected: false, state: 'not_configured', instance_name: instanceName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      const extractBase64 = (d: any): string | null => {
+        const raw = d?.qrcode?.base64 || d?.base64 || d?.qrcode || d?.qr || null;
+        if (!raw || typeof raw !== 'string') return null;
+        let s = raw.trim();
+        if (s.startsWith('data:') && s.includes(',')) s = s.split(',')[1];
+        s = s.replace(/\s/g, '');
+        if (s.length < 100) return null;
+        if (!/^[A-Za-z0-9+/]+={0,2}$/.test(s)) return null;
+        return s;
+      };
       try {
         const resp = await fetch(`${baseUrl}/instance/connectionState/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
         const data = await resp.json().catch(() => ({}));
         const state = data?.instance?.state || data?.state || 'unknown';
-        return new Response(JSON.stringify({ connected: state === 'open', state, instance_name: instanceName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        let qrcode: string | null = null;
+        let pairing_code: string | null = null;
+        if (state !== 'open') {
+          // Fetch QR from /instance/connect so frontend can render the image
+          try {
+            const r = await fetch(`${baseUrl}/instance/connect/${encodeURIComponent(instanceName)}`, { headers: { apikey: apiKey } });
+            const d = await r.json().catch(() => ({}));
+            qrcode = extractBase64(d);
+            pairing_code = d?.pairingCode || d?.qrcode?.pairingCode || null;
+          } catch { /* ignore */ }
+        }
+        return new Response(JSON.stringify({ connected: state === 'open', state, instance_name: instanceName, qrcode, pairing_code }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch {
         return new Response(JSON.stringify({ connected: false, state: 'unknown', instance_name: instanceName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
