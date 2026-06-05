@@ -370,6 +370,16 @@ export default function AIAgent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, hasAccess]);
 
+  // Auto-close QR modal once WhatsApp is connected
+  useEffect(() => {
+    if (waState === 'open' && qrModalOpen) {
+      setQrModalOpen(false);
+      setQrCode(null);
+      toast.success('WhatsApp conectado com sucesso!');
+    }
+  }, [waState, qrModalOpen]);
+
+
 
   if (subLoading || loading) {
     return (
