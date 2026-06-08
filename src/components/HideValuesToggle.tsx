@@ -18,6 +18,7 @@ export const HideValuesToggle = ({
   iconOnly = false,
 }: HideValuesToggleProps) => {
   const label = hidden ? "Mostrar valores" : "Ocultar valores";
+  const showLabel = !iconOnly && size !== "icon";
   return (
     <Button
       type="button"
