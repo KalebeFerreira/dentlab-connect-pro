@@ -130,7 +130,7 @@ export const useFreemiumLimits = () => {
         .from('user_subscriptions')
         .select('status, plan_name')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       const isSubscribed = subscription?.status === 'active' && subscription?.plan_name !== 'free';
       
@@ -176,7 +176,7 @@ export const useFreemiumLimits = () => {
         .eq('user_id', userId)
         .eq('month', currentMonth)
         .eq('year', currentYear)
-        .single();
+        .maybeSingle();
 
       const imageCount = imageUsage?.count || 0;
 
@@ -187,7 +187,7 @@ export const useFreemiumLimits = () => {
         .eq('user_id', userId)
         .eq('month', currentMonth)
         .eq('year', currentYear)
-        .single();
+        .maybeSingle();
 
       const pdfCount = pdfUsage?.count || 0;
 
@@ -211,7 +211,7 @@ export const useFreemiumLimits = () => {
         .eq('user_id', userId)
         .eq('month', currentMonth)
         .eq('year', currentYear)
-        .single();
+        .maybeSingle();
 
       const scannerCount = scannerUsage?.count || 0;
 
