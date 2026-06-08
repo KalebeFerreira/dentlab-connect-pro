@@ -308,48 +308,58 @@ export default function AIAgent() {
   };
 
   // ===== Per-user WhatsApp connection (via evolution-manager) =====
+  // Helper: invoke evolution-manager and surface the real backend error message
+  const callEvolution = async (action: string) => {
+    const { data, error } = await supabase.functions.invoke('evolution-manager', {
+      body: { action },
+    });
+    if (error) {
+      // FunctionsHttpError carries the response body in `context`
+      let detail = error.message || 'Erro ao chamar evolution-manager';
+      try {
+        const ctx: any = (error as any).context;
+        if (ctx?.json) detail = ctx.json.error || detail;
+        else if (typeof ctx?.text === 'function') {
+          const t = await ctx.text();
+          try { detail = JSON.parse(t)?.error || t || detail; } catch { detail = t || detail; }
+        }
+      } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
+  };
+
   const refreshWaStatus = async () => {
     try {
-      const { data: statusData, error: statusErr } = await supabase.functions.invoke('evolution-manager', {
-        body: { action: 'status' },
-      });
-      if (statusErr) throw statusErr;
+      const statusData = await callEvolution('status');
       const state = statusData?.state || 'unknown';
       setWaState(state);
 
-      const { data: infoData } = await supabase.functions.invoke('evolution-manager', {
-        body: { action: 'get' },
-      });
+      const infoData = await callEvolution('get');
       setWaInstance(infoData?.instance_name || null);
 
       if (state === 'open') {
         setQrCode(null);
       } else if (infoData?.instance_name) {
-        // Not connected — try to fetch QR
-        const { data: qrData } = await supabase.functions.invoke('evolution-manager', {
-          body: { action: 'connect' },
-        });
+        const qrData = await callEvolution('connect');
         const raw: unknown = qrData?.qrcode;
         if (typeof raw === 'string' && raw.length > 0) {
           const qr = raw.startsWith('data:image') ? raw : `data:image/png;base64,${raw}`;
           setQrCode(qr);
         }
       }
-    } catch (err) {
-      console.error('status err', err);
+    } catch (err: any) {
+      console.error('[whatsapp] status err', err);
     }
   };
 
   const connectWhatsApp = async () => {
     setLoadingQr(true);
     setQrCode(null);
-    setQrModalOpen(true); // open modal immediately so user sees spinner
+    setQrModalOpen(true);
     try {
-      // 1) Ensure instance exists
-      const { data: createData, error: createErr } = await supabase.functions.invoke('evolution-manager', {
-        body: { action: 'create' },
-      });
-      if (createErr) throw createErr;
+      const createData = await callEvolution('create');
       if (createData?.upgrade_required) {
         toast.error('Faça upgrade para o plano Premium para conectar seu WhatsApp.');
         setQrModalOpen(false);
@@ -358,11 +368,7 @@ export default function AIAgent() {
       }
       setWaInstance(createData?.instance_name || null);
 
-      // 2) Fetch QR code
-      const { data: qrData, error: qrErr } = await supabase.functions.invoke('evolution-manager', {
-        body: { action: 'connect' },
-      });
-      if (qrErr) throw qrErr;
+      const qrData = await callEvolution('connect');
       const raw: unknown = qrData?.qrcode;
       if (typeof raw === 'string' && raw.length > 0) {
         const qr = raw.startsWith('data:image') ? raw : `data:image/png;base64,${raw}`;
@@ -372,29 +378,25 @@ export default function AIAgent() {
         toast.info('Instância criada. Aguarde alguns segundos e atualize o status.');
       }
 
-      // 3) Auto-poll status every 4s; close modal on success
-      const poll = setInterval(async () => {
-        await refreshWaStatus();
-      }, 4000);
+      const poll = setInterval(() => { refreshWaStatus(); }, 4000);
       setTimeout(() => clearInterval(poll), 120000);
-    } catch (err) {
-      console.error(err);
-      toast.error('Erro ao conectar WhatsApp');
+    } catch (err: any) {
+      console.error('[whatsapp] connect err', err);
+      toast.error(err?.message || 'Erro ao conectar WhatsApp');
       setQrModalOpen(false);
     } finally {
       setLoadingQr(false);
     }
   };
 
-
   const disconnectWhatsApp = async () => {
     try {
-      await supabase.functions.invoke('evolution-manager', { body: { action: 'disconnect' } });
+      await callEvolution('disconnect');
       setWaState('close');
       setQrCode(null);
       toast.success('WhatsApp desconectado');
-    } catch {
-      toast.error('Erro ao desconectar');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao desconectar');
     }
   };
 
