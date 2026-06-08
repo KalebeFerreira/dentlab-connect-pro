@@ -6,20 +6,30 @@ interface HideValuesToggleProps {
   onToggle: () => void;
   size?: "sm" | "default" | "icon";
   className?: string;
+  /** When true, always show only the icon (no label) regardless of viewport. */
+  iconOnly?: boolean;
 }
 
-export const HideValuesToggle = ({ hidden, onToggle, size = "icon", className }: HideValuesToggleProps) => {
+export const HideValuesToggle = ({
+  hidden,
+  onToggle,
+  size = "sm",
+  className,
+  iconOnly = false,
+}: HideValuesToggleProps) => {
+  const label = hidden ? "Mostrar valores" : "Ocultar valores";
   return (
     <Button
       type="button"
       variant="outline"
-      size={size}
+      size={iconOnly ? "icon" : size}
       onClick={onToggle}
       className={className}
-      title={hidden ? "Mostrar valores" : "Ocultar valores"}
-      aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
+      title={label}
+      aria-label={label}
     >
       {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      {!iconOnly && <span className="ml-2 hidden sm:inline">{label}</span>}
     </Button>
   );
 };
