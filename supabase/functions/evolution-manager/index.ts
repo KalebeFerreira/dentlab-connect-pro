@@ -156,9 +156,12 @@ Deno.serve(async (req) => {
         const patch: Record<string, unknown> = { connection_status: normalized };
         if (normalized === "open") patch.connected_at = new Date().toISOString();
         await updateRow(patch);
-        return json(200, { state: normalized, raw: data });
+        return json(200, { state: normalized, isCreated: true, raw: data });
       } catch (e) {
-        return json(200, { state: "disconnected", error: String(e instanceof Error ? e.message : e) });
+        // Instância ainda não foi criada na Evolution API (404) — não é erro real
+        const msg = String(e instanceof Error ? e.message : e);
+        console.log(`[evolution-manager] status: instância indisponível (${instanceName}): ${msg}`);
+        return json(200, { state: "disconnected", isCreated: false });
       }
     }
 
