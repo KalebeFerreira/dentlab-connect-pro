@@ -5,13 +5,14 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const HARDCODED_EVOLUTION_URL = "https://dentlab-evolution-api.sfwgy9.easypanel.host";
+
 function sanitizeUrl(raw: string): string {
   let s = (raw || "").trim();
-  // Extract first http(s) URL found, ignoring markdown wrappers like [url](url)
   const m = s.match(/https?:\/\/[^\s\)\]\>"']+/);
   if (m) s = m[0];
   return s.replace(/\/+$/, "");
 }
+
 const _envUrl = sanitizeUrl(Deno.env.get("EVOLUTION_API_URL") || "");
 const EVOLUTION_API_URL = _envUrl && /^https?:\/\/[^\s]+\.[^\s]+$/.test(_envUrl)
   ? _envUrl
@@ -19,7 +20,6 @@ const EVOLUTION_API_URL = _envUrl && /^https?:\/\/[^\s]+\.[^\s]+$/.test(_envUrl)
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-// n8n webhook target (per-tenant via ?clinicaId=). Defaults to our internal proxy.
 const N8N_WEBHOOK_BASE = Deno.env.get("N8N_WEBHOOK_URL") || `${SUPABASE_URL}/functions/v1/n8n-whatsapp-webhook`;
 
 const json = (status: number, body: unknown) =>
@@ -39,7 +39,7 @@ function webhookFor(userId: string) {
 
 async function evo(path: string, init: RequestInit = {}) {
   if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-    throw new Error("Evolution API não configurada (EVOLUTION_API_URL/EVOLUTION_API_KEY ausentes)");
+    throw new Error("Evolution API não configurada no Supabase (EVOLUTION_API_URL ou EVOLUTION_API_KEY ausentes nos Secrets)");
   }
   const res = await fetch(`${EVOLUTION_API_URL}${path}`, {
     ...init,
@@ -49,9 +49,11 @@ async function evo(path: string, init: RequestInit = {}) {
       ...(init.headers || {}),
     },
   });
+
   const text = await res.text().catch(() => "");
   let data: any = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+
   if (!res.ok) {
     const msg = data?.message || data?.error || text || `Evolution API erro ${res.status}`;
     throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
@@ -73,7 +75,14 @@ Deno.serve(async (req) => {
     if (userErr || !userData?.user) return json(401, { error: "Token inválido" });
     const userId = userData.user.id;
 
-    const body = await req.json().catch(() => ({}));
+    // Safe JSON parse — empty body should not throw
+    let body: any = {};
+    try {
+      if (req.body) body = await req.json();
+    } catch (_) {
+      body = {};
+    }
+
     const action = String(body.action || "");
     const instanceName = instanceNameFor(userId);
     const webhookUrl = webhookFor(userId);
@@ -104,7 +113,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
-      // idempotent: if already exists in Evolution, just ensure DB row + webhook
       try {
         await evo(`/instance/create`, {
           method: "POST",
@@ -135,21 +143,23 @@ Deno.serve(async (req) => {
 
     if (action === "connect") {
       const data = await evo(`/instance/connect/${encodeURIComponent(instanceName)}`, { method: "GET" });
-      // Strictly the base64 PNG of the pairing QR — never the raw `code` text
-      // (which is a Baileys pairing token, not an image, and produces broken QRs).
       const qrcode = data?.base64 || data?.qrcode?.base64 || null;
       await updateRow({ connection_status: "connecting" });
       return json(200, { qrcode, pairing_code: data?.pairingCode || data?.qrcode?.pairingCode || null });
     }
 
     if (action === "status") {
-      const data = await evo(`/instance/connectionState/${encodeURIComponent(instanceName)}`, { method: "GET" });
-      const state: string = data?.instance?.state || data?.state || "close";
-      const normalized = state === "open" ? "open" : state === "connecting" ? "connecting" : "disconnected";
-      const patch: Record<string, unknown> = { connection_status: normalized };
-      if (normalized === "open") patch.connected_at = new Date().toISOString();
-      await updateRow(patch);
-      return json(200, { state: normalized, raw: data });
+      try {
+        const data = await evo(`/instance/connectionState/${encodeURIComponent(instanceName)}`, { method: "GET" });
+        const state: string = data?.instance?.state || data?.state || "close";
+        const normalized = state === "open" ? "open" : state === "connecting" ? "connecting" : "disconnected";
+        const patch: Record<string, unknown> = { connection_status: normalized };
+        if (normalized === "open") patch.connected_at = new Date().toISOString();
+        await updateRow(patch);
+        return json(200, { state: normalized, raw: data });
+      } catch (e) {
+        return json(200, { state: "disconnected", error: String(e instanceof Error ? e.message : e) });
+      }
     }
 
     if (action === "set_webhook") {
@@ -183,6 +193,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`[evolution-manager] ${msg}`);
-    return json(500, { error: msg });
+    // Return structured error as 200 so the frontend toast can read the clean message
+    return json(200, { error: msg, state: "error" });
   }
 });
