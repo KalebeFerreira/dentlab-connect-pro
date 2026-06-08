@@ -771,10 +771,10 @@ export default function AIAgent() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Smartphone className="h-5 w-5" />
-                Conectar Meu WhatsApp
+                Configurações do WhatsApp
               </CardTitle>
               <CardDescription>
-                Cada usuário conecta seu próprio número WhatsApp. Seus dados ficam totalmente isolados dos outros usuários.
+                A conexão (QR Code) é feita na aba <strong>WhatsApp</strong>. Aqui você só configura o número e ativa o atendimento.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -801,25 +801,6 @@ export default function AIAgent() {
                 </p>
               </div>
 
-
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-3">
-                  <div className={`h-2.5 w-2.5 rounded-full ${waState === 'open' ? 'bg-green-500' : waState === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
-                  <div>
-                    <p className="text-sm font-medium">
-                      {waState === 'open' ? 'WhatsApp conectado' :
-                       waState === 'connecting' ? 'Aguardando leitura do QR…' :
-                       waState === 'not_configured' ? 'Servidor não configurado' :
-                       'WhatsApp desconectado'}
-                    </p>
-                    {waInstance && <p className="text-[10px] text-muted-foreground font-mono">{waInstance}</p>}
-                  </div>
-                </div>
-                <Button size="sm" variant="ghost" onClick={refreshWaStatus} className="gap-1">
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-base">Atendimento WhatsApp ativo</Label>
@@ -831,20 +812,6 @@ export default function AIAgent() {
                 />
               </div>
 
-              {/* QR rendering happens inside the Dialog modal below */}
-
-
-              {waState === 'open' ? (
-                <Button onClick={disconnectWhatsApp} variant="outline" className="w-full gap-2">
-                  <LogOut className="h-4 w-4" /> Desconectar WhatsApp
-                </Button>
-              ) : (
-                <Button onClick={connectWhatsApp} disabled={loadingQr} className="w-full gap-2">
-                  {loadingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                  {qrCode ? 'Gerar novo QR Code' : 'Conectar Meu WhatsApp'}
-                </Button>
-              )}
-
               <Alert className="border-primary/20 bg-primary/5">
                 <Shield className="h-4 w-4" />
                 <AlertDescription className="text-xs">
@@ -854,6 +821,8 @@ export default function AIAgent() {
               </Alert>
             </CardContent>
           </Card>
+
+
 
 
           <Card>
