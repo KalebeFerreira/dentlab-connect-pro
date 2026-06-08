@@ -43,7 +43,7 @@ export const useScannerLimits = () => {
         .from('user_subscriptions')
         .select('status, plan_name')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       const hasActiveSub = sub?.status === 'active' && sub?.plan_name !== 'free';
       setIsSubscribed(hasActiveSub);
@@ -66,7 +66,7 @@ export const useScannerLimits = () => {
         .eq('user_id', user.id)
         .eq('month', month)
         .eq('year', year)
-        .single();
+        .maybeSingle();
 
       setCurrentUsage(usage?.count || 0);
       setLoading(false);
