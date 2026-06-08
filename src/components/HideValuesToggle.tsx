@@ -23,14 +23,14 @@ export const HideValuesToggle = ({
     <Button
       type="button"
       variant="outline"
-      size={iconOnly ? "icon" : size}
+      size={iconOnly || size === "icon" ? "icon" : size}
       onClick={onToggle}
       className={className}
       title={label}
       aria-label={label}
     >
       {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      {!iconOnly && <span className="ml-2 hidden sm:inline">{label}</span>}
+      {showLabel && <span className="ml-2 hidden sm:inline">{label}</span>}
     </Button>
   );
 };
