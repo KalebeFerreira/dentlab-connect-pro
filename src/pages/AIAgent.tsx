@@ -19,10 +19,10 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import {
-  Bot, Save, Loader2, MessageSquare, Settings2, Webhook,
-  CheckCircle2, XCircle, Crown, Phone, Globe, Clock,
+  Bot, Save, Loader2, Settings2, Webhook,
+  CheckCircle2, Crown, Phone, Clock,
   Copy, Timer, Sparkles, Zap, ArrowRight, Shield, Inbox,
-  Smartphone, QrCode, RefreshCw, LogOut
+  Smartphone
 } from 'lucide-react';
 import WhatsAppInbox from '@/components/ai-agent/WhatsAppInbox';
 import WhatsAppConnection from '@/components/ai-agent/WhatsAppConnection';
