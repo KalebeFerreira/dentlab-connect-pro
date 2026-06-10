@@ -81,12 +81,6 @@ export default function AIAgent() {
   const [trialStartedAt, setTrialStartedAt] = useState<string | null>(null);
   const [isConfigured, setIsConfigured] = useState(false);
 
-  // WhatsApp connection (per-user QR flow)
-  const [waState, setWaState] = useState<'unknown' | 'open' | 'connecting' | 'close' | 'not_configured'>('unknown');
-  const [waInstance, setWaInstance] = useState<string | null>(null);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [loadingQr, setLoadingQr] = useState(false);
-  const [qrModalOpen, setQrModalOpen] = useState(false);
 
 
   // Quick setup fields
