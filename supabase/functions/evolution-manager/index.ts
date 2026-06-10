@@ -202,6 +202,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`[evolution-manager error] ${msg}`);
-    return json(500, { error: msg });
+    // Responde 200 com erro embutido para o frontend não quebrar com FunctionsHttpError
+    return json(200, { error: msg, state: "disconnected" });
   }
 });
