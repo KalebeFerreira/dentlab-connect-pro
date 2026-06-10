@@ -161,8 +161,8 @@ export default function AIAgent() {
 
     try {
       const now = new Date().toISOString();
-      // Deterministic per-user instance name — matches the edge function (`user-{userIdNoHyphens24}`)
-      const instanceName = `user-${user.id.replace(/-/g, '').slice(0, 24)}`;
+      // Deterministic per-user instance name — matches the edge function (`clinic-{userIdNoHyphens24}`)
+      const instanceName = `clinic-${user.id.replace(/-/g, '').slice(0, 24)}`;
 
       const personality = `Você é ${setupName}, ${setupFunction}. Seja sempre educado, profissional e objetivo nas respostas. Responda em português brasileiro.`;
       const welcomeMsg = `Olá! 👋 Eu sou ${setupName}, ${setupFunction.toLowerCase()}. Como posso ajudar você hoje?`;
