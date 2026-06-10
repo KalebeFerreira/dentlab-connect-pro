@@ -878,48 +878,6 @@ export default function AIAgent() {
         </TabsContent>
       </Tabs>
 
-      {/* QR Code Modal — interno, sem redirecionar */}
-      <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-primary" /> Conectar WhatsApp
-            </DialogTitle>
-            <DialogDescription>
-              Abra o WhatsApp no celular &gt; Aparelhos conectados &gt; Conectar um aparelho e escaneie o código.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-3 py-2">
-            {qrCode ? (
-              <img
-                src={qrCode}
-                alt="QR Code de pareamento WhatsApp"
-                className="w-64 h-64 rounded-md bg-white p-2 border pointer-events-none select-none"
-                draggable={false}
-              />
-            ) : (
-              <div className="w-64 h-64 flex flex-col items-center justify-center bg-muted rounded-md gap-2">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Gerando QR Code...</p>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Verificando conexão automaticamente...
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={connectWhatsApp}
-              disabled={loadingQr}
-              className="gap-1"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Gerar novo QR Code
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
