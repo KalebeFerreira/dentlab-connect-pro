@@ -437,14 +437,14 @@ const Appointments = () => {
                 <div>
                   <Label htmlFor="dentist_id">Dentista</Label>
                   <Select
-                    value={formData.dentist_id}
-                    onValueChange={(value) => setFormData({ ...formData, dentist_id: value })}
+                    value={formData.dentist_id || "__none__"}
+                    onValueChange={(value) => setFormData({ ...formData, dentist_id: value === "__none__" ? "" : value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um dentista" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="__none__">Nenhum</SelectItem>
                       {dentists.map((dentist) => (
                         <SelectItem key={dentist.id} value={dentist.id}>
                           {dentist.name} {dentist.cro && `(CRO: ${dentist.cro})`}
