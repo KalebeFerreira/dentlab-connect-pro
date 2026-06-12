@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, Save } from "lucide-react";
+import { Building2, Save, Upload, X } from "lucide-react";
 import { CompanyInfo } from "@/pages/Billing";
+import { toast } from "sonner";
 
 interface CompanyInfoFormProps {
   companyInfo: CompanyInfo | null;
@@ -17,7 +18,9 @@ export const CompanyInfoForm = ({ companyInfo, onSave }: CompanyInfoFormProps) =
     cpf_cnpj: "",
     email: "",
     phone: "",
+    logo_url: "",
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (companyInfo) {
@@ -27,15 +30,12 @@ export const CompanyInfoForm = ({ companyInfo, onSave }: CompanyInfoFormProps) =
 
   const formatCpfCnpj = (value: string) => {
     const numbers = value.replace(/\D/g, "");
-    
     if (numbers.length <= 11) {
-      // CPF: 000.000.000-00
       return numbers
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     } else {
-      // CNPJ: 00.000.000/0000-00
       return numbers
         .replace(/(\d{2})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1.$2")
@@ -46,7 +46,6 @@ export const CompanyInfoForm = ({ companyInfo, onSave }: CompanyInfoFormProps) =
 
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, "");
-    // +55 (00) 00000-0000
     return numbers
       .replace(/(\d{2})(\d)/, "+$1 ($2")
       .replace(/(\d{2})(\d)/, "$1) $2")
@@ -55,14 +54,34 @@ export const CompanyInfoForm = ({ companyInfo, onSave }: CompanyInfoFormProps) =
 
   const handleChange = (field: keyof CompanyInfo, value: string) => {
     let formattedValue = value;
-    
-    if (field === "cpf_cnpj") {
-      formattedValue = formatCpfCnpj(value);
-    } else if (field === "phone") {
-      formattedValue = formatPhone(value);
-    }
-    
+    if (field === "cpf_cnpj") formattedValue = formatCpfCnpj(value);
+    else if (field === "phone") formattedValue = formatPhone(value);
     setFormData((prev) => ({ ...prev, [field]: formattedValue }));
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo deve ter no máximo 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setFormData((prev) => ({ ...prev, logo_url: dataUrl }));
+      toast.success("Logo carregada. Clique em Salvar para confirmar.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData((prev) => ({ ...prev, logo_url: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,6 +99,55 @@ export const CompanyInfoForm = ({ companyInfo, onSave }: CompanyInfoFormProps) =
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Logo da Empresa</Label>
+            <div className="flex items-center gap-4 flex-wrap">
+              {formData.logo_url ? (
+                <div className="relative">
+                  <img
+                    src={formData.logo_url}
+                    alt="Logo"
+                    className="h-20 w-auto max-w-[200px] object-contain border rounded p-2 bg-white"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={handleRemoveLogo}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="h-20 w-32 border-2 border-dashed rounded flex items-center justify-center text-muted-foreground text-xs">
+                  Sem logo
+                </div>
+              )}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  id="logo-upload"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {formData.logo_url ? "Trocar logo" : "Enviar logo"}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PNG, JPG ou SVG. Máximo 2MB.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="company_name">Nome da Empresa</Label>
