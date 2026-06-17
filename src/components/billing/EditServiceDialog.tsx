@@ -87,6 +87,9 @@ export const EditServiceDialog = ({
           client_name: clientName?.trim() || null,
           patient_name: patientName?.trim() || null,
           service_date: serviceDate,
+          payment_method: paymentMethod,
+          due_date: paymentMethod === "a_prazo" ? (dueDate || serviceDate) : serviceDate,
+          paid_at: paidAt || null,
         })
         .eq("id", service.id);
 
