@@ -259,6 +259,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
               <TableHead>Cliente</TableHead>
               <TableHead>Paciente</TableHead>
               <TableHead>Valor</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Data</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -266,7 +267,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
           <TableBody>
             {filteredServices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                   Nenhum serviço encontrado.
                 </TableCell>
               </TableRow>
@@ -276,6 +277,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                 <TableCell>{service.client_name || "-"}</TableCell>
                 <TableCell>{service.patient_name || "-"}</TableCell>
                 <TableCell>{maskValue(formatCurrency(Number(service.service_value)))}</TableCell>
+                <TableCell>{paymentBadge(service)}</TableCell>
                 <TableCell>
                   {format(new Date(service.service_date), "dd/MM/yyyy", {
                     locale: ptBR,
