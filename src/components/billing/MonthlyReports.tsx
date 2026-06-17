@@ -45,6 +45,37 @@ interface ReportHistoryItem {
   sent_at: string;
 }
 
+type PaymentFilter = 'all' | 'cash_paid' | 'unpaid' | 'overdue';
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const applyPaymentFilter = <T extends Service>(list: T[], filter: PaymentFilter): T[] => {
+  if (filter === 'all') return list;
+  const today = todayISO();
+  return list.filter((s) => {
+    const isPaid = !!s.paid_at || (s.payment_method !== 'a_prazo' && s.payment_status === 'pago');
+    const isOverdue = !s.paid_at && !!s.due_date && s.due_date < today;
+    if (filter === 'cash_paid') return isPaid && !isOverdue;
+    if (filter === 'overdue') return isOverdue;
+    if (filter === 'unpaid') return !isPaid; // inclui a receber + vencido
+    return true;
+  });
+};
+
+const buildPaymentSummary = (list: Service[]) => {
+  const today = todayISO();
+  let cash = 0, receivable = 0, overdue = 0, total = 0;
+  for (const s of list) {
+    const v = Number(s.service_value || 0);
+    total += v;
+    const isPaid = !!s.paid_at || (s.payment_method !== 'a_prazo' && s.payment_status === 'pago');
+    if (isPaid) cash += v;
+    else if (s.due_date && s.due_date < today) overdue += v;
+    else receivable += v;
+  }
+  return { cash, receivable, overdue, total };
+};
+
 export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: MonthlyReportsProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -58,6 +89,7 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [reportHistory, setReportHistory] = useState<ReportHistoryItem[]>([]);
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
   const { isSubscribed } = useFreemiumLimits();
   
   // Edit service state
@@ -97,11 +129,13 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     });
   };
 
-  const monthlyServices = getMonthlyServices();
+  const monthlyServicesAll = getMonthlyServices();
+  const monthlyServices = applyPaymentFilter(monthlyServicesAll, paymentFilter);
   const totalMonth = monthlyServices.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
   );
+  const monthlySummary = buildPaymentSummary(monthlyServicesAll);
 
   const getConsolidatedServices = () => {
     if (selectedMonths.length === 0) return [];
@@ -112,11 +146,13 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     });
   };
 
-  const consolidatedServices = getConsolidatedServices();
+  const consolidatedServicesAll = getConsolidatedServices();
+  const consolidatedServices = applyPaymentFilter(consolidatedServicesAll, paymentFilter);
   const totalConsolidated = consolidatedServices.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
   );
+  const consolidatedSummary = buildPaymentSummary(consolidatedServicesAll);
 
   const toggleMonthSelection = (month: string) => {
     setSelectedMonths(prev => 
@@ -150,7 +186,9 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           services: monthlyServices,
           companyInfo,
           totalValue: totalMonth,
-          month: selectedMonth
+          month: selectedMonth,
+          paymentFilter,
+          paymentSummary: monthlySummary,
         }
       });
 
@@ -192,7 +230,9 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           companyInfo,
           totalValue: totalClientMonth,
           month: selectedClientMonth,
-          clientName: selectedClient
+          clientName: selectedClient,
+          paymentFilter,
+          paymentSummary: clientSummary,
         }
       });
 
@@ -240,7 +280,9 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           totalValue: totalConsolidated,
           month: `${selectedMonths.length} meses selecionados`,
           isConsolidated: true,
-          months: selectedMonths.sort()
+          months: selectedMonths.sort(),
+          paymentFilter,
+          paymentSummary: consolidatedSummary,
         }
       });
 
@@ -365,11 +407,13 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     });
   };
 
-  const clientMonthlyServices = getClientMonthlyServices();
+  const clientMonthlyServicesAll = getClientMonthlyServices();
+  const clientMonthlyServices = applyPaymentFilter(clientMonthlyServicesAll, paymentFilter);
   const totalClientMonth = clientMonthlyServices.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
   );
+  const clientSummary = buildPaymentSummary(clientMonthlyServicesAll);
 
   const saveReportHistory = async (channel: 'whatsapp' | 'email', recipient: string) => {
     try {
@@ -639,6 +683,23 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
                   </Badge>
                 )}
               </Button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+              <Label className="text-sm text-muted-foreground sm:whitespace-nowrap">
+                Filtro de pagamento:
+              </Label>
+              <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as PaymentFilter)}>
+                <SelectTrigger className="w-full sm:w-[260px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Completo (à vista + a receber + vencido)</SelectItem>
+                  <SelectItem value="cash_paid">Somente pagas à vista</SelectItem>
+                  <SelectItem value="unpaid">Somente não pagas (a receber + vencidas)</SelectItem>
+                  <SelectItem value="overdue">Somente vencidas</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
         {!consolidatedMode && !clientReportMode && (
