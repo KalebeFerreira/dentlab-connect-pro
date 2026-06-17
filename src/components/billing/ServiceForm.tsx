@@ -178,6 +178,9 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
           color: workColor || null,
           service_date: new Date().toISOString().split("T")[0],
           status: "active",
+          payment_method: paymentMethod,
+          due_date: paymentMethod === "a_prazo" ? dueDate : new Date().toISOString().split("T")[0],
+          paid_at: paymentMethod === "a_vista" ? new Date().toISOString().split("T")[0] : null,
         },
       ]);
 
