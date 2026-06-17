@@ -680,9 +680,13 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          due_date: string | null
           id: string
           month: number | null
           order_id: string | null
+          paid_at: string | null
+          payment_method: string
+          payment_status: string
           service_id: string | null
           status: string
           transaction_type: string
@@ -695,9 +699,13 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          due_date?: string | null
           id?: string
           month?: number | null
           order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          payment_status?: string
           service_id?: string | null
           status?: string
           transaction_type: string
@@ -710,9 +718,13 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          due_date?: string | null
           id?: string
           month?: number | null
           order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          payment_status?: string
           service_id?: string | null
           status?: string
           transaction_type?: string
@@ -1798,9 +1810,13 @@ export type Database = {
           color: string | null
           created_at: string
           dentist_name: string | null
+          due_date: string | null
           id: string
           order_number: string | null
+          paid_at: string | null
           patient_name: string | null
+          payment_method: string
+          payment_status: string
           quantity: number
           service_date: string
           service_name: string
@@ -1816,9 +1832,13 @@ export type Database = {
           color?: string | null
           created_at?: string
           dentist_name?: string | null
+          due_date?: string | null
           id?: string
           order_number?: string | null
+          paid_at?: string | null
           patient_name?: string | null
+          payment_method?: string
+          payment_status?: string
           quantity?: number
           service_date?: string
           service_name: string
@@ -1834,9 +1854,13 @@ export type Database = {
           color?: string | null
           created_at?: string
           dentist_name?: string | null
+          due_date?: string | null
           id?: string
           order_number?: string | null
+          paid_at?: string | null
           patient_name?: string | null
+          payment_method?: string
+          payment_status?: string
           quantity?: number
           service_date?: string
           service_name?: string
@@ -2125,6 +2149,20 @@ export type Database = {
     }
     Functions: {
       generate_tracking_code: { Args: never; Returns: string }
+      get_client_payment_insights: {
+        Args: { p_user_id: string }
+        Returns: {
+          classification: string
+          client_name: string
+          on_time_rate: number
+          open_overdue: number
+          open_overdue_amount: number
+          paid_late: number
+          paid_on_time: number
+          total_amount: number
+          total_invoices: number
+        }[]
+      }
       get_employee_id: { Args: { _auth_user_id: string }; Returns: string }
       get_employee_owner_id: {
         Args: { _auth_user_id: string }
