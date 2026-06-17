@@ -15,6 +15,8 @@ import { FinancialComparativeReport } from "@/components/FinancialComparativeRep
 import { FinancialScanHistory } from "@/components/FinancialScanHistory";
 import { TransactionHistory } from "@/components/billing/TransactionHistory";
 import { FinancialInsights } from "@/components/FinancialInsights";
+import { ClientPaymentInsights } from "@/components/billing/ClientPaymentInsights";
+import { Wallet, Clock, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { useHideValues } from "@/hooks/useHideValues";
