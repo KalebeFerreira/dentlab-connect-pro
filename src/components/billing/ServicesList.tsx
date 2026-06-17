@@ -285,6 +285,16 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {!service.paid_at && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleMarkPaid(service)}
+                        title="Marcar como pago"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
