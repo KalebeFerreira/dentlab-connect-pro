@@ -29,40 +29,51 @@ export const PaymentSummaryCards = ({ services }: Props) => {
     .filter((s) => !s.paid_at && s.due_date != null && s.due_date < today)
     .reduce((sum, s) => sum + Number(s.service_value || 0), 0);
 
+  const cards = [
+    {
+      title: "Recebido à vista",
+      sub: "Já entrou no caixa",
+      value: cashIn,
+      Icon: Wallet,
+      border: "border-green-200",
+      color: "text-green-600",
+    },
+    {
+      title: "A receber",
+      sub: "A prazo, dentro do vencimento",
+      value: toReceive,
+      Icon: Clock,
+      border: "border-blue-200",
+      color: "text-blue-600",
+    },
+    {
+      title: "Vencido",
+      sub: "Faturas em atraso",
+      value: overdue,
+      Icon: AlertCircle,
+      border: "border-red-200",
+      color: "text-red-600",
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-      <Card className="shadow-card border-green-200">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
-          <CardTitle className="text-xs md:text-sm font-medium">Recebido à vista</CardTitle>
-          <Wallet className="h-4 w-4 text-green-600" />
-        </CardHeader>
-        <CardContent className="px-3 md:px-6">
-          <div className="text-lg md:text-2xl font-bold text-green-600">{formatBRL(cashIn)}</div>
-          <p className="text-xs text-muted-foreground">Já entrou no caixa</p>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-card border-blue-200">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
-          <CardTitle className="text-xs md:text-sm font-medium">A receber (próx. mês)</CardTitle>
-          <Clock className="h-4 w-4 text-blue-600" />
-        </CardHeader>
-        <CardContent className="px-3 md:px-6">
-          <div className="text-lg md:text-2xl font-bold text-blue-600">{formatBRL(toReceive)}</div>
-          <p className="text-xs text-muted-foreground">A prazo, dentro do vencimento</p>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-card border-red-200">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
-          <CardTitle className="text-xs md:text-sm font-medium">Vencido</CardTitle>
-          <AlertCircle className="h-4 w-4 text-red-600" />
-        </CardHeader>
-        <CardContent className="px-3 md:px-6">
-          <div className="text-lg md:text-2xl font-bold text-red-600">{formatBRL(overdue)}</div>
-          <p className="text-xs text-muted-foreground">Faturas em atraso</p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 w-full">
+      {cards.map(({ title, sub, value, Icon, border, color }) => (
+        <Card key={title} className={`shadow-card overflow-hidden min-w-0 ${border}`}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-4 md:px-6 gap-2">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate min-w-0">
+              {title}
+            </CardTitle>
+            <Icon className={`h-4 w-4 shrink-0 ${color}`} />
+          </CardHeader>
+          <CardContent className="px-3 sm:px-4 md:px-6 min-w-0">
+            <div className={`text-base sm:text-lg md:text-2xl font-bold break-words leading-tight ${color}`}>
+              {formatBRL(value)}
+            </div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{sub}</p>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };
