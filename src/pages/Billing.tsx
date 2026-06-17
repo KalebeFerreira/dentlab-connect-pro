@@ -17,6 +17,8 @@ const DocumentScanner = lazy(() => import("@/components/billing/DocumentScanner"
 const ScanHistory = lazy(() => import("@/components/billing/ScanHistory").then(m => ({ default: m.ScanHistory })));
 const TransactionHistory = lazy(() => import("@/components/billing/TransactionHistory").then(m => ({ default: m.TransactionHistory })));
 const BillingFiscalIntegration = lazy(() => import("@/components/billing/BillingFiscalIntegration").then(m => ({ default: m.BillingFiscalIntegration })));
+const PaymentSummaryCards = lazy(() => import("@/components/billing/PaymentSummaryCards").then(m => ({ default: m.PaymentSummaryCards })));
+const ClientPaymentInsights = lazy(() => import("@/components/billing/ClientPaymentInsights").then(m => ({ default: m.ClientPaymentInsights })));
 
 const ComponentLoader = memo(() => (
   <div className="flex items-center justify-center py-8">
@@ -202,6 +204,14 @@ const Billing = () => {
 
       <Suspense fallback={<ComponentLoader />}>
         <BillingStats services={services} />
+      </Suspense>
+
+      <Suspense fallback={<ComponentLoader />}>
+        <PaymentSummaryCards services={services} />
+      </Suspense>
+
+      <Suspense fallback={<ComponentLoader />}>
+        <ClientPaymentInsights />
       </Suspense>
 
       <Tabs defaultValue="services" className="w-full">
