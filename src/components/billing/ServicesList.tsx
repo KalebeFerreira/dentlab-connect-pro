@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
