@@ -129,11 +129,13 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     });
   };
 
-  const monthlyServices = getMonthlyServices();
+  const monthlyServicesAll = getMonthlyServices();
+  const monthlyServices = applyPaymentFilter(monthlyServicesAll, paymentFilter);
   const totalMonth = monthlyServices.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
   );
+  const monthlySummary = buildPaymentSummary(monthlyServicesAll);
 
   const getConsolidatedServices = () => {
     if (selectedMonths.length === 0) return [];
@@ -144,11 +146,13 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     });
   };
 
-  const consolidatedServices = getConsolidatedServices();
+  const consolidatedServicesAll = getConsolidatedServices();
+  const consolidatedServices = applyPaymentFilter(consolidatedServicesAll, paymentFilter);
   const totalConsolidated = consolidatedServices.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
   );
+  const consolidatedSummary = buildPaymentSummary(consolidatedServicesAll);
 
   const toggleMonthSelection = (month: string) => {
     setSelectedMonths(prev => 
