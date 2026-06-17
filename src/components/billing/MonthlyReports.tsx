@@ -45,6 +45,37 @@ interface ReportHistoryItem {
   sent_at: string;
 }
 
+type PaymentFilter = 'all' | 'cash_paid' | 'unpaid' | 'overdue';
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const applyPaymentFilter = <T extends Service>(list: T[], filter: PaymentFilter): T[] => {
+  if (filter === 'all') return list;
+  const today = todayISO();
+  return list.filter((s) => {
+    const isPaid = !!s.paid_at || (s.payment_method !== 'a_prazo' && s.payment_status === 'pago');
+    const isOverdue = !s.paid_at && !!s.due_date && s.due_date < today;
+    if (filter === 'cash_paid') return isPaid && !isOverdue;
+    if (filter === 'overdue') return isOverdue;
+    if (filter === 'unpaid') return !isPaid; // inclui a receber + vencido
+    return true;
+  });
+};
+
+const buildPaymentSummary = (list: Service[]) => {
+  const today = todayISO();
+  let cash = 0, receivable = 0, overdue = 0, total = 0;
+  for (const s of list) {
+    const v = Number(s.service_value || 0);
+    total += v;
+    const isPaid = !!s.paid_at || (s.payment_method !== 'a_prazo' && s.payment_status === 'pago');
+    if (isPaid) cash += v;
+    else if (s.due_date && s.due_date < today) overdue += v;
+    else receivable += v;
+  }
+  return { cash, receivable, overdue, total };
+};
+
 export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: MonthlyReportsProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -58,6 +89,7 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [reportHistory, setReportHistory] = useState<ReportHistoryItem[]>([]);
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
   const { isSubscribed } = useFreemiumLimits();
   
   // Edit service state
