@@ -168,7 +168,46 @@ export const EditServiceDialog = ({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="space-y-2">
+            <Label>Forma de Pagamento</Label>
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "a_vista" | "a_prazo")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a_vista">À vista</SelectItem>
+                <SelectItem value="a_prazo">A prazo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {paymentMethod === "a_prazo" && (
+            <div className="space-y-2">
+              <Label htmlFor="edit_due_date">Data de Vencimento</Label>
+              <Input
+                id="edit_due_date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="edit_paid_at">Data do Pagamento (vazio = não pago)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="edit_paid_at"
+                type="date"
+                value={paidAt}
+                onChange={(e) => setPaidAt(e.target.value)}
+              />
+              <Button type="button" variant="outline" onClick={() => setPaidAt(new Date().toISOString().split("T")[0])}>
+                Hoje
+              </Button>
+            </div>
+          </div>
+
             <Button
               type="button"
               variant="outline"
