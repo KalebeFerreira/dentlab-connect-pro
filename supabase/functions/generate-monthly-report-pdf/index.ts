@@ -269,20 +269,34 @@ serve(async (req) => {
                     <th>Serviço</th>
                     <th>Paciente</th>
                     <th>Data</th>
+                    <th>Pagamento</th>
                     <th>Valor</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${clinicServices.map((service: any) => `
+                  ${clinicServices.map((service: any) => {
+                    const today = new Date().toISOString().split('T')[0];
+                    let badge = '<span style="color:#15803d;font-weight:600;">Pago</span>';
+                    if (!service.paid_at) {
+                      if (service.due_date && service.due_date < today) {
+                        badge = `<span style="color:#b91c1c;font-weight:600;">Vencido${service.due_date ? ' em ' + new Date(service.due_date).toLocaleDateString('pt-BR') : ''}</span>`;
+                      } else {
+                        badge = `<span style="color:#1d4ed8;font-weight:600;">A receber${service.due_date ? ' até ' + new Date(service.due_date).toLocaleDateString('pt-BR') : ''}</span>`;
+                      }
+                    }
+                    return `
                     <tr>
                       <td>${service.service_name}</td>
                       <td>${service.patient_name || '-'}</td>
                       <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
+                      <td>${badge}</td>
                       <td>R$ ${Number(service.service_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                  `).join('')}
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
+
             </div>
           `;
         }).join('')}
