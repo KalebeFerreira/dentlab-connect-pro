@@ -206,6 +206,14 @@ const Billing = () => {
         <BillingStats services={services} />
       </Suspense>
 
+      <Suspense fallback={<ComponentLoader />}>
+        <PaymentSummaryCards services={services} />
+      </Suspense>
+
+      <Suspense fallback={<ComponentLoader />}>
+        <ClientPaymentInsights />
+      </Suspense>
+
       <Tabs defaultValue="services" className="w-full">
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1">
           <TabsTrigger value="services" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
