@@ -145,22 +145,35 @@ const Financial = () => {
   };
 
   const calculateTotals = () => {
-    const income = transactions
-      .filter((t) => t.transaction_type === "receipt" && t.status === "completed")
-      .reduce((sum, t) => sum + t.amount, 0);
+    const receipts = transactions.filter((t) => t.transaction_type === "receipt");
+
+    const cashIn = receipts
+      .filter((t) => t.paid_at != null || (t.payment_method !== "a_prazo" && t.status === "completed"))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const today = new Date().toISOString().split("T")[0];
+    const toReceive = receipts
+      .filter((t) => !t.paid_at && (t.payment_method === "a_prazo" || t.status === "pending") && (!t.due_date || t.due_date >= today))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const overdue = receipts
+      .filter((t) => !t.paid_at && t.due_date != null && t.due_date < today)
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const income = cashIn;
 
     const expense = transactions
       .filter((t) => t.transaction_type === "payment" && t.status === "completed")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
     const pending = transactions
       .filter((t) => t.status === "pending")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    return { income, expense, pending, profit: income - expense };
+    return { income, expense, pending, profit: income - expense, cashIn, toReceive, overdue };
   };
 
-  const { income, expense, pending, profit } = calculateTotals();
+  const { income, expense, pending, profit, cashIn, toReceive, overdue } = calculateTotals();
 
   const handleEdit = (transaction: Transaction) => {
     setEditTransaction(transaction);
