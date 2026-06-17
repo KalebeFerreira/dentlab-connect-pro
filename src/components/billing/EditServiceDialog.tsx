@@ -32,17 +32,21 @@ export const EditServiceDialog = ({
   const [clientName, setClientName] = useState("");
   const [patientName, setPatientName] = useState("");
   const [serviceDate, setServiceDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"a_vista" | "a_prazo">("a_vista");
+  const [dueDate, setDueDate] = useState("");
+  const [paidAt, setPaidAt] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (service) {
       setServiceName(service.service_name);
-      setServiceValue(
-        service.service_value.toString().replace(".", ",")
-      );
+      setServiceValue(service.service_value.toString().replace(".", ","));
       setClientName(service.client_name || "");
       setPatientName(service.patient_name || "");
       setServiceDate(service.service_date);
+      setPaymentMethod((service.payment_method as "a_vista" | "a_prazo") || "a_vista");
+      setDueDate(service.due_date || service.service_date);
+      setPaidAt(service.paid_at || "");
     }
   }, [service]);
 
