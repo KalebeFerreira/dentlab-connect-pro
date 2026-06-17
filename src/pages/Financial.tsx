@@ -349,6 +349,46 @@ const Financial = () => {
           </Card>
         </div>
 
+        {/* Cash vs A Receber vs Vencido */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="shadow-card border-green-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Recebido à vista</CardTitle>
+              <Wallet className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-green-600">{maskMoney(cashIn)}</div>
+              <p className="text-xs text-muted-foreground">Já entrou no caixa</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-blue-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">A receber (próx. mês)</CardTitle>
+              <Clock className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-blue-600">{maskMoney(toReceive)}</div>
+              <p className="text-xs text-muted-foreground">A prazo, dentro do vencimento</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-red-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Vencido</CardTitle>
+              <AlertCircle className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-red-600">{maskMoney(overdue)}</div>
+              <p className="text-xs text-muted-foreground">Faturas em atraso</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bons pagadores vs inadimplentes */}
+        <ClientPaymentInsights />
+
+
         {/* Financial Insights */}
         <FinancialInsights
           transactions={transactions}
