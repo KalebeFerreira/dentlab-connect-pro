@@ -401,11 +401,13 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
     });
   };
 
-  const clientMonthlyServices = getClientMonthlyServices();
+  const clientMonthlyServicesAll = getClientMonthlyServices();
+  const clientMonthlyServices = applyPaymentFilter(clientMonthlyServicesAll, paymentFilter);
   const totalClientMonth = clientMonthlyServices.reduce(
     (sum, service) => sum + Number(service.service_value),
     0
   );
+  const clientSummary = buildPaymentSummary(clientMonthlyServicesAll);
 
   const saveReportHistory = async (channel: 'whatsapp' | 'email', recipient: string) => {
     try {
