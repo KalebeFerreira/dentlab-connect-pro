@@ -361,6 +361,32 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
                 className="bg-muted font-semibold"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>Forma de Pagamento *</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "a_vista" | "a_prazo")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a_vista">À vista (recebido agora)</SelectItem>
+                  <SelectItem value="a_prazo">A prazo (a receber)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentMethod === "a_prazo" && (
+              <div className="space-y-2">
+                <Label htmlFor="due_date">Data de Vencimento *</Label>
+                <Input
+                  id="due_date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {perToothMode && (
