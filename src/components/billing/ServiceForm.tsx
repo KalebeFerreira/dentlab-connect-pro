@@ -63,6 +63,13 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [workColor, setWorkColor] = useState("");
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"a_vista" | "a_prazo">("a_vista");
+  const defaultDueDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split("T")[0];
+  }, []);
+  const [dueDate, setDueDate] = useState(defaultDueDate);
 
   // Per-tooth pricing
   const [perToothMode, setPerToothMode] = useState(false);
@@ -171,6 +178,9 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
           color: workColor || null,
           service_date: new Date().toISOString().split("T")[0],
           status: "active",
+          payment_method: paymentMethod,
+          due_date: paymentMethod === "a_prazo" ? dueDate : new Date().toISOString().split("T")[0],
+          paid_at: paymentMethod === "a_vista" ? new Date().toISOString().split("T")[0] : null,
         },
       ]);
 
@@ -351,6 +361,32 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
                 className="bg-muted font-semibold"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>Forma de Pagamento *</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "a_vista" | "a_prazo")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a_vista">À vista (recebido agora)</SelectItem>
+                  <SelectItem value="a_prazo">A prazo (a receber)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentMethod === "a_prazo" && (
+              <div className="space-y-2">
+                <Label htmlFor="due_date">Data de Vencimento *</Label>
+                <Input
+                  id="due_date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {perToothMode && (

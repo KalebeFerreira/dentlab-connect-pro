@@ -15,6 +15,8 @@ import { FinancialComparativeReport } from "@/components/FinancialComparativeRep
 import { FinancialScanHistory } from "@/components/FinancialScanHistory";
 import { TransactionHistory } from "@/components/billing/TransactionHistory";
 import { FinancialInsights } from "@/components/FinancialInsights";
+import { ClientPaymentInsights } from "@/components/billing/ClientPaymentInsights";
+import { Wallet, Clock, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { useHideValues } from "@/hooks/useHideValues";
@@ -29,6 +31,10 @@ interface Transaction {
   month: number;
   year: number;
   created_at: string;
+  payment_method?: string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  payment_status?: string;
 }
 
 const Financial = () => {
@@ -139,22 +145,35 @@ const Financial = () => {
   };
 
   const calculateTotals = () => {
-    const income = transactions
-      .filter((t) => t.transaction_type === "receipt" && t.status === "completed")
-      .reduce((sum, t) => sum + t.amount, 0);
+    const receipts = transactions.filter((t) => t.transaction_type === "receipt");
+
+    const cashIn = receipts
+      .filter((t) => t.paid_at != null || (t.payment_method !== "a_prazo" && t.status === "completed"))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const today = new Date().toISOString().split("T")[0];
+    const toReceive = receipts
+      .filter((t) => !t.paid_at && (t.payment_method === "a_prazo" || t.status === "pending") && (!t.due_date || t.due_date >= today))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const overdue = receipts
+      .filter((t) => !t.paid_at && t.due_date != null && t.due_date < today)
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const income = cashIn;
 
     const expense = transactions
       .filter((t) => t.transaction_type === "payment" && t.status === "completed")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
     const pending = transactions
       .filter((t) => t.status === "pending")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    return { income, expense, pending, profit: income - expense };
+    return { income, expense, pending, profit: income - expense, cashIn, toReceive, overdue };
   };
 
-  const { income, expense, pending, profit } = calculateTotals();
+  const { income, expense, pending, profit, cashIn, toReceive, overdue } = calculateTotals();
 
   const handleEdit = (transaction: Transaction) => {
     setEditTransaction(transaction);
@@ -329,6 +348,46 @@ const Financial = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Cash vs A Receber vs Vencido */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="shadow-card border-green-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Recebido à vista</CardTitle>
+              <Wallet className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-green-600">{maskMoney(cashIn)}</div>
+              <p className="text-xs text-muted-foreground">Já entrou no caixa</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-blue-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">A receber (próx. mês)</CardTitle>
+              <Clock className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-blue-600">{maskMoney(toReceive)}</div>
+              <p className="text-xs text-muted-foreground">A prazo, dentro do vencimento</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-red-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Vencido</CardTitle>
+              <AlertCircle className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-red-600">{maskMoney(overdue)}</div>
+              <p className="text-xs text-muted-foreground">Faturas em atraso</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bons pagadores vs inadimplentes */}
+        <ClientPaymentInsights />
+
 
         {/* Financial Insights */}
         <FinancialInsights

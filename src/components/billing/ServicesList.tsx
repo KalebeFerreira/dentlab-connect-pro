@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search } from "lucide-react";
+import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,6 +50,27 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
       style: "currency",
       currency: "BRL",
     });
+  };
+
+  const handleMarkPaid = async (service: Service) => {
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({ paid_at: new Date().toISOString().split("T")[0] })
+        .eq("id", service.id);
+      if (error) throw error;
+      toast.success("Marcado como pago!");
+      await onServiceUpdate();
+    } catch {
+      toast.error("Erro ao marcar como pago");
+    }
+  };
+
+  const paymentBadge = (s: Service) => {
+    const status = s.payment_status || (s.paid_at ? "pago" : "pendente");
+    if (status === "pago") return <Badge className="bg-green-600 hover:bg-green-700">Pago</Badge>;
+    if (status === "vencido") return <Badge variant="destructive">Vencido</Badge>;
+    return <Badge variant="secondary">A receber</Badge>;
   };
 
   const handleGenerateReceipt = async (service: Service) => {
@@ -237,6 +259,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
               <TableHead>Cliente</TableHead>
               <TableHead>Paciente</TableHead>
               <TableHead>Valor</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Data</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -244,7 +267,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
           <TableBody>
             {filteredServices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                   Nenhum serviço encontrado.
                 </TableCell>
               </TableRow>
@@ -254,6 +277,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                 <TableCell>{service.client_name || "-"}</TableCell>
                 <TableCell>{service.patient_name || "-"}</TableCell>
                 <TableCell>{maskValue(formatCurrency(Number(service.service_value)))}</TableCell>
+                <TableCell>{paymentBadge(service)}</TableCell>
                 <TableCell>
                   {format(new Date(service.service_date), "dd/MM/yyyy", {
                     locale: ptBR,
@@ -261,6 +285,16 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {!service.paid_at && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleMarkPaid(service)}
+                        title="Marcar como pago"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

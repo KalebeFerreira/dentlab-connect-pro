@@ -8,6 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Service } from "@/pages/Billing";
@@ -31,17 +32,21 @@ export const EditServiceDialog = ({
   const [clientName, setClientName] = useState("");
   const [patientName, setPatientName] = useState("");
   const [serviceDate, setServiceDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"a_vista" | "a_prazo">("a_vista");
+  const [dueDate, setDueDate] = useState("");
+  const [paidAt, setPaidAt] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (service) {
       setServiceName(service.service_name);
-      setServiceValue(
-        service.service_value.toString().replace(".", ",")
-      );
+      setServiceValue(service.service_value.toString().replace(".", ","));
       setClientName(service.client_name || "");
       setPatientName(service.patient_name || "");
       setServiceDate(service.service_date);
+      setPaymentMethod((service.payment_method as "a_vista" | "a_prazo") || "a_vista");
+      setDueDate(service.due_date || service.service_date);
+      setPaidAt(service.paid_at || "");
     }
   }, [service]);
 
@@ -82,6 +87,9 @@ export const EditServiceDialog = ({
           client_name: clientName?.trim() || null,
           patient_name: patientName?.trim() || null,
           service_date: serviceDate,
+          payment_method: paymentMethod,
+          due_date: paymentMethod === "a_prazo" ? (dueDate || serviceDate) : serviceDate,
+          paid_at: paidAt || null,
         })
         .eq("id", service.id);
 
@@ -158,6 +166,46 @@ export const EditServiceDialog = ({
               onChange={(e) => setServiceDate(e.target.value)}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Forma de Pagamento</Label>
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "a_vista" | "a_prazo")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a_vista">À vista</SelectItem>
+                <SelectItem value="a_prazo">A prazo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {paymentMethod === "a_prazo" && (
+            <div className="space-y-2">
+              <Label htmlFor="edit_due_date">Data de Vencimento</Label>
+              <Input
+                id="edit_due_date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="edit_paid_at">Data do Pagamento (vazio = não pago)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="edit_paid_at"
+                type="date"
+                value={paidAt}
+                onChange={(e) => setPaidAt(e.target.value)}
+              />
+              <Button type="button" variant="outline" onClick={() => setPaidAt(new Date().toISOString().split("T")[0])}>
+                Hoje
+              </Button>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
