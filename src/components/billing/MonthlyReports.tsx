@@ -186,7 +186,9 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           services: monthlyServices,
           companyInfo,
           totalValue: totalMonth,
-          month: selectedMonth
+          month: selectedMonth,
+          paymentFilter,
+          paymentSummary: monthlySummary,
         }
       });
 
@@ -228,7 +230,9 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           companyInfo,
           totalValue: totalClientMonth,
           month: selectedClientMonth,
-          clientName: selectedClient
+          clientName: selectedClient,
+          paymentFilter,
+          paymentSummary: clientSummary,
         }
       });
 
@@ -276,7 +280,9 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
           totalValue: totalConsolidated,
           month: `${selectedMonths.length} meses selecionados`,
           isConsolidated: true,
-          months: selectedMonths.sort()
+          months: selectedMonths.sort(),
+          paymentFilter,
+          paymentSummary: consolidatedSummary,
         }
       });
 
