@@ -29,6 +29,10 @@ interface Transaction {
   month: number;
   year: number;
   created_at: string;
+  payment_method?: string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  payment_status?: string;
 }
 
 const Financial = () => {
