@@ -685,6 +685,23 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
               </Button>
             </div>
 
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+              <Label className="text-sm text-muted-foreground sm:whitespace-nowrap">
+                Filtro de pagamento:
+              </Label>
+              <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as PaymentFilter)}>
+                <SelectTrigger className="w-full sm:w-[260px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Completo (à vista + a receber + vencido)</SelectItem>
+                  <SelectItem value="cash_paid">Somente pagas à vista</SelectItem>
+                  <SelectItem value="unpaid">Somente não pagas (a receber + vencidas)</SelectItem>
+                  <SelectItem value="overdue">Somente vencidas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
         {!consolidatedMode && !clientReportMode && (
           <div className="flex flex-col md:flex-row gap-4">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
