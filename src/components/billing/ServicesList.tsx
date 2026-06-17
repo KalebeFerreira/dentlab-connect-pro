@@ -52,6 +52,27 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
     });
   };
 
+  const handleMarkPaid = async (service: Service) => {
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({ paid_at: new Date().toISOString().split("T")[0] })
+        .eq("id", service.id);
+      if (error) throw error;
+      toast.success("Marcado como pago!");
+      await onServiceUpdate();
+    } catch {
+      toast.error("Erro ao marcar como pago");
+    }
+  };
+
+  const paymentBadge = (s: Service) => {
+    const status = s.payment_status || (s.paid_at ? "pago" : "pendente");
+    if (status === "pago") return <Badge className="bg-green-600 hover:bg-green-700">Pago</Badge>;
+    if (status === "vencido") return <Badge variant="destructive">Vencido</Badge>;
+    return <Badge variant="secondary">A receber</Badge>;
+  };
+
   const handleGenerateReceipt = async (service: Service) => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-receipt-pdf', {
