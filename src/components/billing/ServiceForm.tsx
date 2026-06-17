@@ -63,6 +63,13 @@ export const ServiceForm = ({ onServiceAdd }: ServiceFormProps) => {
   const [workColor, setWorkColor] = useState("");
   const [loading, setLoading] = useState(false);
   const [useManualInput, setUseManualInput] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"a_vista" | "a_prazo">("a_vista");
+  const defaultDueDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split("T")[0];
+  }, []);
+  const [dueDate, setDueDate] = useState(defaultDueDate);
 
   // Per-tooth pricing
   const [perToothMode, setPerToothMode] = useState(false);
