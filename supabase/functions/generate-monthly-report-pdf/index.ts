@@ -73,7 +73,15 @@ serve(async (req) => {
       await supabaseAdmin.rpc('increment_pdf_usage', { p_user_id: user.id });
     }
 
-    const { services, companyInfo, totalValue, month, isConsolidated, months } = await req.json();
+    const { services, companyInfo, totalValue, month, isConsolidated, months, paymentFilter, paymentSummary } = await req.json();
+
+    const filterLabels: Record<string, string> = {
+      all: 'Completo',
+      cash_paid: 'Somente pagas à vista',
+      unpaid: 'Somente não pagas',
+      overdue: 'Somente vencidas',
+    };
+    const filterLabel = paymentFilter ? filterLabels[paymentFilter] || 'Completo' : 'Completo';
 
     // Logo Essência Dental-Lab para plano gratuito (usar logo em base64 inline)
     const essenciaLogoSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMjAgNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiMxYzQ1ODciIHJ4PSI1Ii8+PHRleHQgeD0iNjAiIHk9IjI1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXNzw6puY2lhIERlbnRhbC1MYWI8L3RleHQ+PC9zdmc+`;
