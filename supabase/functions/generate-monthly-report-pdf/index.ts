@@ -224,27 +224,8 @@ serve(async (req) => {
           <p><strong>Período:</strong> ${month}</p>
           ${isConsolidated && months ? `<p><strong>Meses incluídos:</strong> ${months.join(', ')}</p>` : ''}
           <p><strong>Total de Serviços:</strong> ${services.length}</p>
-          <p><strong>Filtro aplicado:</strong> ${filterLabel}</p>
-          ${paymentFilter && paymentFilter !== 'all' ? '' : (() => {
-            const today = new Date().toISOString().split('T')[0];
-            const cash = paymentSummary?.cash ?? services.filter((s: any) => s.paid_at || (s.payment_method !== 'a_prazo'))
-              .reduce((sum: number, s: any) => sum + Number(s.service_value), 0);
-            const toReceive = paymentSummary?.receivable ?? services.filter((s: any) => !s.paid_at && s.payment_method === 'a_prazo' && (!s.due_date || s.due_date >= today))
-              .reduce((sum: number, s: any) => sum + Number(s.service_value), 0);
-            const overdue = paymentSummary?.overdue ?? services.filter((s: any) => !s.paid_at && s.due_date && s.due_date < today)
-              .reduce((sum: number, s: any) => sum + Number(s.service_value), 0);
-            const grand = paymentSummary?.total ?? (cash + toReceive + overdue);
-            const fmt = (n: number) => `R$ ${Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-            return `<div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap;">
-              <div style="flex:1; min-width:160px; padding:10px; border:1px solid #16a34a; border-radius:6px; background:#f0fdf4;"><div style="font-size:11px; color:#15803d; font-weight:600;">Recebido à vista</div><div style="font-size:18px; font-weight:700; color:#15803d;">${fmt(cash)}</div></div>
-              <div style="flex:1; min-width:160px; padding:10px; border:1px solid #2563eb; border-radius:6px; background:#eff6ff;"><div style="font-size:11px; color:#1d4ed8; font-weight:600;">A receber</div><div style="font-size:18px; font-weight:700; color:#1d4ed8;">${fmt(toReceive)}</div></div>
-              <div style="flex:1; min-width:160px; padding:10px; border:1px solid #dc2626; border-radius:6px; background:#fef2f2;"><div style="font-size:11px; color:#b91c1c; font-weight:600;">Vencido</div><div style="font-size:18px; font-weight:700; color:#b91c1c;">${fmt(overdue)}</div></div>
-              <div style="flex:1; min-width:160px; padding:10px; border:1px solid #111827; border-radius:6px; background:#f9fafb;"><div style="font-size:11px; color:#111827; font-weight:600;">Total geral (período)</div><div style="font-size:18px; font-weight:700; color:#111827;">${fmt(grand)}</div></div>
-            </div>`;
-          })()}
-
-
         </div>
+
 
 
         ${clinicNames.map((clinicName: string) => {
@@ -282,11 +263,12 @@ serve(async (req) => {
                     let badge = '<span style="color:#15803d;font-weight:600;">Pago</span>';
                     if (!service.paid_at) {
                       if (service.due_date && service.due_date < today) {
-                        badge = `<span style="color:#b91c1c;font-weight:600;">Vencido${service.due_date ? ' em ' + new Date(service.due_date).toLocaleDateString('pt-BR') : ''}</span>`;
+                        badge = `<span style="color:#b91c1c;font-weight:600;">Vencido</span>`;
                       } else {
-                        badge = `<span style="color:#1d4ed8;font-weight:600;">A receber${service.due_date ? ' até ' + new Date(service.due_date).toLocaleDateString('pt-BR') : ''}</span>`;
+                        badge = `<span style="color:#1d4ed8;font-weight:600;">A receber</span>`;
                       }
                     }
+
                     return `
                     <tr>
                       <td>${service.service_name}</td>
