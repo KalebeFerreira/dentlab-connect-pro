@@ -308,8 +308,18 @@ serve(async (req) => {
         }).join('')}
 
         <div class="total">
-          Total Geral do Período: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          ${(() => {
+            const totalLabels: Record<string, string> = {
+              all: 'Total Geral do Período',
+              cash_paid: 'Total Recebido à Vista',
+              unpaid: 'Total Não Pagas',
+              overdue: 'Total Vencido',
+            };
+            const label = totalLabels[paymentFilter || 'all'] || 'Total do Período';
+            return `${label}: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+          })()}
         </div>
+
 
         <div class="footer">
           ${showFreemiumLogo ? `
