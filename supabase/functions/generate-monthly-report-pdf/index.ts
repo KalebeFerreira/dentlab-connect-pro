@@ -253,32 +253,18 @@ serve(async (req) => {
                     <th>Serviço</th>
                     <th>Paciente</th>
                     <th>Data</th>
-                    <th>Pagamento</th>
                     <th>Valor</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${clinicServices.map((service: any) => {
-                    const today = new Date().toISOString().split('T')[0];
-                    let badge = '<span style="color:#15803d;font-weight:600;">Pago</span>';
-                    if (!service.paid_at) {
-                      if (service.due_date && service.due_date < today) {
-                        badge = `<span style="color:#b91c1c;font-weight:600;">Vencido</span>`;
-                      } else {
-                        badge = `<span style="color:#1d4ed8;font-weight:600;">A receber</span>`;
-                      }
-                    }
-
-                    return `
+                  ${clinicServices.map((service: any) => `
                     <tr>
                       <td>${service.service_name}</td>
                       <td>${service.patient_name || '-'}</td>
                       <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
-                      <td>${badge}</td>
                       <td>R$ ${Number(service.service_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    `;
-                  }).join('')}
+                  `).join('')}
                 </tbody>
               </table>
 
@@ -287,17 +273,9 @@ serve(async (req) => {
         }).join('')}
 
         <div class="total">
-          ${(() => {
-            const totalLabels: Record<string, string> = {
-              all: 'Total Geral do Período',
-              cash_paid: 'Total Recebido à Vista',
-              unpaid: 'Total Não Pagas',
-              overdue: 'Total Vencido',
-            };
-            const label = totalLabels[paymentFilter || 'all'] || 'Total do Período';
-            return `${label}: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-          })()}
+          Total do Relatório: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </div>
+
 
 
         <div class="footer">
