@@ -263,11 +263,12 @@ serve(async (req) => {
                     let badge = '<span style="color:#15803d;font-weight:600;">Pago</span>';
                     if (!service.paid_at) {
                       if (service.due_date && service.due_date < today) {
-                        badge = `<span style="color:#b91c1c;font-weight:600;">Vencido${service.due_date ? ' em ' + new Date(service.due_date).toLocaleDateString('pt-BR') : ''}</span>`;
+                        badge = `<span style="color:#b91c1c;font-weight:600;">Vencido</span>`;
                       } else {
-                        badge = `<span style="color:#1d4ed8;font-weight:600;">A receber${service.due_date ? ' até ' + new Date(service.due_date).toLocaleDateString('pt-BR') : ''}</span>`;
+                        badge = `<span style="color:#1d4ed8;font-weight:600;">A receber</span>`;
                       }
                     }
+
                     return `
                     <tr>
                       <td>${service.service_name}</td>
