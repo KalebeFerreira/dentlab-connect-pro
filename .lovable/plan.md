@@ -1,16 +1,10 @@
-Vou ajustar o relatório PDF mensal para ficar exatamente como você pediu: somente os trabalhos listados/detalhados, sem dados extras.
+Vou ajustar o relatório gerado para cliente para exibir somente os trabalhos executados, sem informações de cobrança/controle interno.
 
 Plano:
-1. Remover do PDF os cartões/resumos de valores como “Recebido à vista”, “A receber”, “Vencido” e “Total geral”.
-2. Remover do cabeçalho do relatório informações extras como “Filtro aplicado”, mantendo no máximo período e quantidade de serviços.
-3. Simplificar a coluna “Pagamento” para não mostrar frases com datas, como “A receber até dia X” ou “Vencido em dia X”. Ela mostrará apenas algo simples, por exemplo: “Pago”, “A receber” ou “Vencido”.
-4. Manter apenas a listagem detalhada dos trabalhos: clínica, serviço, paciente, data, status simples de pagamento e valor.
-5. Manter o total final apenas como soma dos trabalhos que aparecem no relatório filtrado.
+1. Em `supabase/functions/generate-monthly-report-pdf/index.ts`, remover do HTML do PDF qualquer coluna ou texto de status de pagamento: `Pagamento`, `Pago`, `A receber`, `Vencido`.
+2. Deixar a tabela do PDF apenas com dados do trabalho: `Serviço`, `Paciente`, `Data` e `Valor`.
+3. Trocar os totais com nomes financeiros internos, como `Total Recebido à Vista`, `Total Não Pagas` e `Total Vencido`, para um texto neutro: `Total do Relatório`.
+4. Remover do rodapé a frase `relatório gerencial`, para não parecer relatório interno de controle.
+5. Manter o filtro funcionando apenas para selecionar quais trabalhos entram no relatório, mas sem mostrar esse filtro/status no documento final.
 
-Arquivo a alterar:
-- `supabase/functions/generate-monthly-report-pdf/index.ts`
-
-Resultado esperado:
-- Se você gerar relatório de “A receber”, aparecerão somente os trabalhos desse filtro, sem resumo de outros status e sem “pagar/receber até dia X”.
-- Se gerar “Pagos à vista”, aparecerão somente esses trabalhos.
-- Se gerar “Vencidos”, aparecerão somente esses trabalhos, sem especificar data de vencimento no texto.
+Resultado esperado: mesmo escolhendo `A receber`, `Vencidas` ou `Pagas à vista`, o PDF enviado ao cliente mostrará somente a lista detalhada dos trabalhos filtrados, sem cobrança, vencimento ou instruções de pagamento.
