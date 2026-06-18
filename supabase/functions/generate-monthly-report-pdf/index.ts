@@ -285,7 +285,7 @@ serve(async (req) => {
               <p style="font-size: 10px; color: #666; margin-top: 5px;">Gerado com Essência Dental-Lab</p>
             </div>
           ` : ''}
-          <p>Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+          <p>Emitido em ${new Date().toLocaleDateString('pt-BR')}</p>
 
         </div>
       </body>

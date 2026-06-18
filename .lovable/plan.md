@@ -1,10 +1,7 @@
-Vou ajustar o relatório gerado para cliente para exibir somente os trabalhos executados, sem informações de cobrança/controle interno.
+Plano para corrigir o relatório mensal:
 
-Plano:
-1. Em `supabase/functions/generate-monthly-report-pdf/index.ts`, remover do HTML do PDF qualquer coluna ou texto de status de pagamento: `Pagamento`, `Pago`, `A receber`, `Vencido`.
-2. Deixar a tabela do PDF apenas com dados do trabalho: `Serviço`, `Paciente`, `Data` e `Valor`.
-3. Trocar os totais com nomes financeiros internos, como `Total Recebido à Vista`, `Total Não Pagas` e `Total Vencido`, para um texto neutro: `Total do Relatório`.
-4. Remover do rodapé a frase `relatório gerencial`, para não parecer relatório interno de controle.
-5. Manter o filtro funcionando apenas para selecionar quais trabalhos entram no relatório, mas sem mostrar esse filtro/status no documento final.
+1. Alterar o rodapé do PDF em `generate-monthly-report-pdf` para mostrar somente a data de emissão, sem horário.
+2. Manter o cabeçalho como está, já exibindo apenas `Data de emissão: dd/mm/aaaa`.
+3. Não mexer nos filtros, valores, serviços ou demais dados do relatório.
 
-Resultado esperado: mesmo escolhendo `A receber`, `Vencidas` ou `Pagas à vista`, o PDF enviado ao cliente mostrará somente a lista detalhada dos trabalhos filtrados, sem cobrança, vencimento ou instruções de pagamento.
+Resultado esperado: o PDF não terá mais texto como `às 14:35:20`; ficará apenas uma data, por exemplo: `Emitido em 18/06/2026`.
