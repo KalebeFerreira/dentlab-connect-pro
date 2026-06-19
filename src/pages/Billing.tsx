@@ -19,6 +19,7 @@ const TransactionHistory = lazy(() => import("@/components/billing/TransactionHi
 const BillingFiscalIntegration = lazy(() => import("@/components/billing/BillingFiscalIntegration").then(m => ({ default: m.BillingFiscalIntegration })));
 const PaymentSummaryCards = lazy(() => import("@/components/billing/PaymentSummaryCards").then(m => ({ default: m.PaymentSummaryCards })));
 const ClientPaymentInsights = lazy(() => import("@/components/billing/ClientPaymentInsights").then(m => ({ default: m.ClientPaymentInsights })));
+const ClientPaymentCategories = lazy(() => import("@/components/billing/ClientPaymentCategories").then(m => ({ default: m.ClientPaymentCategories })));
 
 const ComponentLoader = memo(() => (
   <div className="flex items-center justify-center py-8">
