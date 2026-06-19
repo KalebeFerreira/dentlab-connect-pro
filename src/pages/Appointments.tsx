@@ -357,7 +357,7 @@ const Appointments = () => {
                     <SelectValue placeholder="Selecione um paciente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {patients.map((patient) => (
+                    {patients.filter((p) => p.id).map((patient) => (
                       <SelectItem key={patient.id} value={patient.id}>
                         {patient.name}
                       </SelectItem>
@@ -445,7 +445,7 @@ const Appointments = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">Nenhum</SelectItem>
-                      {dentists.map((dentist) => (
+                      {dentists.filter((d) => d.id).map((dentist) => (
                         <SelectItem key={dentist.id} value={dentist.id}>
                           {dentist.name} {dentist.cro && `(CRO: ${dentist.cro})`}
                         </SelectItem>
