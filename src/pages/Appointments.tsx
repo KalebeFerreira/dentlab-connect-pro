@@ -579,6 +579,11 @@ const Appointments = () => {
           </DialogContent>
         </Dialog>
       </div>
+      <p className="text-xs text-muted-foreground mb-6">
+        💡 Os lançamentos financeiros (receita do tratamento / pagamento ao dentista) só são criados ao marcar o agendamento como <strong>Concluído</strong>.
+      </p>
+
+
 
       <Card>
         <CardHeader>
