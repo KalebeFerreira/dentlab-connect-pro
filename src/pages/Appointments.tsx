@@ -495,6 +495,59 @@ const Appointments = () => {
                   placeholder="Ex: Limpeza, Canal, Extração..."
                 />
               </div>
+              <div className="rounded-md border border-dashed p-3 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  💰 Cobrança do paciente — lançado automaticamente como <strong>receita</strong> no Financeiro quando o status for <strong>Concluído</strong>.
+                  O valor pago ao dentista vira <strong>despesa</strong> automaticamente.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="treatment_value">Valor do Tratamento (R$)</Label>
+                    <Input
+                      id="treatment_value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.treatment_value}
+                      onChange={(e) => setFormData({ ...formData, treatment_value: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="payment_method">Forma de Pagamento</Label>
+                    <Select
+                      value={formData.payment_method}
+                      onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="a_vista">À vista</SelectItem>
+                        <SelectItem value="a_prazo">A prazo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="due_date">Vencimento</Label>
+                    <Input
+                      id="due_date"
+                      type="date"
+                      value={formData.due_date}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="paid_at">Pago em</Label>
+                    <Input
+                      id="paid_at"
+                      type="date"
+                      value={formData.paid_at}
+                      onChange={(e) => setFormData({ ...formData, paid_at: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
               <div>
                 <Label htmlFor="notes">Observações</Label>
                 <Textarea
