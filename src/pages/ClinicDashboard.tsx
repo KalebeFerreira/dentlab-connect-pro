@@ -9,6 +9,7 @@ import { DentistManagement } from "@/components/clinic/DentistManagement";
 import { CertificateGenerator } from "@/components/clinic/CertificateGenerator";
 import { CertificateTemplateManager } from "@/components/clinic/CertificateTemplateManager";
 import { MessageTemplates } from "@/components/MessageTemplates";
+import { ClinicFinancialSummary } from "@/components/clinic/ClinicFinancialSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Plus, 
