@@ -445,7 +445,7 @@ const Appointments = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">Nenhum</SelectItem>
-                      {dentists.map((dentist) => (
+                      {dentists.filter((d) => d.id).map((dentist) => (
                         <SelectItem key={dentist.id} value={dentist.id}>
                           {dentist.name} {dentist.cro && `(CRO: ${dentist.cro})`}
                         </SelectItem>
