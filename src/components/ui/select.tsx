@@ -6,10 +6,19 @@ import { cn } from "@/lib/utils";
 
 const EMPTY_SELECT_ITEM_VALUE = "__empty_select_item__";
 
-const Select = ({ onValueChange, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) => (
+const toRadixSelectValue = (value: unknown) => {
+  if (value === "" || value === null || value === undefined) return EMPTY_SELECT_ITEM_VALUE;
+  return String(value);
+};
+
+const fromRadixSelectValue = (value: string) => (value === EMPTY_SELECT_ITEM_VALUE ? "" : value);
+
+const Select = ({ onValueChange, value, defaultValue, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) => (
   <SelectPrimitive.Root
     {...props}
-    onValueChange={(value) => onValueChange?.(value === EMPTY_SELECT_ITEM_VALUE ? "" : value)}
+    value={value === "" ? EMPTY_SELECT_ITEM_VALUE : value}
+    defaultValue={defaultValue === "" ? EMPTY_SELECT_ITEM_VALUE : defaultValue}
+    onValueChange={(value) => onValueChange?.(fromRadixSelectValue(value))}
   />
 );
 
@@ -111,7 +120,7 @@ const SelectItem = React.forwardRef<
 >(({ className, children, value, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
-    value={value === "" ? EMPTY_SELECT_ITEM_VALUE : value}
+    value={toRadixSelectValue(value)}
     className={cn(
       "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-7 md:pl-8 pr-2 text-xs md:text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground",
       className,
