@@ -89,12 +89,16 @@ export type Database = {
           created_at: string
           dentist_id: string | null
           dentist_payment: number | null
+          due_date: string | null
           duration_minutes: number
           id: string
           notes: string | null
+          paid_at: string | null
           patient_id: string
+          payment_method: string | null
           procedure_type: string | null
           status: string
+          treatment_value: number | null
           type: string
           updated_at: string
           user_id: string
@@ -106,12 +110,16 @@ export type Database = {
           created_at?: string
           dentist_id?: string | null
           dentist_payment?: number | null
+          due_date?: string | null
           duration_minutes?: number
           id?: string
           notes?: string | null
+          paid_at?: string | null
           patient_id: string
+          payment_method?: string | null
           procedure_type?: string | null
           status?: string
+          treatment_value?: number | null
           type: string
           updated_at?: string
           user_id: string
@@ -123,12 +131,16 @@ export type Database = {
           created_at?: string
           dentist_id?: string | null
           dentist_payment?: number | null
+          due_date?: string | null
           duration_minutes?: number
           id?: string
           notes?: string | null
+          paid_at?: string | null
           patient_id?: string
+          payment_method?: string | null
           procedure_type?: string | null
           status?: string
+          treatment_value?: number | null
           type?: string
           updated_at?: string
           user_id?: string
