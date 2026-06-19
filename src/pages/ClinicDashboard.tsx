@@ -9,6 +9,7 @@ import { DentistManagement } from "@/components/clinic/DentistManagement";
 import { CertificateGenerator } from "@/components/clinic/CertificateGenerator";
 import { CertificateTemplateManager } from "@/components/clinic/CertificateTemplateManager";
 import { MessageTemplates } from "@/components/MessageTemplates";
+import { ClinicFinancialSummary } from "@/components/clinic/ClinicFinancialSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Plus, 
@@ -198,8 +199,12 @@ const ClinicDashboard = () => {
         </div>
       </div>
 
+      {/* Financial Summary */}
+      <ClinicFinancialSummary />
+
       {/* Statistics Overview */}
       <OrdersSummary />
+
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">

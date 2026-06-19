@@ -56,6 +56,10 @@ const Appointments = () => {
     dentist_id: "",
     dentist_payment: "",
     procedure_type: "",
+    treatment_value: "",
+    payment_method: "a_vista",
+    due_date: "",
+    paid_at: "",
   });
 
   useEffect(() => {
@@ -143,6 +147,10 @@ const Appointments = () => {
             dentist_id: formData.dentist_id || null,
             dentist_payment: formData.dentist_payment ? parseFloat(formData.dentist_payment) : 0,
             procedure_type: formData.procedure_type || null,
+            treatment_value: formData.treatment_value ? parseFloat(formData.treatment_value) : null,
+            payment_method: formData.payment_method || null,
+            due_date: formData.due_date || null,
+            paid_at: formData.paid_at || null,
           })
           .eq("id", editingAppointment.id);
 
@@ -160,6 +168,10 @@ const Appointments = () => {
           dentist_id: formData.dentist_id || null,
           dentist_payment: formData.dentist_payment ? parseFloat(formData.dentist_payment) : 0,
           procedure_type: formData.procedure_type || null,
+          treatment_value: formData.treatment_value ? parseFloat(formData.treatment_value) : null,
+          payment_method: formData.payment_method || null,
+          due_date: formData.due_date || null,
+          paid_at: formData.paid_at || null,
         });
 
         if (error) throw error;
@@ -190,6 +202,10 @@ const Appointments = () => {
       dentist_id: appointment.dentist_id || "",
       dentist_payment: appointment.dentist_payment ? appointment.dentist_payment.toString() : "",
       procedure_type: appointment.procedure_type || "",
+      treatment_value: (appointment as any).treatment_value ? String((appointment as any).treatment_value) : "",
+      payment_method: (appointment as any).payment_method || "a_vista",
+      due_date: (appointment as any).due_date || "",
+      paid_at: (appointment as any).paid_at || "",
     });
     setDialogOpen(true);
   };
@@ -220,6 +236,10 @@ const Appointments = () => {
       dentist_id: "",
       dentist_payment: "",
       procedure_type: "",
+      treatment_value: "",
+      payment_method: "a_vista",
+      due_date: "",
+      paid_at: "",
     });
   };
 
@@ -474,6 +494,59 @@ const Appointments = () => {
                   onChange={(e) => setFormData({ ...formData, procedure_type: e.target.value })}
                   placeholder="Ex: Limpeza, Canal, Extração..."
                 />
+              </div>
+              <div className="rounded-md border border-dashed p-3 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  💰 Cobrança do paciente — lançado automaticamente como <strong>receita</strong> no Financeiro quando o status for <strong>Concluído</strong>.
+                  O valor pago ao dentista vira <strong>despesa</strong> automaticamente.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="treatment_value">Valor do Tratamento (R$)</Label>
+                    <Input
+                      id="treatment_value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.treatment_value}
+                      onChange={(e) => setFormData({ ...formData, treatment_value: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="payment_method">Forma de Pagamento</Label>
+                    <Select
+                      value={formData.payment_method}
+                      onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="a_vista">À vista</SelectItem>
+                        <SelectItem value="a_prazo">A prazo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="due_date">Vencimento</Label>
+                    <Input
+                      id="due_date"
+                      type="date"
+                      value={formData.due_date}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="paid_at">Pago em</Label>
+                    <Input
+                      id="paid_at"
+                      type="date"
+                      value={formData.paid_at}
+                      onChange={(e) => setFormData({ ...formData, paid_at: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <Label htmlFor="notes">Observações</Label>
