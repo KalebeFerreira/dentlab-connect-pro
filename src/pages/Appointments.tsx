@@ -147,6 +147,10 @@ const Appointments = () => {
             dentist_id: formData.dentist_id || null,
             dentist_payment: formData.dentist_payment ? parseFloat(formData.dentist_payment) : 0,
             procedure_type: formData.procedure_type || null,
+            treatment_value: formData.treatment_value ? parseFloat(formData.treatment_value) : null,
+            payment_method: formData.payment_method || null,
+            due_date: formData.due_date || null,
+            paid_at: formData.paid_at || null,
           })
           .eq("id", editingAppointment.id);
 
@@ -164,6 +168,10 @@ const Appointments = () => {
           dentist_id: formData.dentist_id || null,
           dentist_payment: formData.dentist_payment ? parseFloat(formData.dentist_payment) : 0,
           procedure_type: formData.procedure_type || null,
+          treatment_value: formData.treatment_value ? parseFloat(formData.treatment_value) : null,
+          payment_method: formData.payment_method || null,
+          due_date: formData.due_date || null,
+          paid_at: formData.paid_at || null,
         });
 
         if (error) throw error;
