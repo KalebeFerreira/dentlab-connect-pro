@@ -363,7 +363,7 @@ const Appointments = () => {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2">
         <h1 className="text-3xl font-bold">Agendamentos</h1>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
