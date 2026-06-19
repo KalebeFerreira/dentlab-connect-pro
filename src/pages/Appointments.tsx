@@ -357,7 +357,7 @@ const Appointments = () => {
                     <SelectValue placeholder="Selecione um paciente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {patients.map((patient) => (
+                    {patients.filter((p) => p.id).map((patient) => (
                       <SelectItem key={patient.id} value={patient.id}>
                         {patient.name}
                       </SelectItem>
