@@ -153,6 +153,21 @@ const Orders = () => {
     }
   };
 
+  const handleMarkDelivered = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "completed", delivery_date: new Date().toISOString() })
+        .eq("id", orderId);
+      if (error) throw error;
+      toast.success("Ordem entregue e despesa lançada no financeiro");
+      checkAuthAndLoadOrders();
+    } catch (error: any) {
+      console.error("Error marking order delivered:", error);
+      toast.error("Erro ao marcar como entregue: " + (error.message || ""));
+    }
+  };
+
   if (loading) {
 
     return (
