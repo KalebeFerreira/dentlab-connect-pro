@@ -216,9 +216,12 @@ const Billing = () => {
       </Suspense>
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 h-auto gap-1 p-1">
           <TabsTrigger value="services" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             Serviços
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            Clientes
           </TabsTrigger>
           <TabsTrigger value="fiscal" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             NFS-e
