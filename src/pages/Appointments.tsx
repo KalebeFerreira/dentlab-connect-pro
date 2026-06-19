@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, MessageCircle, CheckCircle2 } from "lucide-react";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { ScheduleAnalyzer } from "@/components/clinic/ScheduleAnalyzer";
 
