@@ -155,7 +155,7 @@ _Enviado automaticamente via DentLab Connect_`;
     e.preventDefault();
 
     // Check freemium limits - enforce for all users
-    if (!limits.canCreateOrder) {
+    if (!limits.loading && !limits.canCreateOrder) {
       toast.error("Limite de pedidos atingido", {
         description: limits.isSubscribed 
           ? "Você atingiu o limite mensal do seu plano atual." 
@@ -270,10 +270,10 @@ _Enviado automaticamente via DentLab Connect_`;
       }
 
       navigate('/orders');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating order:', error);
       toast.error("Erro ao criar ordem", {
-        description: "Não foi possível criar a ordem. Tente novamente.",
+        description: error?.message || "Não foi possível criar a ordem. Tente novamente.",
       });
     } finally {
       setSubmitting(false);
