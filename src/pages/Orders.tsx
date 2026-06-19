@@ -210,6 +210,9 @@ const Orders = () => {
               Nova Ordem
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            💡 A despesa da ordem é lançada no financeiro automaticamente ao clicar em <strong>Entregue</strong>.
+          </p>
 
           {orders.length > 0 && (
             <div className="flex items-center gap-2">
