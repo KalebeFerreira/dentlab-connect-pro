@@ -269,6 +269,21 @@ const Orders = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      {order.status !== "completed" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkDelivered(order.id);
+                          }}
+                          title="Marcar como entregue (lança despesa no financeiro)"
+                        >
+                          <PackageCheck className="h-4 w-4 mr-1" />
+                          Entregue
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         className="h-8 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-md hover:opacity-90"
