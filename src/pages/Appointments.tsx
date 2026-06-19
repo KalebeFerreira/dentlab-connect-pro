@@ -223,6 +223,20 @@ const Appointments = () => {
     }
   };
 
+  const handleCompleteAppointment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "completed" })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Procedimento concluído e lançado no financeiro");
+      loadAppointments();
+    } catch (error: any) {
+      toast.error("Erro ao concluir procedimento", { description: error.message });
+    }
+  };
+
   const resetForm = () => {
     setEditingAppointment(null);
     setFormData({
