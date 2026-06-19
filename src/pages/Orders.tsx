@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil, FileSignature, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil, FileSignature, Trash2, PackageCheck } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { EditOrderDialog } from "@/components/EditOrderDialog";
@@ -153,6 +153,21 @@ const Orders = () => {
     }
   };
 
+  const handleMarkDelivered = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "completed", delivery_date: new Date().toISOString() })
+        .eq("id", orderId);
+      if (error) throw error;
+      toast.success("Ordem entregue e despesa lançada no financeiro");
+      checkAuthAndLoadOrders();
+    } catch (error: any) {
+      console.error("Error marking order delivered:", error);
+      toast.error("Erro ao marcar como entregue: " + (error.message || ""));
+    }
+  };
+
   if (loading) {
 
     return (
@@ -195,6 +210,9 @@ const Orders = () => {
               Nova Ordem
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            💡 A despesa da ordem é lançada no financeiro automaticamente ao clicar em <strong>Entregue</strong>.
+          </p>
 
           {orders.length > 0 && (
             <div className="flex items-center gap-2">
@@ -254,6 +272,21 @@ const Orders = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      {order.status !== "completed" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkDelivered(order.id);
+                          }}
+                          title="Marcar como entregue (lança despesa no financeiro)"
+                        >
+                          <PackageCheck className="h-4 w-4 mr-1" />
+                          Entregue
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         className="h-8 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-md hover:opacity-90"

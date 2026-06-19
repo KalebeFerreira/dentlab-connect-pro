@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, MessageCircle, CheckCircle2 } from "lucide-react";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { ScheduleAnalyzer } from "@/components/clinic/ScheduleAnalyzer";
 
@@ -223,6 +223,20 @@ const Appointments = () => {
     }
   };
 
+  const handleCompleteAppointment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "completed" })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Procedimento concluído e lançado no financeiro");
+      loadAppointments();
+    } catch (error: any) {
+      toast.error("Erro ao concluir procedimento", { description: error.message });
+    }
+  };
+
   const resetForm = () => {
     setEditingAppointment(null);
     setFormData({
@@ -349,7 +363,7 @@ const Appointments = () => {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2">
         <h1 className="text-3xl font-bold">Agendamentos</h1>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
@@ -565,6 +579,11 @@ const Appointments = () => {
           </DialogContent>
         </Dialog>
       </div>
+      <p className="text-xs text-muted-foreground mb-6">
+        💡 Os lançamentos financeiros (receita do tratamento / pagamento ao dentista) só são criados ao marcar o agendamento como <strong>Concluído</strong>.
+      </p>
+
+
 
       <Card>
         <CardHeader>
@@ -616,6 +635,16 @@ const Appointments = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {appointment.status !== "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCompleteAppointment(appointment.id)}
+                            title="Concluir procedimento (lança no financeiro)"
+                          >
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
