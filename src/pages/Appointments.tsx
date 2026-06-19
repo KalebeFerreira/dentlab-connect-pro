@@ -202,6 +202,10 @@ const Appointments = () => {
       dentist_id: appointment.dentist_id || "",
       dentist_payment: appointment.dentist_payment ? appointment.dentist_payment.toString() : "",
       procedure_type: appointment.procedure_type || "",
+      treatment_value: (appointment as any).treatment_value ? String((appointment as any).treatment_value) : "",
+      payment_method: (appointment as any).payment_method || "a_vista",
+      due_date: (appointment as any).due_date || "",
+      paid_at: (appointment as any).paid_at || "",
     });
     setDialogOpen(true);
   };
