@@ -56,6 +56,10 @@ const Appointments = () => {
     dentist_id: "",
     dentist_payment: "",
     procedure_type: "",
+    treatment_value: "",
+    payment_method: "a_vista",
+    due_date: "",
+    paid_at: "",
   });
 
   useEffect(() => {
