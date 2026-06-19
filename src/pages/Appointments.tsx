@@ -630,6 +630,16 @@ const Appointments = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {appointment.status !== "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCompleteAppointment(appointment.id)}
+                            title="Concluir procedimento (lança no financeiro)"
+                          >
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
