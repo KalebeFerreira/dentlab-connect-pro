@@ -199,8 +199,12 @@ const ClinicDashboard = () => {
         </div>
       </div>
 
+      {/* Financial Summary */}
+      <ClinicFinancialSummary />
+
       {/* Statistics Overview */}
       <OrdersSummary />
+
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
