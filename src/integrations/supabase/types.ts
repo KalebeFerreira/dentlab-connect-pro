@@ -301,6 +301,36 @@ export type Database = {
         }
         Relationships: []
       }
+      client_payment_profiles: {
+        Row: {
+          client_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          payment_type: Database["public"]["Enums"]["client_payment_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_type?: Database["public"]["Enums"]["client_payment_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_type?: Database["public"]["Enums"]["client_payment_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       company_info: {
         Row: {
           company_name: string
@@ -2217,6 +2247,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "clinic" | "laboratory" | "dentist" | "employee"
+      client_payment_type: "a_vista" | "mensalista" | "nao_definido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2345,6 +2376,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "clinic", "laboratory", "dentist", "employee"],
+      client_payment_type: ["a_vista", "mensalista", "nao_definido"],
     },
   },
 } as const

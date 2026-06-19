@@ -19,6 +19,7 @@ const TransactionHistory = lazy(() => import("@/components/billing/TransactionHi
 const BillingFiscalIntegration = lazy(() => import("@/components/billing/BillingFiscalIntegration").then(m => ({ default: m.BillingFiscalIntegration })));
 const PaymentSummaryCards = lazy(() => import("@/components/billing/PaymentSummaryCards").then(m => ({ default: m.PaymentSummaryCards })));
 const ClientPaymentInsights = lazy(() => import("@/components/billing/ClientPaymentInsights").then(m => ({ default: m.ClientPaymentInsights })));
+const ClientPaymentCategories = lazy(() => import("@/components/billing/ClientPaymentCategories").then(m => ({ default: m.ClientPaymentCategories })));
 
 const ComponentLoader = memo(() => (
   <div className="flex items-center justify-center py-8">
@@ -215,9 +216,12 @@ const Billing = () => {
       </Suspense>
 
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 h-auto gap-1 p-1">
           <TabsTrigger value="services" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             Serviços
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            Clientes
           </TabsTrigger>
           <TabsTrigger value="fiscal" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             NFS-e
@@ -256,6 +260,12 @@ const Billing = () => {
               onServiceUpdate={loadServices}
               companyInfo={companyInfo}
             />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <Suspense fallback={<ComponentLoader />}>
+            <ClientPaymentCategories />
           </Suspense>
         </TabsContent>
 
