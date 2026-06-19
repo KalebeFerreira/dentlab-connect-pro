@@ -263,6 +263,12 @@ const Billing = () => {
           </Suspense>
         </TabsContent>
 
+        <TabsContent value="categories">
+          <Suspense fallback={<ComponentLoader />}>
+            <ClientPaymentCategories />
+          </Suspense>
+        </TabsContent>
+
         <TabsContent value="fiscal" className="space-y-6">
           <Suspense fallback={<ComponentLoader />}>
             <BillingFiscalIntegration services={services} onSuccess={loadServices} />
