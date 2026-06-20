@@ -128,6 +128,26 @@ Deno.serve(async (req) => {
         const msg = String(e instanceof Error ? e.message : e);
         if (msg !== "NOT_FOUND" && !/already|exists|in use/i.test(msg)) throw e;
       }
+
+      // Auto-configura o webhook logo após criar a instância,
+      // para que a clínica não precise mexer no painel da Evolution.
+      try {
+        await evo(`/webhook/set/${encodeURIComponent(instanceName)}`, {
+          method: "POST",
+          body: JSON.stringify({
+            webhook: {
+              enabled: true,
+              url: webhookUrl,
+              byEvents: false,
+              base64: false,
+              events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE"],
+            },
+          }),
+        });
+      } catch (e) {
+        console.warn(`[evolution-manager] auto set_webhook falhou: ${e instanceof Error ? e.message : e}`);
+      }
+
       await upsertRow({
         evolution_instance_name: instanceName,
         webhook_url: webhookUrl,
