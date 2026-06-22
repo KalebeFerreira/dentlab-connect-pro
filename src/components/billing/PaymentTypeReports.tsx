@@ -313,8 +313,25 @@ const CategoryReport = ({
           )}
         </CardContent>
       </Card>
+      <Card className="shadow-card border-green-200 bg-green-50/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Resumo Recebido — {category === "a_vista" ? "À Vista" : "Mensalistas"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {periodLabels.map((label, i) => (
+              <div key={label} className="p-3 rounded-md bg-background border">
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className="text-lg font-bold text-green-600">{fmt(periodTotals[i] || 0)}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
+
+export default PaymentTypeReports;
 
 export default PaymentTypeReports;
