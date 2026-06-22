@@ -139,32 +139,73 @@ export const PaymentTypeReports = () => {
     );
   }
 
-  return (
-    <Tabs defaultValue="a_vista" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="a_vista" className="gap-2">
-          <Wallet className="h-4 w-4" /> À Vista
-        </TabsTrigger>
-        <TabsTrigger value="mensalista" className="gap-2">
-          <CalendarClock className="h-4 w-4" /> Mensalistas / Parcelado
-        </TabsTrigger>
-      </TabsList>
+  const aVistaRecs = receivables.filter((r) => getCategory(r) === "a_vista");
+  const mensRecs = receivables.filter((r) => getCategory(r) === "mensalista");
 
-      <TabsContent value="a_vista">
-        <CategoryReport
-          category="a_vista"
-          receivables={receivables.filter((r) => getCategory(r) === "a_vista")}
-          expenses={expenses.filter((e) => e.payment_method !== "a_prazo")}
-        />
-      </TabsContent>
-      <TabsContent value="mensalista">
-        <CategoryReport
-          category="mensalista"
-          receivables={receivables.filter((r) => getCategory(r) === "mensalista")}
-          expenses={expenses.filter((e) => e.payment_method === "a_prazo")}
-        />
-      </TabsContent>
-    </Tabs>
+  const totalRecebidoPeriodo = (recs: Receivable[], fromDate: string) =>
+    recs.filter((r) => r.paid_at && r.date >= fromDate).reduce((s, r) => s + r.amount, 0);
+
+  const periodFroms = PERIODS.map((p) => ({ key: p.key, label: p.label, from: p.from().toISOString().split("T")[0] }));
+  const totalsAVista = periodFroms.map((p) => totalRecebidoPeriodo(aVistaRecs, p.from));
+  const totalsMens = periodFroms.map((p) => totalRecebidoPeriodo(mensRecs, p.from));
+  const totalsGeral = periodFroms.map((_, i) => totalsAVista[i] + totalsMens[i]);
+  const acumuladoAno = totalsGeral[totalsGeral.length - 1];
+
+  return (
+    <div className="space-y-4">
+      <Card className="shadow-card border-primary/30 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" /> Total Recebido (À Vista + Mensalistas)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {periodFroms.map((p, i) => (
+              <div key={p.key} className="p-3 rounded-md bg-background border">
+                <div className="text-xs text-muted-foreground">{p.label}</div>
+                <div className="text-lg font-bold text-green-600">{fmt(totalsGeral[i])}</div>
+                <div className="text-[10px] text-muted-foreground">À vista: {fmt(totalsAVista[i])} · Mens.: {fmt(totalsMens[i])}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t flex items-center justify-between">
+            <span className="text-sm font-medium">Acumulado no ano</span>
+            <span className="text-2xl font-extrabold text-green-700">{fmt(acumuladoAno)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="a_vista" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="a_vista" className="gap-2">
+            <Wallet className="h-4 w-4" /> À Vista
+          </TabsTrigger>
+          <TabsTrigger value="mensalista" className="gap-2">
+            <CalendarClock className="h-4 w-4" /> Mensalistas / Parcelado
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="a_vista">
+          <CategoryReport
+            category="a_vista"
+            receivables={aVistaRecs}
+            expenses={expenses.filter((e) => e.payment_method !== "a_prazo")}
+            periodTotals={totalsAVista}
+            periodLabels={periodFroms.map((p) => p.label)}
+          />
+        </TabsContent>
+        <TabsContent value="mensalista">
+          <CategoryReport
+            category="mensalista"
+            receivables={mensRecs}
+            expenses={expenses.filter((e) => e.payment_method === "a_prazo")}
+            periodTotals={totalsMens}
+            periodLabels={periodFroms.map((p) => p.label)}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
@@ -172,10 +213,14 @@ const CategoryReport = ({
   category,
   receivables,
   expenses,
+  periodTotals,
+  periodLabels,
 }: {
   category: PaymentCategory;
   receivables: Receivable[];
   expenses: Expense[];
+  periodTotals: number[];
+  periodLabels: string[];
 }) => {
   const today = new Date().toISOString().split("T")[0];
 
@@ -266,6 +311,21 @@ const CategoryReport = ({
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+      <Card className="shadow-card border-green-200 bg-green-50/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Resumo Recebido — {category === "a_vista" ? "À Vista" : "Mensalistas"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {periodLabels.map((label, i) => (
+              <div key={label} className="p-3 rounded-md bg-background border">
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className="text-lg font-bold text-green-600">{fmt(periodTotals[i] || 0)}</div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,55 +1,74 @@
+## 1. Adicionar conta a vencer (botão + dialog)
 
-# Plano: Relatórios À Vista vs Mensalistas + Aba de Agendamentos no Financeiro
+Em `src/components/billing/AppointmentsFinancialTab.tsx`, adicionar botão **"+ Nova conta a vencer"** no topo da aba que abre `AddBillDueDialog` com:
+- Descrição (obrigatório)
+- Cliente / Pagador (opcional)
+- Valor R$ (obrigatório)
+- Data de vencimento (date picker — obrigatório)
+- Categoria: À Vista / Mensalista (radio)
+- Tipo: Receber / Pagar (radio — define `transaction_type`)
+- Observações
 
-## 1. Financeiro → nova aba "Relatórios por Cliente"
+Ao salvar, insere em `financial_transactions`:
+- `transaction_type` = receipt ou expense
+- `status` = pending
+- `payment_status` = pendente
+- `due_date` = data escolhida
+- `paid_at` = null
+- `payment_method` = a_vista ou a_prazo (conforme categoria)
+- Descrição com tag `[MANUAL-REC:<uuid>]` ou `[MANUAL-DESP:<uuid>]` para identificar contas manuais
 
-Em `src/pages/Financial.tsx`, adicionar aba `Relatórios` com 2 sub-abas:
+### Gatilho Pago / Não Pago
+Na lista de contas a vencer (dentro da mesma aba):
+- Switch **"Pago / Não Pago"** ao lado de cada conta.
+- Ao marcar **Pago**: `paid_at = hoje`, `payment_status = 'pago'`, `status = 'completed'`.
+- Ao desmarcar: `paid_at = null`, recalcula `payment_status` (`vencido` se due_date < hoje, senão `pendente`), `status = 'pending'`.
+- Também adicionar botão **Editar** e **Excluir** para contas manuais.
 
-- **À Vista** — clientes classificados como `a_vista` em `client_payment_profiles` + transações com `payment_method = 'a_vista'`
-- **Mensalistas / Parcelado** — clientes `mensalista` + transações com `payment_method = 'a_prazo'`
+Reflete automaticamente nos cards do topo do Financeiro (Total Recebido, A Receber, etc).
 
-Para cada sub-aba, lucro consolidado por período:
-- Semanal (últimos 7 dias)
-- Quinzenal (últimos 15 dias)
-- Mensal (mês corrente)
-- Anual (ano corrente)
+## 2. Aviso 1 dia antes do vencimento
 
-Cada período mostra: total recebido, a receber, vencido, lucro líquido (receita − despesas do período).
+Novo hook `src/hooks/useBillDueNotifications.ts` (padrão de `useDeadlineNotifications`):
+- Consulta `financial_transactions` com `paid_at IS NULL` e `due_date` entre hoje e amanhã.
+- Push notification + toast:
+  - "⏰ Vence amanhã: {descrição} — R$ {valor}"
+  - "🚨 Vence hoje: ..."
+  - "⚠️ Atrasada há N dias: ..."
+- Roda ao carregar app e a cada 1h.
+- Registrado em `App.tsx`.
 
-**Tabela com nomes dos clientes/pacientes** em cada categoria:
-- Nome, nº de transações, total recebido, pendente, vencido, última transação
-- Ordenado por valor total (desc)
+## 3. Totais sempre visíveis nos relatórios À Vista / Mensalistas
 
-Novo componente: `src/components/billing/PaymentTypeReports.tsx` (gráficos recharts + tabela).
+Editar `src/components/billing/PaymentTypeReports.tsx`:
 
-## 2. Financeiro → nova aba "Agendamentos"
+### 3.1 Reforçar "Total Recebido" em cada card de período
+Destacar o valor recebido (Semanal, Quinzenal, Mensal, Anual) com fonte maior e cor verde — métrica principal.
 
-Em vez de mexer em `src/pages/Appointments.tsx`, criar a aba dentro do próprio `Financial.tsx`:
+### 3.2 Rodapé "Resumo Recebido" por aba
+Card no fim de cada aba (À Vista e Mensalistas) com:
+- Recebido na semana
+- Recebido na quinzena
+- Recebido no mês
+- Recebido no ano
 
-- **Contas a vencer**: `appointments.treatment_value` com `status = 'completed'`, `paid_at IS NULL`, `due_date >= hoje`
-- **Contas vencidas**: idem com `due_date < hoje`
-- **Contas pagas (mês)**: `paid_at` dentro do mês corrente
-- **Total previsto (mês)**
+### 3.3 Card consolidado "Total Geral (À Vista + Mensalistas)"
+Acima do `Tabs`, sempre visível:
+- Recebido semana (soma das duas categorias)
+- Recebido quinzena
+- Recebido mês
+- Recebido ano
+- **Total acumulado** no ano (destaque grande)
 
-Cada card expande lista com **nome do paciente**, procedimento, valor, vencimento e botão **"Marcar como pago"** (atualiza `paid_at = hoje` em `appointments`).
-
-Tudo já é sincronizado para `financial_transactions` pelo trigger existente `sync_appointment_to_transactions` — refletindo nos cards do topo do Financeiro automaticamente.
-
-Novo componente: `src/components/billing/AppointmentsFinancialTab.tsx`.
-
-## 3. Sem mudanças de schema
-
-Nenhuma migração. Usa: `financial_transactions`, `client_payment_profiles`, `appointments`, `patients`, `services`.
+Mover cálculo dos períodos para o componente pai `PaymentTypeReports`, passar resultados para os filhos via props para evitar duplicação.
 
 ## Arquivos
 
-- **novo** `src/components/billing/PaymentTypeReports.tsx`
-- **novo** `src/components/billing/AppointmentsFinancialTab.tsx`
-- **editar** `src/pages/Financial.tsx` — adicionar 2 abas: "Relatórios" e "Agendamentos"
+- **editar** `src/components/billing/PaymentTypeReports.tsx` — card consolidado + rodapé por aba
+- **editar** `src/components/billing/AppointmentsFinancialTab.tsx` — botão "Nova conta", lista de contas manuais, switch Pago/Não Pago, editar/excluir
+- **novo** `src/components/billing/AddBillDueDialog.tsx` — formulário (criar/editar)
+- **novo** `src/hooks/useBillDueNotifications.ts` — push 1 dia antes
+- **editar** `src/App.tsx` — registrar hook
 
-## Detalhes técnicos
-
-- Períodos calculados com `date-fns` (`subDays`, `startOfMonth`, `startOfYear`).
-- Classificação: registro em `client_payment_profiles` tem prioridade; fallback para `payment_method` da transação.
-- Nome do paciente via JOIN com `patients` para transações de agendamento; `client_name` direto para `services`.
-- Realtime de `Financial.tsx` já cobre atualizações; adicionar canal para `appointments` na nova aba.
+## Sem mudanças de schema
+Tudo usa colunas existentes em `financial_transactions` (`due_date`, `paid_at`, `payment_status`, `status`, `payment_method`, `description`).

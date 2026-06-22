@@ -9,6 +9,14 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 import { FloatingWidgets } from "@/components/FloatingWidgets";
+import { useAuth } from "@/contexts/AuthContext";
+import { useBillDueNotifications } from "@/hooks/useBillDueNotifications";
+
+const BillNotifier = () => {
+  const { user } = useAuth();
+  useBillDueNotifications(user?.id);
+  return null;
+};
 
 // Eager load critical pages
 import Index from "./pages/Index";
@@ -94,6 +102,7 @@ const App = () => (
             <Suspense fallback={null}>
               <FreemiumNotifications />
             </Suspense>
+            <BillNotifier />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
