@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare, History, FileText, QrCode } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Plus, Scan, List, BarChart3, GitCompare, History, FileText, QrCode, Users, Calendar } from "lucide-react";
 import { TransactionForm } from "@/components/TransactionForm";
 import { PixChargeDialog } from "@/components/PixChargeDialog";
 import { TransactionList } from "@/components/TransactionList";
@@ -16,6 +16,8 @@ import { FinancialScanHistory } from "@/components/FinancialScanHistory";
 import { TransactionHistory } from "@/components/billing/TransactionHistory";
 import { FinancialInsights } from "@/components/FinancialInsights";
 import { ClientPaymentInsights } from "@/components/billing/ClientPaymentInsights";
+import { PaymentTypeReports } from "@/components/billing/PaymentTypeReports";
+import { AppointmentsFinancialTab } from "@/components/billing/AppointmentsFinancialTab";
 import { Wallet, Clock, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
@@ -399,11 +401,21 @@ const Financial = () => {
 
         {/* Tabs for Transactions, Scanner, and Charts */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsList className="flex w-full max-w-5xl flex-wrap h-auto">
             <TabsTrigger value="transactions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Transações</span>
               <span className="sm:hidden">Lista</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Relatórios</span>
+              <span className="sm:hidden">Rel.</span>
+            </TabsTrigger>
+            <TabsTrigger value="appointments" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Agendamentos</span>
+              <span className="sm:hidden">Agend.</span>
             </TabsTrigger>
             <TabsTrigger value="full-history" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <FileText className="h-4 w-4" />
@@ -447,6 +459,14 @@ const Financial = () => {
               onEdit={handleEdit}
               onDelete={loadTransactions}
             />
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            <PaymentTypeReports />
+          </TabsContent>
+
+          <TabsContent value="appointments" className="space-y-6">
+            <AppointmentsFinancialTab />
           </TabsContent>
 
           <TabsContent value="full-history" className="space-y-6">
