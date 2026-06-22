@@ -461,6 +461,14 @@ const Financial = () => {
             />
           </TabsContent>
 
+          <TabsContent value="reports" className="space-y-6">
+            <PaymentTypeReports />
+          </TabsContent>
+
+          <TabsContent value="appointments" className="space-y-6">
+            <AppointmentsFinancialTab />
+          </TabsContent>
+
           <TabsContent value="full-history" className="space-y-6">
             <TransactionHistory />
           </TabsContent>
