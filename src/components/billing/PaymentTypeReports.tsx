@@ -213,10 +213,14 @@ const CategoryReport = ({
   category,
   receivables,
   expenses,
+  periodTotals,
+  periodLabels,
 }: {
   category: PaymentCategory;
   receivables: Receivable[];
   expenses: Expense[];
+  periodTotals: number[];
+  periodLabels: string[];
 }) => {
   const today = new Date().toISOString().split("T")[0];
 
