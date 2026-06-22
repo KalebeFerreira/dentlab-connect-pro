@@ -102,6 +102,7 @@ const App = () => (
             <Suspense fallback={null}>
               <FreemiumNotifications />
             </Suspense>
+            <BillNotifier />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
