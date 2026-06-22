@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Wallet, CalendarClock, TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Wallet, CalendarClock, TrendingUp, TrendingDown, FileDown, FileSpreadsheet, Printer } from "lucide-react";
 import { startOfMonth, startOfYear, subDays, parseISO, isAfter, isBefore, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { generatePDF } from "@/lib/pdfGenerator";
+import { buildCsv, triggerDownload } from "@/lib/reportExport";
+import { toast } from "sonner";
 
 type PaymentCategory = "a_vista" | "mensalista";
 
