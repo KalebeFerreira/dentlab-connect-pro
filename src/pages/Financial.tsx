@@ -401,8 +401,22 @@ const Financial = () => {
 
         {/* Tabs for Transactions, Scanner, and Charts */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsList className="flex w-full max-w-5xl flex-wrap h-auto">
             <TabsTrigger value="transactions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">Transações</span>
+              <span className="sm:hidden">Lista</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Relatórios</span>
+              <span className="sm:hidden">Rel.</span>
+            </TabsTrigger>
+            <TabsTrigger value="appointments" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Agendamentos</span>
+              <span className="sm:hidden">Agend.</span>
+            </TabsTrigger>
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Transações</span>
               <span className="sm:hidden">Lista</span>
