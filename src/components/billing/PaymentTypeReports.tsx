@@ -333,5 +333,3 @@ const CategoryReport = ({
 };
 
 export default PaymentTypeReports;
-
-export default PaymentTypeReports;
