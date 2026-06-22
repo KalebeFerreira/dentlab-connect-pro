@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Wallet, CalendarClock, TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Wallet, CalendarClock, TrendingUp, TrendingDown, FileDown, FileSpreadsheet, Printer } from "lucide-react";
 import { startOfMonth, startOfYear, subDays, parseISO, isAfter, isBefore, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { generatePDF } from "@/lib/pdfGenerator";
+import { buildCsv, triggerDownload } from "@/lib/reportExport";
+import { toast } from "sonner";
 
 type PaymentCategory = "a_vista" | "mensalista";
 
@@ -223,6 +228,9 @@ const CategoryReport = ({
   periodLabels: string[];
 }) => {
   const today = new Date().toISOString().split("T")[0];
+  const [exportPeriod, setExportPeriod] = useState<string>("month");
+  const [exporting, setExporting] = useState(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const periodStats = PERIODS.map((p) => {
     const from = p.from().toISOString().split("T")[0];
@@ -248,8 +256,127 @@ const CategoryReport = ({
   });
   const clients = Array.from(clientMap.values()).sort((a, b) => (b.recebido + b.pendente + b.vencido) - (a.recebido + a.pendente + a.vencido));
 
+  // Export data for selected period
+  const selectedPeriod = PERIODS.find((p) => p.key === exportPeriod) || PERIODS[2];
+  const selectedFrom = selectedPeriod.from().toISOString().split("T")[0];
+  const exportRecs = receivables
+    .filter((r) => r.date >= selectedFrom)
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const exportStats = periodStats.find((p) => p.key === exportPeriod)!;
+
+  const statusOf = (r: Receivable) => {
+    if (r.paid_at) return "Recebido";
+    if (r.due_date && r.due_date < today) return "Vencido";
+    return "Pendente";
+  };
+
+  const categoryLabel = category === "a_vista" ? "À Vista" : "Mensalistas";
+  const fileBase = `relatorio-${category}-${exportPeriod}-${format(new Date(), "yyyy-MM-dd")}`;
+
+  const handleExportPDF = async () => {
+    if (!pdfRef.current) return;
+    setExporting(true);
+    try {
+      // Make visible for capture
+      pdfRef.current.style.left = "0";
+      pdfRef.current.style.top = "0";
+      pdfRef.current.style.position = "fixed";
+      pdfRef.current.style.zIndex = "-1";
+      pdfRef.current.style.opacity = "1";
+      await generatePDF(pdfRef.current, { filename: `${fileBase}.pdf`, orientation: "portrait" });
+      toast.success("PDF gerado com sucesso");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      pdfRef.current.style.left = "-9999px";
+      pdfRef.current.style.opacity = "0";
+      setExporting(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const rows: (string | number)[][] = [];
+    rows.push([`Relatório ${categoryLabel} — ${selectedPeriod.label}`]);
+    rows.push([`Gerado em ${format(new Date(), "dd/MM/yyyy HH:mm")}`]);
+    rows.push([]);
+    rows.push(["Resumo"]);
+    rows.push(["Recebido", exportStats.recebido.toFixed(2)]);
+    rows.push(["A receber", exportStats.aReceber.toFixed(2)]);
+    rows.push(["Vencido", exportStats.vencido.toFixed(2)]);
+    rows.push(["Despesas", exportStats.despesa.toFixed(2)]);
+    rows.push(["Lucro", exportStats.lucro.toFixed(2)]);
+    rows.push([]);
+    rows.push(["Transações"]);
+    rows.push(["Cliente/Paciente", "Data", "Vencimento", "Valor", "Status"]);
+    exportRecs.forEach((r) => {
+      rows.push([
+        r.client,
+        r.date ? format(parseISO(r.date), "dd/MM/yyyy") : "",
+        r.due_date ? format(parseISO(r.due_date), "dd/MM/yyyy") : "",
+        r.amount.toFixed(2),
+        statusOf(r),
+      ]);
+    });
+    rows.push([]);
+    rows.push(["Resumo por Cliente"]);
+    rows.push(["Cliente", "Transações", "Recebido", "Pendente", "Vencido", "Total"]);
+    clients.forEach((c) => {
+      rows.push([c.client, c.count, c.recebido.toFixed(2), c.pendente.toFixed(2), c.vencido.toFixed(2), (c.recebido + c.pendente + c.vencido).toFixed(2)]);
+    });
+    const csv = "\uFEFF" + buildCsv(rows);
+    triggerDownload(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${fileBase}.csv`);
+    toast.success("CSV baixado");
+  };
+
+  const handlePrint = () => {
+    if (!pdfRef.current) return;
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.write(`<html><head><title>${fileBase}</title>
+      <style>body{font-family:Arial,sans-serif;padding:20px;color:#1f2937;}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px;}
+      th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;}
+      th{background:#f3f4f6;}
+      h1{font-size:18px;margin:0 0 4px;} h2{font-size:14px;margin:16px 0 8px;color:#1c4587;}
+      .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0;}
+      .summary div{border:1px solid #e5e7eb;padding:8px;border-radius:4px;}
+      .summary .lbl{font-size:10px;color:#6b7280;text-transform:uppercase;}
+      .summary .val{font-size:14px;font-weight:bold;}
+      </style></head><body>${pdfRef.current.innerHTML}</body></html>`);
+    w.document.close();
+    setTimeout(() => { w.print(); }, 300);
+  };
+
   return (
     <div className="space-y-4">
+      {/* Export bar */}
+      <Card className="shadow-card">
+        <CardContent className="py-3 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium">Exportar relatório:</span>
+          <Select value={exportPeriod} onValueChange={setExportPeriod}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODS.map((p) => (
+                <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" onClick={handleExportPDF} disabled={exporting}>
+            <FileDown className="h-4 w-4 mr-1" /> PDF
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleExportCSV}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel (CSV)
+          </Button>
+          <Button size="sm" variant="outline" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-1" /> Imprimir
+          </Button>
+          <span className="text-xs text-muted-foreground ml-auto">{exportRecs.length} transações no período</span>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {periodStats.map((p) => (
           <Card key={p.key} className="shadow-card">
@@ -273,7 +400,7 @@ const CategoryReport = ({
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="text-base">
-            Clientes / Pacientes — {category === "a_vista" ? "À Vista" : "Mensalistas"}
+            Clientes / Pacientes — {categoryLabel}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -315,7 +442,7 @@ const CategoryReport = ({
       </Card>
       <Card className="shadow-card border-green-200 bg-green-50/30">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Resumo Recebido — {category === "a_vista" ? "À Vista" : "Mensalistas"}</CardTitle>
+          <CardTitle className="text-sm">Resumo Recebido — {categoryLabel}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -328,6 +455,83 @@ const CategoryReport = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Hidden PDF/Print layout */}
+      <div
+        ref={pdfRef}
+        style={{ position: "fixed", left: "-9999px", top: 0, width: "800px", background: "#fff", padding: "24px", opacity: 0, fontFamily: "Arial, sans-serif", color: "#1f2937" }}
+      >
+        <h1 style={{ fontSize: 20, margin: 0, color: "#1c4587" }}>Relatório {categoryLabel}</h1>
+        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
+          Período: {selectedPeriod.label} · Gerado em {format(new Date(), "dd/MM/yyyy HH:mm")}
+        </div>
+
+        <h2 style={{ fontSize: 14, color: "#1c4587", margin: "16px 0 8px" }}>Resumo</h2>
+        <div className="summary" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8 }}>
+          {[
+            ["Recebido", exportStats.recebido, "#16a34a"],
+            ["A receber", exportStats.aReceber, "#2563eb"],
+            ["Vencido", exportStats.vencido, "#dc2626"],
+            ["Despesas", exportStats.despesa, "#dc2626"],
+            ["Lucro", exportStats.lucro, exportStats.lucro >= 0 ? "#16a34a" : "#dc2626"],
+          ].map(([l, v, c]) => (
+            <div key={l as string} style={{ border: "1px solid #e5e7eb", padding: 8, borderRadius: 4 }}>
+              <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase" }}>{l as string}</div>
+              <div style={{ fontSize: 14, fontWeight: "bold", color: c as string }}>{fmt(v as number)}</div>
+            </div>
+          ))}
+        </div>
+
+        <h2 style={{ fontSize: 14, color: "#1c4587", margin: "16px 0 8px" }}>Transações ({exportRecs.length})</h2>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+          <thead>
+            <tr style={{ background: "#f3f4f6" }}>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "left" }}>Cliente/Paciente</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "left" }}>Data</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "left" }}>Vencimento</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>Valor</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "left" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {exportRecs.map((r, i) => (
+              <tr key={i}>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6 }}>{r.client}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6 }}>{r.date ? format(parseISO(r.date), "dd/MM/yyyy") : "—"}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6 }}>{r.due_date ? format(parseISO(r.due_date), "dd/MM/yyyy") : "—"}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>{fmt(r.amount)}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6 }}>{statusOf(r)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h2 style={{ fontSize: 14, color: "#1c4587", margin: "16px 0 8px" }}>Resumo por Cliente</h2>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+          <thead>
+            <tr style={{ background: "#f3f4f6" }}>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "left" }}>Cliente</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "center" }}>Transações</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>Recebido</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>Pendente</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>Vencido</th>
+              <th style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clients.map((c) => (
+              <tr key={c.client}>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6 }}>{c.client}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "center" }}>{c.count}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>{fmt(c.recebido)}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>{fmt(c.pendente)}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right" }}>{fmt(c.vencido)}</td>
+                <td style={{ border: "1px solid #e5e7eb", padding: 6, textAlign: "right", fontWeight: "bold" }}>{fmt(c.recebido + c.pendente + c.vencido)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
