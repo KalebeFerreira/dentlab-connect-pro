@@ -123,14 +123,7 @@ export const PaymentTypeReports = () => {
     }
   };
 
-  const classify = (r: Receivable): PaymentCategory => {
-    const p = profiles[r.client?.trim().toLowerCase()];
-    if (p) return p;
-    return r.payment_method_fallback === "a_prazo" ? "mensalista" : "a_vista";
-  };
-
-  // attach payment_method-based fallback during classification
-  const getCategory = (r: any): PaymentCategory => {
+  const getCategory = (r: Receivable): PaymentCategory => {
     const p = profiles[r.client?.trim().toLowerCase()];
     if (p) return p;
     // we don't store payment_method on receivable; infer from due_date vs date
