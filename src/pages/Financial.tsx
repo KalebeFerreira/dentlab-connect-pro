@@ -417,10 +417,6 @@ const Financial = () => {
               <span className="hidden sm:inline">Agendamentos</span>
               <span className="sm:hidden">Agend.</span>
             </TabsTrigger>
-              <List className="h-4 w-4" />
-              <span className="hidden sm:inline">Transações</span>
-              <span className="sm:hidden">Lista</span>
-            </TabsTrigger>
             <TabsTrigger value="full-history" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Histórico</span>
