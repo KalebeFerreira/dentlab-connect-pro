@@ -54,7 +54,7 @@ const Financial = () => {
   const [pixDialogOpen, setPixDialogOpen] = useState(false);
   const { isSubscribed } = useFreemiumLimits();
   const { hidden: valuesHidden, toggle: toggleValuesHidden } = useHideValues();
-  const maskMoney = (v: number) => (valuesHidden ? "••••••" : `R$ ${v.toFixed(2)}`);
+  const maskMoney = (v: number) => (valuesHidden ? "••••••" : (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
   useEffect(() => {
     checkAuth();

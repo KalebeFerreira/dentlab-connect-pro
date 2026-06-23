@@ -29,7 +29,8 @@ interface Expense {
   payment_method: string | null;
 }
 
-const fmt = (v: number) => `R$ ${v.toFixed(2)}`;
+const fmt = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtNum = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const PERIODS: { key: string; label: string; from: () => Date }[] = [
   { key: "week", label: "Semanal (7d)", from: () => subDays(new Date(), 7) },
@@ -301,11 +302,11 @@ const CategoryReport = ({
     rows.push([`Gerado em ${format(new Date(), "dd/MM/yyyy HH:mm")}`]);
     rows.push([]);
     rows.push(["Resumo"]);
-    rows.push(["Recebido", exportStats.recebido.toFixed(2)]);
-    rows.push(["A receber", exportStats.aReceber.toFixed(2)]);
-    rows.push(["Vencido", exportStats.vencido.toFixed(2)]);
-    rows.push(["Despesas", exportStats.despesa.toFixed(2)]);
-    rows.push(["Lucro", exportStats.lucro.toFixed(2)]);
+    rows.push(["Recebido", fmtNum(exportStats.recebido)]);
+    rows.push(["A receber", fmtNum(exportStats.aReceber)]);
+    rows.push(["Vencido", fmtNum(exportStats.vencido)]);
+    rows.push(["Despesas", fmtNum(exportStats.despesa)]);
+    rows.push(["Lucro", fmtNum(exportStats.lucro)]);
     rows.push([]);
     rows.push(["Transações"]);
     rows.push(["Cliente/Paciente", "Data", "Vencimento", "Valor", "Status"]);
@@ -314,7 +315,7 @@ const CategoryReport = ({
         r.client,
         r.date ? format(parseISO(r.date), "dd/MM/yyyy") : "",
         r.due_date ? format(parseISO(r.due_date), "dd/MM/yyyy") : "",
-        r.amount.toFixed(2),
+        fmtNum(r.amount),
         statusOf(r),
       ]);
     });
@@ -322,7 +323,7 @@ const CategoryReport = ({
     rows.push(["Resumo por Cliente"]);
     rows.push(["Cliente", "Transações", "Recebido", "Pendente", "Vencido", "Total"]);
     clients.forEach((c) => {
-      rows.push([c.client, c.count, c.recebido.toFixed(2), c.pendente.toFixed(2), c.vencido.toFixed(2), (c.recebido + c.pendente + c.vencido).toFixed(2)]);
+      rows.push([c.client, c.count, fmtNum(c.recebido), fmtNum(c.pendente), fmtNum(c.vencido), fmtNum(c.recebido + c.pendente + c.vencido)]);
     });
     const csv = "\uFEFF" + buildCsv(rows);
     triggerDownload(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${fileBase}.csv`);
