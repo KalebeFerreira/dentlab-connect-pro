@@ -39,13 +39,23 @@ export const DeleteAccountDialog = () => {
       });
 
       if (error) {
-        const errorMsg = error.message || "Erro ao excluir conta";
+        // Try to surface the function's JSON error body
+        let errorMsg = error.message || "Erro ao excluir conta";
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx?.body) {
+            const body = typeof ctx.body === "string" ? JSON.parse(ctx.body) : ctx.body;
+            if (body?.error) errorMsg = body.error;
+          }
+        } catch {}
+        console.error("delete-account error:", error);
         toast.error(errorMsg);
         setDeleting(false);
         return;
       }
 
       if (data?.error) {
+        console.error("delete-account data error:", data);
         toast.error(data.error);
         setDeleting(false);
         return;
