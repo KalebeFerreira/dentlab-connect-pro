@@ -23,7 +23,7 @@ interface ApptRow {
   patient: { name: string } | null;
 }
 
-const fmt = (v: number) => `R$ ${v.toFixed(2)}`;
+const fmt = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const stripTag = (s: string) => s.replace(/\s*\[(MANUAL-REC|MANUAL-DESP):[^\]]+\]/g, "").trim();
 
 export const AppointmentsFinancialTab = () => {

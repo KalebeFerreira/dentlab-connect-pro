@@ -29,7 +29,8 @@ interface Expense {
   payment_method: string | null;
 }
 
-const fmt = (v: number) => `R$ ${v.toFixed(2)}`;
+const fmt = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtNum = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const PERIODS: { key: string; label: string; from: () => Date }[] = [
   { key: "week", label: "Semanal (7d)", from: () => subDays(new Date(), 7) },
