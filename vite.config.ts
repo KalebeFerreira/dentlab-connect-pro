@@ -15,6 +15,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: null,
+      filename: "sw.js",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
         name: "Essência dental-lab",
