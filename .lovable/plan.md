@@ -1,48 +1,24 @@
-## Diagnóstico: por que "sumiram" as alterações
+## Problema
 
-As mudanças de ontem estão **todas no código e ativas** no projeto:
+No `/billing`, ao clicar no lápis de um serviço cadastrado, o diálogo de edição (`EditServiceDialog`) abre, mas no viewport atual (~922×588) o conteúdo do formulário ultrapassa a altura da tela. Como o `DialogContent` não tem `max-height` nem rolagem interna, os campos do meio/fim (forma de pagamento, vencimento, data de pagamento) e principalmente os botões **Cancelar / Salvar Alterações** ficam fora da área visível e inalcançáveis — dando a sensação de que "não há opção de alterar nada nem salvar".
 
-- `src/pages/Financial.tsx` já renderiza:
-  - aba **Relatórios** → `<PaymentTypeReports />` (À Vista / Mensalistas com semanal, quinzenal, mensal, anual + exportação PDF/CSV/Imprimir)
-  - aba **Agendamentos** → `<AppointmentsFinancialTab />` (contas a vencer, vencidas, pagas, botão "Nova conta a vencer", switch pago/não pago, edição/exclusão)
-- `src/App.tsx` monta `<BillNotifier />` (avisos 1 dia antes do vencimento)
-- Componentes existem: `AppointmentsFinancialTab.tsx`, `PaymentTypeReports.tsx`, `AddBillDueDialog.tsx`, `useBillDueNotifications.ts`
+## Correção
 
-**Por que no seu dispositivo (celular/PWA) parece que sumiu:** o app é um PWA com Service Worker (`dev-dist/sw.js` + `public/manifest.json`). O SW guardou em cache a versão antiga e segue servindo ela offline-first, mesmo após você "atualizar". Em iOS isso é especialmente persistente.
+Ajustar apenas o `EditServiceDialog` (sem mexer na lógica de salvamento, que já funciona):
 
-## O que vou fazer (somente correção do problema real — sem reescrever as features que já existem)
+1. Limitar a altura do `DialogContent` (`max-h-[90vh]`) e transformar seu interior em layout flex em coluna.
+2. Mover o `<form>` para dentro de um wrapper rolável (`overflow-y-auto`, `flex-1`, `pr-1` para não esconder a scrollbar) para que todos os campos fiquem acessíveis em telas pequenas/médias.
+3. Manter o rodapé com **Cancelar / Salvar Alterações** fixo (`sticky bottom-0 bg-background border-t pt-3`) sempre visível, independente da rolagem.
+4. Garantir `pointer-events-auto` no conteúdo para que os inputs (incluindo datas) recebam interação normalmente dentro do modal.
 
-### 1. Forçar atualização do PWA quando houver nova versão
+Nenhuma alteração em schema, edge functions, ou na regra de negócio de atualização do serviço — apenas presentation/UX no componente do diálogo.
 
-Adicionar lógica de "update available" no boot do app:
-- Registrar o SW com `registerSW({ immediate: true, onNeedRefresh })` (do `virtual:pwa-register`).
-- Quando houver nova versão, exibir um toast "Nova versão disponível — Atualizar" que chama `updateSW(true)` (skip waiting + reload).
-- Em paralelo: na montagem do `App`, se `navigator.serviceWorker.controller` existir, chamar `registration.update()` para checar nova versão a cada sessão.
+## Arquivo afetado
 
-Arquivo: **editar** `src/main.tsx` (registrar SW com auto-update) e **criar** `src/components/PWAUpdatePrompt.tsx` (toast de atualização).
+- `src/components/billing/EditServiceDialog.tsx` (somente layout do `DialogContent` / `DialogFooter`).
 
-### 2. Bumpar a versão do cache do manifest/SW
+## Verificação
 
-Editar `public/manifest.json` (campo `version` ou query no `start_url`) e garantir que o `vite-plugin-pwa` esteja em modo `autoUpdate` no `vite.config.ts` para invalidar o cache antigo.
-
-### 3. Verificação visual
-
-Após o deploy, abrir `/financial` no celular e confirmar:
-- aba **Relatórios** mostrando sub-abas "À Vista" e "Mensalistas" com seletor Semanal/Quinzenal/Mensal/Anual + botões Exportar PDF / Excel / Imprimir + card "Total Recebido" consolidado.
-- aba **Agendamentos** mostrando cards (A vencer / Vencidas / Pagas / Previsto), botão **+ Nova conta a vencer**, lista de contas com switch **Pago/Não pago**, editar e excluir.
-
-### Sobre o que você descreveu como "quero adicionar"
-
-Tudo já existe no código atual (foi feito ontem). Se após a atualização do PWA ainda faltar algo específico, ajusto pontualmente — **não vou recriar** os componentes para evitar perder o que já está pronto.
-
-### Passo manual para destravar agora (enquanto o fix sobe)
-
-No celular: **fechar o app PWA → Configurações do navegador → Limpar dados do site** do domínio do app → reabrir. Isso descarta o SW antigo imediatamente.
-
-### Arquivos
-- editar `src/main.tsx`
-- criar `src/components/PWAUpdatePrompt.tsx`
-- editar `vite.config.ts` (garantir `registerType: 'autoUpdate'`)
-- editar `public/manifest.json` (bump de versão)
-
-Sem mudanças de schema, sem novas dependências (vite-plugin-pwa já está no projeto).
+- Abrir Faturamento → clicar no lápis de um serviço.
+- Conferir no viewport 922×588 que: todos os campos aparecem (com rolagem se necessário) e os botões **Cancelar** e **Salvar Alterações** continuam visíveis no rodapé.
+- Alterar data do serviço, forma de pagamento e valor → clicar em **Salvar Alterações** → toast de sucesso e lista atualizada.
