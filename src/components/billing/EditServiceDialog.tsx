@@ -108,107 +108,109 @@ export const EditServiceDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0 pointer-events-auto">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle>Editar Serviço</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit_service_name">Serviço Prestado</Label>
-            <Input
-              id="edit_service_name"
-              value={serviceName}
-              onChange={(e) => setServiceName(e.target.value)}
-              placeholder="Descrição do serviço"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit_service_value">Valor do Serviço</Label>
-            <Input
-              id="edit_service_value"
-              type="text"
-              inputMode="decimal"
-              value={serviceValue}
-              onChange={(e) => setServiceValue(e.target.value)}
-              placeholder="Ex: 150 ou 150,50"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit_client_name">Nome da Clínica (Cliente)</Label>
-            <ClientAutocomplete
-              id="edit_client_name"
-              value={clientName}
-              onChange={setClientName}
-              placeholder="Nome da clínica"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit_patient_name">Nome do Paciente (Opcional)</Label>
-            <Input
-              id="edit_patient_name"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder="Nome do paciente"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit_service_date">Data do Serviço</Label>
-            <Input
-              id="edit_service_date"
-              type="date"
-              value={serviceDate}
-              onChange={(e) => setServiceDate(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Forma de Pagamento</Label>
-            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "a_vista" | "a_prazo")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="a_vista">À vista</SelectItem>
-                <SelectItem value="a_prazo">A prazo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {paymentMethod === "a_prazo" && (
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-2 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_due_date">Data de Vencimento</Label>
+              <Label htmlFor="edit_service_name">Serviço Prestado</Label>
               <Input
-                id="edit_due_date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                id="edit_service_name"
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+                placeholder="Descrição do serviço"
+                required
               />
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="edit_paid_at">Data do Pagamento (vazio = não pago)</Label>
-            <div className="flex gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit_service_value">Valor do Serviço</Label>
               <Input
-                id="edit_paid_at"
-                type="date"
-                value={paidAt}
-                onChange={(e) => setPaidAt(e.target.value)}
+                id="edit_service_value"
+                type="text"
+                inputMode="decimal"
+                value={serviceValue}
+                onChange={(e) => setServiceValue(e.target.value)}
+                placeholder="Ex: 150 ou 150,50"
+                required
               />
-              <Button type="button" variant="outline" onClick={() => setPaidAt(new Date().toISOString().split("T")[0])}>
-                Hoje
-              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_client_name">Nome da Clínica (Cliente)</Label>
+              <ClientAutocomplete
+                id="edit_client_name"
+                value={clientName}
+                onChange={setClientName}
+                placeholder="Nome da clínica"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_patient_name">Nome do Paciente (Opcional)</Label>
+              <Input
+                id="edit_patient_name"
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                placeholder="Nome do paciente"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_service_date">Data do Serviço</Label>
+              <Input
+                id="edit_service_date"
+                type="date"
+                value={serviceDate}
+                onChange={(e) => setServiceDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Forma de Pagamento</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "a_vista" | "a_prazo")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a_vista">À vista</SelectItem>
+                  <SelectItem value="a_prazo">A prazo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentMethod === "a_prazo" && (
+              <div className="space-y-2">
+                <Label htmlFor="edit_due_date">Data de Vencimento</Label>
+                <Input
+                  id="edit_due_date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_paid_at">Data do Pagamento (vazio = não pago)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="edit_paid_at"
+                  type="date"
+                  value={paidAt}
+                  onChange={(e) => setPaidAt(e.target.value)}
+                />
+                <Button type="button" variant="outline" onClick={() => setPaidAt(new Date().toISOString().split("T")[0])}>
+                  Hoje
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t bg-background shrink-0">
             <Button
               type="button"
               variant="outline"
