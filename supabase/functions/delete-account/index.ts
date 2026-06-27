@@ -5,6 +5,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+const readBody = async (req: Request) => {
+  try {
+    const text = await req.text();
+    if (!text) return {};
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,20 +34,12 @@ Deno.serve(async (req) => {
     // Get the authorization header to identify the user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Não autorizado" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Não autorizado" }, 401);
     }
 
-    const { password } = await req.json();
-
-    if (!password || password.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Senha é obrigatória" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const body = await readBody(req) as { password?: string; confirmation?: string };
+    const password = body.password?.trim() || "";
+    const confirmation = body.confirmation?.trim().toUpperCase() || "";
 
     // Create a client with the user's token to get their info
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
@@ -41,24 +49,30 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Usuário não encontrado" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Usuário não encontrado" }, 401);
     }
 
-    // Verify password by attempting to sign in
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
-    const { error: signInError } = await supabaseAuth.auth.signInWithPassword({
-      email: user.email!,
-      password: password,
-    });
+    const providers = (user.identities || []).map((identity: any) => identity.provider);
+    const provider = user.app_metadata?.provider || providers[0] || "email";
+    const isPasswordAccount = provider === "email" || providers.includes("email");
 
-    if (signInError) {
-      return new Response(
-        JSON.stringify({ error: "Senha incorreta" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (isPasswordAccount) {
+      if (!password) {
+        return json({ error: "Senha é obrigatória" }, 400);
+      }
+
+      // Verify password by attempting to sign in
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+      const { error: signInError } = await supabaseAuth.auth.signInWithPassword({
+        email: user.email!,
+        password,
+      });
+
+      if (signInError) {
+        return json({ error: "Senha incorreta" }, 400);
+      }
+    } else if (confirmation !== "EXCLUIR") {
+      return json({ error: "Confirme a exclusão digitando EXCLUIR" }, 400);
     }
 
     // Use admin client to clean up related data and delete the user
@@ -77,6 +91,20 @@ Deno.serve(async (req) => {
       'scanner_usage','services','user_roles','user_subscriptions',
       'whatsapp_conversations','whatsapp_messages','work_records'
     ];
+
+    try {
+      const { error: orderFilesError } = await supabaseAdmin
+        .from('order_files')
+        .delete()
+        .eq('uploaded_by', user.id);
+      if (orderFilesError) {
+        console.error("Error clearing order_files:", orderFilesError);
+        cleanupErrors.push(`order_files: ${orderFilesError.message}`);
+      }
+    } catch (e: any) {
+      console.error("Exception clearing order_files:", e);
+      cleanupErrors.push(`order_files: ${e.message}`);
+    }
 
     const cleanupErrors: string[] = [];
     for (const table of userTables) {
@@ -110,24 +138,15 @@ Deno.serve(async (req) => {
 
     if (deleteError) {
       console.error("Error deleting user:", deleteError, "Cleanup errors:", cleanupErrors);
-      return new Response(
-        JSON.stringify({
-          error: `Erro ao excluir conta: ${deleteError.message}`,
-          details: cleanupErrors,
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({
+        error: `Erro ao excluir conta: ${deleteError.message}`,
+        details: cleanupErrors,
+      }, 500);
     }
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Conta excluída com sucesso" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ success: true, message: "Conta excluída com sucesso" });
   } catch (error: any) {
     console.error("Error in delete-account:", error);
-    return new Response(
-      JSON.stringify({ error: `Erro interno: ${error?.message || "desconhecido"}` }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: `Erro interno: ${error?.message || "desconhecido"}` }, 500);
   }
 });
