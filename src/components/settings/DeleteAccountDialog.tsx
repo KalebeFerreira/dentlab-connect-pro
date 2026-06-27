@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,32 @@ export const DeleteAccountDialog = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
   const [confirmStep, setConfirmStep] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [authProvider, setAuthProvider] = useState<string | null>(null);
+
+  const isPasswordAccount = authProvider === "email";
+  const requiresTextConfirmation = !isPasswordAccount;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const loadProvider = async () => {
+      const { data } = await supabase.auth.getUser();
+      const provider = data.user?.app_metadata?.provider || data.user?.identities?.[0]?.provider || "email";
+      setAuthProvider(provider);
+    };
+
+    loadProvider();
+  }, [open]);
 
   const handlePasswordSubmit = () => {
+    if (requiresTextConfirmation) {
+      setConfirmStep(true);
+      return;
+    }
+
     if (!password || password.trim().length === 0) {
       toast.error("Digite sua senha para continuar");
       return;
@@ -35,7 +57,10 @@ export const DeleteAccountDialog = () => {
     setDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke("delete-account", {
-        body: { password },
+        body: {
+          password: isPasswordAccount ? password : undefined,
+          confirmation: requiresTextConfirmation ? confirmation : undefined,
+        },
       });
 
       if (error) {
@@ -75,8 +100,10 @@ export const DeleteAccountDialog = () => {
     setOpen(isOpen);
     if (!isOpen) {
       setPassword("");
+      setConfirmation("");
       setConfirmStep(false);
       setDeleting(false);
+      setAuthProvider(null);
     }
   };
 
@@ -96,11 +123,13 @@ export const DeleteAccountDialog = () => {
           <DialogDescription>
             {confirmStep
               ? "Tem certeza absoluta? Esta ação é irreversível. Todos os seus dados, pedidos, pacientes e informações serão permanentemente excluídos."
-              : "Para excluir sua conta, digite sua senha para confirmar sua identidade."}
+              : requiresTextConfirmation
+                ? "Para excluir sua conta conectada pelo Google, avance e confirme digitando EXCLUIR."
+                : "Para excluir sua conta, digite sua senha para confirmar sua identidade."}
           </DialogDescription>
         </DialogHeader>
 
-        {!confirmStep ? (
+        {!confirmStep && isPasswordAccount ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="delete-password">Senha</Label>
@@ -114,12 +143,29 @@ export const DeleteAccountDialog = () => {
               />
             </div>
           </div>
+        ) : !confirmStep ? (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            <p className="font-medium mb-1">Conta conectada por Google</p>
+            <p>Na próxima etapa, confirme a exclusão digitando EXCLUIR.</p>
+          </div>
         ) : (
-          <div className="py-2">
+          <div className="space-y-4 py-2">
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
               <p className="font-medium mb-1">⚠️ Atenção!</p>
               <p>Esta ação não pode ser desfeita. Todos os seus dados serão apagados permanentemente.</p>
             </div>
+            {requiresTextConfirmation && (
+              <div className="space-y-2">
+                <Label htmlFor="delete-confirmation">Digite EXCLUIR para confirmar</Label>
+                <Input
+                  id="delete-confirmation"
+                  value={confirmation}
+                  onChange={(e) => setConfirmation(e.target.value)}
+                  placeholder="EXCLUIR"
+                  onKeyDown={(e) => e.key === "Enter" && confirmation.trim().toUpperCase() === "EXCLUIR" && handleDeleteAccount()}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -135,7 +181,7 @@ export const DeleteAccountDialog = () => {
             <Button
               variant="destructive"
               onClick={handlePasswordSubmit}
-              disabled={!password}
+              disabled={isPasswordAccount && !password}
             >
               Continuar
             </Button>
@@ -143,7 +189,7 @@ export const DeleteAccountDialog = () => {
             <Button
               variant="destructive"
               onClick={handleDeleteAccount}
-              disabled={deleting}
+              disabled={deleting || (requiresTextConfirmation && confirmation.trim().toUpperCase() !== "EXCLUIR")}
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sim, Excluir Minha Conta
