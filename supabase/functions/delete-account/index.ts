@@ -92,6 +92,8 @@ Deno.serve(async (req) => {
       'whatsapp_conversations','whatsapp_messages','work_records'
     ];
 
+    const cleanupErrors: string[] = [];
+
     try {
       const { error: orderFilesError } = await supabaseAdmin
         .from('order_files')
@@ -106,7 +108,6 @@ Deno.serve(async (req) => {
       cleanupErrors.push(`order_files: ${e.message}`);
     }
 
-    const cleanupErrors: string[] = [];
     for (const table of userTables) {
       try {
         const { error: delErr } = await supabaseAdmin.from(table).delete().eq('user_id', user.id);
