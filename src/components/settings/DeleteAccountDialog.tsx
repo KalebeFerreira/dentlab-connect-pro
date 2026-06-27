@@ -25,8 +25,9 @@ export const DeleteAccountDialog = () => {
   const [deleting, setDeleting] = useState(false);
   const [authProvider, setAuthProvider] = useState<string | null>(null);
 
+  const isProviderLoading = authProvider === null;
   const isPasswordAccount = authProvider === "email";
-  const requiresTextConfirmation = !isPasswordAccount;
+  const requiresTextConfirmation = authProvider !== null && !isPasswordAccount;
 
   useEffect(() => {
     if (!open) return;
@@ -123,13 +124,20 @@ export const DeleteAccountDialog = () => {
           <DialogDescription>
             {confirmStep
               ? "Tem certeza absoluta? Esta ação é irreversível. Todos os seus dados, pedidos, pacientes e informações serão permanentemente excluídos."
-              : requiresTextConfirmation
+              : isProviderLoading
+                ? "Carregando o método de acesso da sua conta."
+                : requiresTextConfirmation
                 ? "Para excluir sua conta conectada pelo Google, avance e confirme digitando EXCLUIR."
                 : "Para excluir sua conta, digite sua senha para confirmar sua identidade."}
           </DialogDescription>
         </DialogHeader>
 
-        {!confirmStep && isPasswordAccount ? (
+        {isProviderLoading ? (
+          <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verificando conta...
+          </div>
+        ) : !confirmStep && isPasswordAccount ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="delete-password">Senha</Label>
@@ -181,7 +189,7 @@ export const DeleteAccountDialog = () => {
             <Button
               variant="destructive"
               onClick={handlePasswordSubmit}
-              disabled={isPasswordAccount && !password}
+              disabled={isProviderLoading || (isPasswordAccount && !password)}
             >
               Continuar
             </Button>
