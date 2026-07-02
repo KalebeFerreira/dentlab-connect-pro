@@ -87,8 +87,56 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({} as any));
     let { action } = body;
+
+    // ============================================================
+    // n8n tolerance layer: extract phone/message/instance from
+    // multiple common payload shapes (root, body.*, body.data.*, etc.)
+    // ============================================================
+    try {
+      const b: any = body || {};
+      const nested: any = b.body || {};
+      const evoData: any = nested.data || b.data || {};
+      const remoteJid: string = evoData?.key?.remoteJid || '';
+      const jidPhone = remoteJid ? remoteJid.split('@')[0] : '';
+
+      const foundPhone =
+        b.phone_number || b.phone || b.from || b.number ||
+        nested.phone_number || nested.phone || nested.from || nested.number ||
+        jidPhone || '';
+
+      const foundMessage =
+        b.message || b.text || b.content ||
+        nested.message || nested.text || nested.content ||
+        evoData?.message?.conversation ||
+        evoData?.message?.extendedTextMessage?.text || '';
+
+      const foundInstance =
+        b.instance || b.instance_name || b.instanceName ||
+        nested.instance || nested.instance_name || nested.instanceName ||
+        evoData?.instance || null;
+
+      const foundName =
+        b.patient_name || b.pushName || b.name ||
+        nested.patient_name || nested.pushName || nested.name ||
+        evoData?.pushName || null;
+
+      if (foundPhone && typeof b.phone_number !== 'string') b.phone_number = String(foundPhone);
+      if (foundMessage && typeof b.message !== 'string') b.message = String(foundMessage);
+      if (foundInstance && !b.instance_name) b.instance_name = String(foundInstance);
+      if (foundName && !b.patient_name) b.patient_name = String(foundName);
+
+      if (!action && b.phone_number && b.message) {
+        b.action = 'process_message';
+        action = 'process_message';
+        console.log('[n8n-tolerance] normalized to process_message', {
+          phone: b.phone_number, instance: b.instance_name, len: b.message.length,
+        });
+      }
+    } catch (normErr) {
+      console.warn('[n8n-tolerance] normalization skipped:', normErr);
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -432,8 +480,12 @@ serve(async (req) => {
       const { phone_number, message, patient_name, user_id, instance_name } = body;
 
       if (!phone_number || !message) {
+        console.error('[process_message] validation failed. extracted:', { phone_number, message, instance_name, user_id });
         return new Response(
-          JSON.stringify({ error: 'phone_number e message são obrigatórios' }),
+          JSON.stringify({
+            error: 'phone_number e message são obrigatórios',
+            received: { phone_number: phone_number || null, message: message || null, instance_name: instance_name || null, user_id: user_id || null },
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
