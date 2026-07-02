@@ -598,10 +598,21 @@ serve(async (req) => {
       const isOutsideHours = currentTime < startTime || currentTime > endTime;
       const isClosedDay = isWeekend && !agentSettings.work_on_weekends;
 
-      // Resolve Evolution config with fallback to env secrets
+      // Resolve Evolution config. NEVER fall back to the generic EVOLUTION_INSTANCE env
+      // for a per-tenant reply — that instance ("clinica") does not exist on the shared
+      // server and causes Evolution 400 "Cannot read properties of undefined (reading 'id')".
+      // Derive the per-user instance the same way evolution-manager does.
+      const derivedInstance = `clinic-${agentSettings.user_id.replace(/-/g, '').slice(0, 24)}`;
       const evoUrl = agentSettings.evolution_api_url || Deno.env.get('EVOLUTION_API_URL') || '';
-      const evoInstance = agentSettings.evolution_instance_name || Deno.env.get('EVOLUTION_INSTANCE') || '';
-      console.log(`[process_message] evolution config url=${evoUrl ? 'set' : 'MISSING'} instance=${evoInstance || 'MISSING'}`);
+      const evoInstance = agentSettings.evolution_instance_name || derivedInstance;
+      console.log(`[process_message] evolution config url=${evoUrl ? 'set' : 'MISSING'} instance=${evoInstance} (source=${agentSettings.evolution_instance_name ? 'db' : 'derived'})`);
+
+      // Backfill DB so subsequent lookups by instance_name work
+      if (!agentSettings.evolution_instance_name) {
+        await supabase.from('ai_agent_settings')
+          .update({ evolution_instance_name: derivedInstance })
+          .eq('user_id', agentSettings.user_id);
+      }
 
       if ((isOutsideHours || isClosedDay) && agentSettings.auto_reply_outside_hours) {
         const outsideMsg = agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.';
