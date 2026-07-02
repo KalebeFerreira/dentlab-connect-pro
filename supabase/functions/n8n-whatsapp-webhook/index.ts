@@ -480,8 +480,12 @@ serve(async (req) => {
       const { phone_number, message, patient_name, user_id, instance_name } = body;
 
       if (!phone_number || !message) {
+        console.error('[process_message] validation failed. extracted:', { phone_number, message, instance_name, user_id });
         return new Response(
-          JSON.stringify({ error: 'phone_number e message são obrigatórios' }),
+          JSON.stringify({
+            error: 'phone_number e message são obrigatórios',
+            received: { phone_number: phone_number || null, message: message || null, instance_name: instance_name || null, user_id: user_id || null },
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
