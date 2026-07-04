@@ -477,7 +477,39 @@ serve(async (req) => {
 
     // Process message action (called from n8n)
     if (action === 'process_message') {
-      const { phone_number, message, patient_name, user_id, instance_name } = body;
+      const { phone_number, patient_name, user_id, instance_name } = body;
+
+      // Captura texto simples ou extrai metadados/legendas de mídias para evitar que venha vazio
+      const rawData: any = body;
+      let extractedMessage = rawData.message || rawData.body?.message || rawData.body?.text || rawData.body?.text?.message;
+
+      if (!extractedMessage && rawData.body?.data?.message) {
+        const msgData = rawData.body.data.message;
+        extractedMessage = msgData.conversation ||
+                           msgData.extendedTextMessage?.text ||
+                           msgData.imageMessage?.caption ||
+                           msgData.videoMessage?.caption ||
+                           msgData.audioMessage?.caption;
+
+        // Se ainda assim for nulo, identifica o tipo de mídia para dar um contexto à IA
+        if (!extractedMessage) {
+          if (msgData.audioMessage) extractedMessage = "[Nota de Áudio/Mensagem de voz enviada pelo paciente]";
+          else if (msgData.imageMessage) extractedMessage = "[Imagem/Foto enviada pelo paciente]";
+          else if (msgData.videoMessage) extractedMessage = "[Vídeo enviado pelo paciente]";
+          else if (msgData.stickerMessage) extractedMessage = "[Figurinha/Sticker enviado pelo paciente]";
+          else if (msgData.documentMessage) extractedMessage = "[Documento/Arquivo enviado pelo paciente]";
+        }
+      }
+
+      // Se o payload vier de formatos alternativos da Evolution API
+      if (!extractedMessage && rawData.body?.messageType) {
+        const mType = rawData.body.messageType;
+        if (mType !== 'text') {
+          extractedMessage = `[Mídia do tipo ${mType} enviada pelo paciente]`;
+        }
+      }
+
+      const message = extractedMessage || 'Mensagem sem texto';
 
       if (!phone_number || !message) {
         console.error('[process_message] validation failed. extracted:', { phone_number, message, instance_name, user_id });
