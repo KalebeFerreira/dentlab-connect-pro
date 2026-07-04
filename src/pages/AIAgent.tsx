@@ -99,6 +99,26 @@ export default function AIAgent() {
     if (user) loadSettings();
   }, [user]);
 
+  const applySettingsRow = (data: any) => {
+    setSettings({
+      id: data.id,
+      agent_name: data.agent_name,
+      agent_personality: data.agent_personality,
+      welcome_message: data.welcome_message,
+      is_whatsapp_enabled: data.is_whatsapp_enabled ?? false,
+      evolution_api_url: data.evolution_api_url,
+      evolution_instance_name: data.evolution_instance_name,
+      whatsapp_number: (data as any).whatsapp_number ?? null,
+      working_hours_start: data.working_hours_start,
+      working_hours_end: data.working_hours_end,
+      work_on_weekends: data.work_on_weekends ?? false,
+      auto_reply_outside_hours: data.auto_reply_outside_hours ?? true,
+      outside_hours_message: data.outside_hours_message,
+    });
+    setTrialStartedAt((data as any).trial_started_at);
+    setIsConfigured(!!data.agent_name && data.agent_name !== 'Assistente Virtual');
+  };
+
   const loadSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -108,25 +128,35 @@ export default function AIAgent() {
         .maybeSingle();
 
       if (error) throw error;
+
       if (data) {
-        setSettings({
-          id: data.id,
-          agent_name: data.agent_name,
-          agent_personality: data.agent_personality,
-          welcome_message: data.welcome_message,
-          is_whatsapp_enabled: data.is_whatsapp_enabled ?? false,
-          evolution_api_url: data.evolution_api_url,
-          evolution_instance_name: data.evolution_instance_name,
-          whatsapp_number: (data as any).whatsapp_number ?? null,
-          working_hours_start: data.working_hours_start,
-          working_hours_end: data.working_hours_end,
-          work_on_weekends: data.work_on_weekends ?? false,
-          auto_reply_outside_hours: data.auto_reply_outside_hours ?? true,
-          outside_hours_message: data.outside_hours_message,
-        });
-        setTrialStartedAt((data as any).trial_started_at);
-        // Consider configured if agent_name is set and not default
-        setIsConfigured(!!data.agent_name && data.agent_name !== 'Assistente Virtual');
+        applySettingsRow(data);
+      } else {
+        // Safe upsert: cria linha padrão para o usuário na primeira visita
+        const instanceName = `clinic-${user!.id.replace(/-/g, '').slice(0, 24)}`;
+        const { data: inserted, error: insertError } = await supabase
+          .from('ai_agent_settings')
+          .insert({
+            user_id: user!.id,
+            agent_name: 'Assistente Virtual',
+            is_whatsapp_enabled: true,
+            evolution_instance_name: instanceName,
+          })
+          .select()
+          .maybeSingle();
+
+        if (insertError) {
+          // Possível corrida entre abas — tenta re-ler
+          console.warn('Insert de ai_agent_settings falhou, tentando re-ler:', insertError);
+          const { data: retry } = await supabase
+            .from('ai_agent_settings')
+            .select('*')
+            .eq('user_id', user!.id)
+            .maybeSingle();
+          if (retry) applySettingsRow(retry);
+        } else if (inserted) {
+          applySettingsRow(inserted);
+        }
       }
     } catch (err) {
       console.error('Erro ao carregar configurações:', err);
