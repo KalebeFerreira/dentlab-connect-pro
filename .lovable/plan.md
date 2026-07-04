@@ -1,26 +1,37 @@
-O problema mais provável é este: a conta `regiarodrigues70@gmail.com` existe, mas foi criada com login Google. A tela atual exige senha para excluir a conta; usuários Google não têm senha local, então a validação por senha bloqueia a exclusão. Também há risco de falha por dependências que não usam `user_id`, como arquivos vinculados por `uploaded_by`.
+## Problema
 
-Plano de correção:
+Novos usuários abrem a página do Agente de IA sem nenhuma linha em `ai_agent_settings`. Como o `loadSettings()` só faz `select`, o estado fica vazio e ações posteriores (gerar QR, conectar Evolution) falham com "Instância não encontrada" porque não há `evolution_instance_name` persistido.
 
-1. Ajustar a tela de exclusão de conta
-   - Detectar se o usuário usa provedor Google/OAuth.
-   - Para conta Google, não pedir senha; pedir confirmação digitando `EXCLUIR`.
-   - Para conta com email/senha, manter a validação por senha.
-   - Mostrar erro real retornado pelo backend de forma clara.
+## Solução: Safe Upsert no carregamento
 
-2. Ajustar a função backend `delete-account`
-   - Aceitar dois fluxos seguros:
-     - email/senha: exige senha e valida login.
-     - Google/OAuth: exige confirmação textual e usuário autenticado.
-   - Evitar quebra se o corpo da requisição vier vazio ou incompleto.
-   - Excluir também registros com vínculo indireto, especialmente `order_files.uploaded_by`.
-   - Continuar limpando dados do usuário antes de remover a conta da autenticação.
+Ajustar `src/pages/AIAgent.tsx` (`loadSettings`) para, quando o `select` retornar `null`, inserir automaticamente uma linha padrão para o `user_id` autenticado e usá-la em seguida.
 
-3. Excluir a conta solicitada
-   - Remover definitivamente a conta `regiarodrigues70@gmail.com` e os dados vinculados.
-   - Confirmar no banco que o email não existe mais.
+### Registro padrão inserido
+- `user_id`: `user.id`
+- `agent_name`: `"Assistente Virtual"`
+- `is_whatsapp_enabled`: `true`
+- `evolution_instance_name`: `clinic-${user.id.replace(/-/g, '').slice(0, 24)}` (mesmo formato do backend em `n8n-whatsapp-webhook`)
+- Demais colunas: deixar o default do banco
 
-4. Validar
-   - Testar a função de exclusão com o formato esperado.
-   - Conferir logs da função se houver falha.
-   - Confirmar que usuários Google e usuários com senha conseguem iniciar o cancelamento corretamente.
+### Fluxo em `loadSettings`
+1. `select * from ai_agent_settings where user_id = user.id` (maybeSingle).
+2. Se `data` existir → comportamento atual.
+3. Se `data` for `null`:
+   - `insert` da linha padrão com `.select().single()`.
+   - Em caso de conflito (corrida entre abas), tratar como benigno e re-executar o `select`.
+   - Preencher `settings`, `trialStartedAt`, `isConfigured` com o registro recém-criado (isConfigured = false, pois nome é o default).
+4. `setLoading(false)` no `finally`.
+
+### Detalhes técnicos
+- Somente frontend; nenhuma mudança de schema, RLS ou edge function (a policy de INSERT em `ai_agent_settings` já permite `auth.uid() = user_id`).
+- Reutilizar o helper de instância inline (uma linha) para manter consistência com `handleQuickSetup` (linha 159) e com o webhook.
+- Não alterar `handleQuickSetup` nem a lógica de trial — o upsert só garante existência da linha.
+- Logar erro de insert no console e mostrar toast discreto apenas se falhar (não bloquear tela).
+
+### Arquivos afetados
+- `src/pages/AIAgent.tsx` — função `loadSettings` (linhas ~102-136).
+
+### Validação
+- Novo usuário abre `/ai-agent` → linha aparece em `ai_agent_settings` com `evolution_instance_name` correto e `is_whatsapp_enabled = true`.
+- Clique em conectar WhatsApp deixa de retornar "Instância não encontrada".
+- Usuários existentes continuam carregando normalmente (branch do `data` existente inalterado).
