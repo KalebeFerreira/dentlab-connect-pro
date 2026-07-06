@@ -525,10 +525,35 @@ serve(async (req) => {
       console.log('[process_message] lookup', { user_id, instance_name, phone_number });
 
       // Find agent settings — try multiple strategies
+      // Preferência: rotear via whatsapp_instances (novo modelo multi-clínica).
+      // Fallback: ai_agent_settings direto (compat com backfill).
       let agentSettings: any = null;
 
-      // 1. Explicit user_id
-      if (user_id) {
+      // 0. NEW: por instance_name em whatsapp_instances → agent → ai_agent_settings
+      if (instance_name) {
+        const { data: inst } = await supabase
+          .from('whatsapp_instances')
+          .select('id, clinic_id, agent_id, legacy_ai_agent_settings_id')
+          .ilike('evolution_instance_name', instance_name)
+          .maybeSingle();
+
+        if (inst?.legacy_ai_agent_settings_id) {
+          const { data } = await supabase
+            .from('ai_agent_settings')
+            .select('*')
+            .eq('id', inst.legacy_ai_agent_settings_id)
+            .maybeSingle();
+          agentSettings = data;
+          if (agentSettings) {
+            console.log('[process_message] routed via whatsapp_instances', {
+              instance_id: inst.id, clinic_id: inst.clinic_id, agent_id: inst.agent_id,
+            });
+          }
+        }
+      }
+
+      // 1. Explicit user_id (compat)
+      if (!agentSettings && user_id) {
         const { data } = await supabase
           .from('ai_agent_settings')
           .select('*')
@@ -537,7 +562,7 @@ serve(async (req) => {
         agentSettings = data;
       }
 
-      // 2. By instance_name (case-insensitive)
+      // 2. By instance_name direto em ai_agent_settings (compat)
       if (!agentSettings && instance_name) {
         const { data } = await supabase
           .from('ai_agent_settings')
@@ -565,10 +590,9 @@ serve(async (req) => {
         }
       }
 
-      // 4. (REMOVIDO) Fallback "primeiro agente habilitado".
-      // Em ambiente multi-tenant, este fallback rotearia mensagens de qualquer
-      // número desconhecido para a clínica errada. Preferimos falhar de forma
-      // explícita a vazar mensagem entre clínicas.
+      // 4. (REMOVIDO) Fallback "primeiro agente habilitado" — vazamento cross-tenant.
+
+
 
 
       if (!agentSettings) {
