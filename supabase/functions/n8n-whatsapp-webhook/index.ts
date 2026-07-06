@@ -565,20 +565,11 @@ serve(async (req) => {
         }
       }
 
-      // 4. Fallback: any enabled WhatsApp agent (single-tenant deployments)
-      if (!agentSettings) {
-        const { data } = await supabase
-          .from('ai_agent_settings')
-          .select('*')
-          .eq('is_whatsapp_enabled', true)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        agentSettings = data;
-        if (agentSettings) {
-          console.log('[process_message] fallback to first whatsapp-enabled agent', agentSettings.user_id);
-        }
-      }
+      // 4. (REMOVIDO) Fallback "primeiro agente habilitado".
+      // Em ambiente multi-tenant, este fallback rotearia mensagens de qualquer
+      // número desconhecido para a clínica errada. Preferimos falhar de forma
+      // explícita a vazar mensagem entre clínicas.
+
 
       if (!agentSettings) {
         console.error('[process_message] no agent found', { user_id, instance_name, phone_number });
