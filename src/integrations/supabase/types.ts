@@ -14,11 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          auto_reply_outside_hours: boolean
+          clinic_id: string
+          created_at: string
+          handoff_rules: Json
+          id: string
+          is_active: boolean
+          is_whatsapp_enabled: boolean
+          legacy_ai_agent_settings_id: string | null
+          name: string
+          outside_hours_message: string | null
+          personality: string | null
+          system_prompt: string | null
+          updated_at: string
+          welcome_message: string | null
+          work_on_weekends: boolean
+          working_hours_end: string | null
+          working_hours_start: string | null
+        }
+        Insert: {
+          auto_reply_outside_hours?: boolean
+          clinic_id: string
+          created_at?: string
+          handoff_rules?: Json
+          id?: string
+          is_active?: boolean
+          is_whatsapp_enabled?: boolean
+          legacy_ai_agent_settings_id?: string | null
+          name?: string
+          outside_hours_message?: string | null
+          personality?: string | null
+          system_prompt?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+          work_on_weekends?: boolean
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Update: {
+          auto_reply_outside_hours?: boolean
+          clinic_id?: string
+          created_at?: string
+          handoff_rules?: Json
+          id?: string
+          is_active?: boolean
+          is_whatsapp_enabled?: boolean
+          legacy_ai_agent_settings_id?: string | null
+          name?: string
+          outside_hours_message?: string | null
+          personality?: string | null
+          system_prompt?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+          work_on_weekends?: boolean
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_agent_settings: {
         Row: {
           agent_name: string
           agent_personality: string | null
           auto_reply_outside_hours: boolean | null
+          clinic_id: string | null
           connected_at: string | null
           connection_status: string
           created_at: string
@@ -41,6 +110,7 @@ export type Database = {
           agent_name?: string
           agent_personality?: string | null
           auto_reply_outside_hours?: boolean | null
+          clinic_id?: string | null
           connected_at?: string | null
           connection_status?: string
           created_at?: string
@@ -63,6 +133,7 @@ export type Database = {
           agent_name?: string
           agent_personality?: string | null
           auto_reply_outside_hours?: boolean | null
+          clinic_id?: string | null
           connected_at?: string | null
           connection_status?: string
           created_at?: string
@@ -81,11 +152,20 @@ export type Database = {
           working_hours_end?: string | null
           working_hours_start?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_settings_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       appointments: {
         Row: {
           appointment_date: string
+          clinic_id: string | null
           created_at: string
           dentist_id: string | null
           dentist_payment: number | null
@@ -107,6 +187,7 @@ export type Database = {
         }
         Insert: {
           appointment_date: string
+          clinic_id?: string | null
           created_at?: string
           dentist_id?: string | null
           dentist_payment?: number | null
@@ -128,6 +209,7 @@ export type Database = {
         }
         Update: {
           appointment_date?: string
+          clinic_id?: string | null
           created_at?: string
           dentist_id?: string | null
           dentist_payment?: number | null
@@ -148,6 +230,13 @@ export type Database = {
           whatsapp_sent?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_dentist_id_fkey"
             columns: ["dentist_id"]
@@ -328,6 +417,65 @@ export type Database = {
           payment_type?: Database["public"]["Enums"]["client_payment_type"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      clinic_members: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["clinic_member_role"]
+          user_id: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["clinic_member_role"]
+          user_id: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["clinic_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_members_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinics: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+          timezone?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1484,6 +1632,7 @@ export type Database = {
         Row: {
           address: string | null
           birth_date: string | null
+          clinic_id: string | null
           cpf: string | null
           created_at: string
           email: string | null
@@ -1497,6 +1646,7 @@ export type Database = {
         Insert: {
           address?: string | null
           birth_date?: string | null
+          clinic_id?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
@@ -1510,6 +1660,7 @@ export type Database = {
         Update: {
           address?: string | null
           birth_date?: string | null
+          clinic_id?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
@@ -1520,7 +1671,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pdf_generation_usage: {
         Row: {
@@ -2031,8 +2190,11 @@ export type Database = {
       }
       whatsapp_conversations: {
         Row: {
+          agent_id: string | null
+          clinic_id: string | null
           created_at: string
           id: string
+          instance_id: string | null
           is_active: boolean | null
           last_message_at: string
           patient_id: string | null
@@ -2043,8 +2205,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_id?: string | null
+          clinic_id?: string | null
           created_at?: string
           id?: string
+          instance_id?: string | null
           is_active?: boolean | null
           last_message_at?: string
           patient_id?: string | null
@@ -2055,8 +2220,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_id?: string | null
+          clinic_id?: string | null
           created_at?: string
           id?: string
+          instance_id?: string | null
           is_active?: boolean | null
           last_message_at?: string
           patient_id?: string | null
@@ -2068,6 +2236,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "whatsapp_conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_conversations_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_conversations_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "whatsapp_conversations_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
@@ -2076,38 +2265,110 @@ export type Database = {
           },
         ]
       }
+      whatsapp_instances: {
+        Row: {
+          agent_id: string | null
+          clinic_id: string
+          connected_at: string | null
+          created_at: string
+          evolution_api_url: string | null
+          evolution_instance_name: string
+          id: string
+          legacy_ai_agent_settings_id: string | null
+          phone_number: string | null
+          status: string
+          trial_started_at: string | null
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          clinic_id: string
+          connected_at?: string | null
+          created_at?: string
+          evolution_api_url?: string | null
+          evolution_instance_name: string
+          id?: string
+          legacy_ai_agent_settings_id?: string | null
+          phone_number?: string | null
+          status?: string
+          trial_started_at?: string | null
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          clinic_id?: string
+          connected_at?: string | null
+          created_at?: string
+          evolution_api_url?: string | null
+          evolution_instance_name?: string
+          id?: string
+          legacy_ai_agent_settings_id?: string | null
+          phone_number?: string | null
+          status?: string
+          trial_started_at?: string | null
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_instances_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_instances_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_messages: {
         Row: {
+          agent_id: string | null
+          clinic_id: string | null
           content: string
           conversation_id: string
           created_at: string
           direction: string
           evolution_message_id: string | null
           id: string
+          instance_id: string | null
           is_from_ai: boolean | null
           message_type: string
           status: string | null
           user_id: string
         }
         Insert: {
+          agent_id?: string | null
+          clinic_id?: string | null
           content: string
           conversation_id: string
           created_at?: string
           direction: string
           evolution_message_id?: string | null
           id?: string
+          instance_id?: string | null
           is_from_ai?: boolean | null
           message_type?: string
           status?: string | null
           user_id: string
         }
         Update: {
+          agent_id?: string | null
+          clinic_id?: string | null
           content?: string
           conversation_id?: string
           created_at?: string
           direction?: string
           evolution_message_id?: string | null
           id?: string
+          instance_id?: string | null
           is_from_ai?: boolean | null
           message_type?: string
           status?: string | null
@@ -2115,10 +2376,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "whatsapp_messages_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "whatsapp_messages_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
             referencedColumns: ["id"]
           },
         ]
@@ -2232,7 +2514,12 @@ export type Database = {
         Args: { p_document_type: string; p_user_id: string }
         Returns: string
       }
+      get_user_default_clinic: { Args: { _user_id: string }; Returns: string }
       has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
+      has_clinic_access: {
+        Args: { _clinic_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2248,6 +2535,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "clinic" | "laboratory" | "dentist" | "employee"
       client_payment_type: "a_vista" | "mensalista" | "nao_definido"
+      clinic_member_role: "owner" | "admin" | "reception" | "dentist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2377,6 +2665,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "clinic", "laboratory", "dentist", "employee"],
       client_payment_type: ["a_vista", "mensalista", "nao_definido"],
+      clinic_member_role: ["owner", "admin", "reception", "dentist"],
     },
   },
 } as const
