@@ -100,6 +100,15 @@ Deno.serve(async (req) => {
       }
     };
 
+    // GARANTIA CRÍTICA (multi-tenant): toda chamada assegura que o user_id
+    // esteja amarrado ao instance_name determinístico dessa clínica.
+    // Sem isso, o webhook da Evolution chega com instance_name e não acha
+    // o dono (user_id) → erro 404 "Configurações do agente não encontradas".
+    await upsertRow({
+      evolution_instance_name: instanceName,
+      webhook_url: webhookUrl,
+    });
+
     if (action === "get") {
       const { data } = await supabaseAdmin
         .from("ai_agent_settings")
