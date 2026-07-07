@@ -12,6 +12,53 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+function safeParseDate(value: unknown): Date | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+
+  try {
+    if (typeof value === 'number') {
+      // Stripe envia timestamps Unix em segundos; valores já em ms são preservados.
+      const ms = value < 1e10 ? value * 1000 : value;
+      const d = new Date(ms);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      // ISO / RFC (inclui strings com timezone)
+      const iso = new Date(trimmed);
+      if (!isNaN(iso.getTime())) return iso;
+
+      // DD/MM/YYYY ou DD-MM-YYYY
+      const dmy = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (dmy) {
+        let [, d, m, y] = dmy;
+        let yearNum = parseInt(y);
+        if (yearNum < 100) yearNum += 2000;
+        const dayNum = parseInt(d);
+        const monthNum = parseInt(m);
+        if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) return null;
+        const result = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
+        if (result.getUTCDate() !== dayNum || result.getUTCMonth() !== monthNum - 1) return null;
+        return result;
+      }
+    }
+  } catch (err) {
+    // qualquer exceção no parse retorna null
+  }
+
+  return null;
+}
+
+function isDateAfter(value: unknown, reference: Date = new Date()): boolean {
+  const d = safeParseDate(value);
+  if (!d) return false;
+  return d.getTime() > reference.getTime();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
