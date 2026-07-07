@@ -25,9 +25,53 @@ Se o paciente usar frases como "falar com atendente", "pessoa real", "humano", "
 
 const TRIAL_DAYS = 15;
 
+function safeParseDate(value: unknown): Date | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+
+  try {
+    if (typeof value === 'number') {
+      const ms = value < 1e10 ? value * 1000 : value;
+      const d = new Date(ms);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      const iso = new Date(trimmed);
+      if (!isNaN(iso.getTime())) return iso;
+
+      const dmy = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (dmy) {
+        let [, d, m, y] = dmy;
+        let yearNum = parseInt(y);
+        if (yearNum < 100) yearNum += 2000;
+        const dayNum = parseInt(d);
+        const monthNum = parseInt(m);
+        if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) return null;
+        const result = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
+        if (result.getUTCDate() !== dayNum || result.getUTCMonth() !== monthNum - 1) return null;
+        return result;
+      }
+    }
+  } catch (err) {
+    // ignore
+  }
+
+  return null;
+}
+
+function isDateAfter(value: unknown, reference: Date = new Date()): boolean {
+  const d = safeParseDate(value);
+  if (!d) return false;
+  return d.getTime() > reference.getTime();
+}
+
 function isTrialExpired(trialStartedAt: string | null): boolean {
-  if (!trialStartedAt) return false;
-  const start = new Date(trialStartedAt);
+  const start = safeParseDate(trialStartedAt);
+  if (!start) return false;
   const now = new Date();
   const diffMs = now.getTime() - start.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
@@ -209,17 +253,22 @@ serve(async (req) => {
     };
 
     const checkPlanAccess = async (userId: string) => {
-      const { data: settings } = await supabase
-        .from('ai_agent_settings').select('trial_started_at').eq('user_id', userId).maybeSingle();
-      const { data: sub } = await supabase
-        .from('user_subscriptions').select('status, plan_name, current_period_end')
-        .eq('user_id', userId).maybeSingle();
-      const isPremium = sub && (
-        sub.status === 'active' || sub.status === 'trialing' ||
-        (sub.status === 'canceled' && sub.current_period_end && new Date(sub.current_period_end) > new Date())
-      ) && (sub.plan_name === 'premium' || sub.plan_name === 'super_premium');
-      const trialActive = settings?.trial_started_at && !isTrialExpired(settings.trial_started_at);
-      return !!(isPremium || trialActive);
+      try {
+        const { data: settings } = await supabase
+          .from('ai_agent_settings').select('trial_started_at').eq('user_id', userId).maybeSingle();
+        const { data: sub } = await supabase
+          .from('user_subscriptions').select('status, plan_name, current_period_end')
+          .eq('user_id', userId).maybeSingle();
+        const isPremium = sub && (
+          sub.status === 'active' || sub.status === 'trialing' ||
+          (sub.status === 'canceled' && isDateAfter(sub.current_period_end))
+        ) && (sub.plan_name === 'premium' || sub.plan_name === 'super_premium');
+        const trialActive = settings?.trial_started_at && !isTrialExpired(settings.trial_started_at);
+        return !!(isPremium || trialActive);
+      } catch (err) {
+        console.error('[checkPlanAccess] fallback denied due to error', { userId, error: String(err) });
+        return false;
+      }
     };
 
     const userInstanceName = (userId: string) => `user-${userId.replace(/-/g, '').slice(0, 24)}`;
@@ -663,23 +712,39 @@ serve(async (req) => {
       }
 
       // Check trial expiration
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select('status, plan_name, current_period_end')
-        .eq('user_id', agentSettings.user_id)
-        .maybeSingle();
+      let isPremium = false;
+      try {
+        const { data: subscription } = await supabase
+          .from('user_subscriptions')
+          .select('status, plan_name, current_period_end')
+          .eq('user_id', agentSettings.user_id)
+          .maybeSingle();
 
-      const isPremium = subscription && (
-        subscription.status === 'active' ||
-        subscription.status === 'trialing' ||
-        (subscription.status === 'canceled' && subscription.current_period_end && new Date(subscription.current_period_end) > new Date())
-      );
-
-      if (!isPremium && isTrialExpired(agentSettings.trial_started_at)) {
-        return new Response(
-          JSON.stringify({ error: 'Período de teste expirado. Assine o plano Premium para continuar.' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        isPremium = subscription && (
+          subscription.status === 'active' ||
+          subscription.status === 'trialing' ||
+          (subscription.status === 'canceled' && isDateAfter(subscription.current_period_end))
         );
+      } catch (subErr) {
+        console.error('[process_message] subscription check failed, continuing as non-premium', {
+          user_id: agentSettings.user_id,
+          error: String(subErr),
+        });
+        isPremium = false;
+      }
+
+      try {
+        if (!isPremium && isTrialExpired(agentSettings.trial_started_at)) {
+          return new Response(
+            JSON.stringify({ error: 'Período de teste expirado. Assine o plano Premium para continuar.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (trialErr) {
+        console.error('[process_message] trial check failed, allowing message to proceed', {
+          user_id: agentSettings.user_id,
+          error: String(trialErr),
+        });
       }
 
       // Check working hours
