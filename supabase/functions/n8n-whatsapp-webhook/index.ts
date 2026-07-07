@@ -716,7 +716,7 @@ serve(async (req) => {
       const isPremium = subscription && (
         subscription.status === 'active' ||
         subscription.status === 'trialing' ||
-        (subscription.status === 'canceled' && subscription.current_period_end && new Date(subscription.current_period_end) > new Date())
+        (subscription.status === 'canceled' && isDateAfter(subscription.current_period_end))
       );
 
       if (!isPremium && isTrialExpired(agentSettings.trial_started_at)) {
