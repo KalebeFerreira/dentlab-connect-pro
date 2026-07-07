@@ -260,7 +260,7 @@ serve(async (req) => {
         .eq('user_id', userId).maybeSingle();
       const isPremium = sub && (
         sub.status === 'active' || sub.status === 'trialing' ||
-        (sub.status === 'canceled' && sub.current_period_end && new Date(sub.current_period_end) > new Date())
+        (sub.status === 'canceled' && isDateAfter(sub.current_period_end))
       ) && (sub.plan_name === 'premium' || sub.plan_name === 'super_premium');
       const trialActive = settings?.trial_started_at && !isTrialExpired(settings.trial_started_at);
       return !!(isPremium || trialActive);
