@@ -50,30 +50,44 @@ async function sendWhatsAppReply(
   phoneNumber: string,
   message: string,
 ): Promise<boolean> {
-  const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-  if (!EVOLUTION_API_KEY || !evolutionApiUrl || !instanceName) {
-    console.error('[sendWhatsAppReply] missing config', { hasKey: !!EVOLUTION_API_KEY, url: evolutionApiUrl, instance: instanceName });
+  // Aceita ambos os nomes de secret (TOKEN preferencial, KEY como fallback).
+  const EVOLUTION_TOKEN =
+    Deno.env.get('EVOLUTION_API_TOKEN') || Deno.env.get('EVOLUTION_API_KEY') || '';
+  const resolvedUrl =
+    evolutionApiUrl || Deno.env.get('EVOLUTION_API_URL') || HARDCODED_EVOLUTION_URL;
+
+  if (!EVOLUTION_TOKEN || !resolvedUrl || !instanceName || !phoneNumber || !message) {
+    console.error('[sendWhatsAppReply] missing config', {
+      hasToken: !!EVOLUTION_TOKEN,
+      url: resolvedUrl,
+      instance: instanceName,
+      hasPhone: !!phoneNumber,
+      hasMsg: !!message,
+    });
     return false;
   }
 
-  const baseUrl = normalizeEvolutionApiUrl(evolutionApiUrl);
+  const baseUrl = normalizeEvolutionApiUrl(resolvedUrl);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
-  // Normalize number: digits only, ensure 55 prefix
+  // Normaliza número: só dígitos, prefixo 55 do Brasil.
   let number = (phoneNumber || '').replace(/\D/g, '');
   if (number && !number.startsWith('55')) number = '55' + number;
+
+  const payload = { number, text: message, delay: 1200 };
+  console.log(`[sendWhatsAppReply] POST ${url} number=${number} msgLen=${message.length}`);
 
   try {
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number, text: message }),
+      headers: { apikey: EVOLUTION_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     const text = await resp.text().catch(() => '');
     if (!resp.ok) {
       console.error(`[sendWhatsAppReply] Evolution ${resp.status} url=${url} body=${text.slice(0, 400)}`);
       return false;
     }
-    console.log(`[sendWhatsAppReply] ok → ${number}`);
+    console.log(`[sendWhatsAppReply] ok → ${number} (${resp.status})`);
     return true;
   } catch (err) {
     console.error('[sendWhatsAppReply] erro:', err);
