@@ -712,23 +712,39 @@ serve(async (req) => {
       }
 
       // Check trial expiration
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select('status, plan_name, current_period_end')
-        .eq('user_id', agentSettings.user_id)
-        .maybeSingle();
+      let isPremium = false;
+      try {
+        const { data: subscription } = await supabase
+          .from('user_subscriptions')
+          .select('status, plan_name, current_period_end')
+          .eq('user_id', agentSettings.user_id)
+          .maybeSingle();
 
-      const isPremium = subscription && (
-        subscription.status === 'active' ||
-        subscription.status === 'trialing' ||
-        (subscription.status === 'canceled' && isDateAfter(subscription.current_period_end))
-      );
-
-      if (!isPremium && isTrialExpired(agentSettings.trial_started_at)) {
-        return new Response(
-          JSON.stringify({ error: 'Período de teste expirado. Assine o plano Premium para continuar.' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        isPremium = subscription && (
+          subscription.status === 'active' ||
+          subscription.status === 'trialing' ||
+          (subscription.status === 'canceled' && isDateAfter(subscription.current_period_end))
         );
+      } catch (subErr) {
+        console.error('[process_message] subscription check failed, continuing as non-premium', {
+          user_id: agentSettings.user_id,
+          error: String(subErr),
+        });
+        isPremium = false;
+      }
+
+      try {
+        if (!isPremium && isTrialExpired(agentSettings.trial_started_at)) {
+          return new Response(
+            JSON.stringify({ error: 'Período de teste expirado. Assine o plano Premium para continuar.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (trialErr) {
+        console.error('[process_message] trial check failed, allowing message to proceed', {
+          user_id: agentSettings.user_id,
+          error: String(trialErr),
+        });
       }
 
       // Check working hours
