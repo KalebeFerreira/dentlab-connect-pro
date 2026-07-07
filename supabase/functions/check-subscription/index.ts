@@ -226,7 +226,7 @@ serve(async (req) => {
         stripe_price_id: priceId,
         plan_name: planName,
         status: normalizedStatus,
-        current_period_start: subscription ? new Date(subscription.current_period_start * 1000).toISOString() : null,
+        current_period_start: subscription ? (safeParseDate(subscription.current_period_start)?.toISOString() ?? null) : null,
         current_period_end: subscriptionEnd,
         cancel_at_period_end: subscription?.cancel_at_period_end || false,
         updated_at: new Date().toISOString(),
