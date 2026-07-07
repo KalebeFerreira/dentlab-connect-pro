@@ -253,17 +253,22 @@ serve(async (req) => {
     };
 
     const checkPlanAccess = async (userId: string) => {
-      const { data: settings } = await supabase
-        .from('ai_agent_settings').select('trial_started_at').eq('user_id', userId).maybeSingle();
-      const { data: sub } = await supabase
-        .from('user_subscriptions').select('status, plan_name, current_period_end')
-        .eq('user_id', userId).maybeSingle();
-      const isPremium = sub && (
-        sub.status === 'active' || sub.status === 'trialing' ||
-        (sub.status === 'canceled' && isDateAfter(sub.current_period_end))
-      ) && (sub.plan_name === 'premium' || sub.plan_name === 'super_premium');
-      const trialActive = settings?.trial_started_at && !isTrialExpired(settings.trial_started_at);
-      return !!(isPremium || trialActive);
+      try {
+        const { data: settings } = await supabase
+          .from('ai_agent_settings').select('trial_started_at').eq('user_id', userId).maybeSingle();
+        const { data: sub } = await supabase
+          .from('user_subscriptions').select('status, plan_name, current_period_end')
+          .eq('user_id', userId).maybeSingle();
+        const isPremium = sub && (
+          sub.status === 'active' || sub.status === 'trialing' ||
+          (sub.status === 'canceled' && isDateAfter(sub.current_period_end))
+        ) && (sub.plan_name === 'premium' || sub.plan_name === 'super_premium');
+        const trialActive = settings?.trial_started_at && !isTrialExpired(settings.trial_started_at);
+        return !!(isPremium || trialActive);
+      } catch (err) {
+        console.error('[checkPlanAccess] fallback denied due to error', { userId, error: String(err) });
+        return false;
+      }
     };
 
     const userInstanceName = (userId: string) => `user-${userId.replace(/-/g, '').slice(0, 24)}`;
