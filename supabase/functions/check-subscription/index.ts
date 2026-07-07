@@ -145,7 +145,7 @@ serve(async (req) => {
       const isActive = dbSub && (
         dbSub.status === "active" ||
         dbSub.status === "trialing" ||
-        (dbSub.status === "canceled" && dbSub.current_period_end && new Date(dbSub.current_period_end) > new Date())
+        (dbSub.status === "canceled" && isDateAfter(dbSub.current_period_end))
       );
 
       logStep("Returning from DB fallback", { reason, planName: dbSub?.plan_name, isActive });
