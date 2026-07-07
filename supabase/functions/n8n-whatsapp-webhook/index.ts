@@ -592,13 +592,54 @@ serve(async (req) => {
 
       // 4. (REMOVIDO) Fallback "primeiro agente habilitado" — vazamento cross-tenant.
 
+      // 5. AUTO-CRIAÇÃO: se ainda não achou mas temos instance_name no padrão
+      //    `clinic-<24hex>`, derivamos o user_id (prefixo) e criamos um agente
+      //    padrão para que a primeira mensagem já seja respondida pela IA.
+      if (!agentSettings && instance_name) {
+        const m = instance_name.match(/^clinic-([a-f0-9]{24})$/i);
+        if (m) {
+          const prefix = m[1].toLowerCase();
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .filter('user_id::text', 'ilike', `${prefix.slice(0,8)}-${prefix.slice(8,12)}-${prefix.slice(12,16)}-${prefix.slice(16,20)}-${prefix.slice(20,24)}%`)
+            .maybeSingle();
 
-
+          const derivedUserId = profileRow?.user_id || null;
+          if (derivedUserId) {
+            const defaultPrompt = 'Você é um assistente virtual de atendimento odontológico amigável. Seu objetivo é saudar o paciente e perguntar como pode ajudar hoje.';
+            const { data: created } = await supabase
+              .from('ai_agent_settings')
+              .insert({
+                user_id: derivedUserId,
+                agent_name: 'Assistente Virtual',
+                agent_personality: defaultPrompt,
+                welcome_message: 'Olá! Sou o assistente virtual da clínica. Como posso te ajudar hoje?',
+                outside_hours_message: 'Estamos fora do horário de atendimento. Retornaremos assim que possível.',
+                working_hours_start: '08:00',
+                working_hours_end: '18:00',
+                work_on_weekends: false,
+                auto_reply_outside_hours: true,
+                is_whatsapp_enabled: true,
+                evolution_instance_name: instance_name,
+                connection_status: 'open',
+              })
+              .select('*')
+              .maybeSingle();
+            agentSettings = created;
+            console.log('[process_message] auto-created default agent', { user_id: derivedUserId, instance_name });
+          }
+        }
+      }
 
       if (!agentSettings) {
         console.error('[process_message] no agent found', { user_id, instance_name, phone_number });
+        // Retorna 200 com response vazio + hint para o n8n não travar o fluxo,
+        // mas ainda sinaliza claramente que o cadastro está faltando.
         return new Response(
           JSON.stringify({
+            response: '',
+            requires_human: true,
             error: 'Configurações do agente não encontradas.',
             hint: 'Cadastre o agente em Ajustes → Agente IA e preencha o campo "Nome da instância" exatamente igual ao usado no n8n/Evolution.',
             received: { user_id: user_id || null, instance_name: instance_name || null, phone_number },
