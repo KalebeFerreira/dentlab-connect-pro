@@ -199,7 +199,8 @@ serve(async (req) => {
 
     let planName = "free";
     if (hasActiveSub) {
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      const endDate = safeParseDate(subscription.current_period_end);
+      subscriptionEnd = endDate ? endDate.toISOString() : null;
       productId = subscription.items.data[0].price.product as string;
       priceId = subscription.items.data[0].price.id;
       planName = PRICE_TO_PLAN[priceId] || "basic";
