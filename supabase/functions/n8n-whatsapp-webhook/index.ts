@@ -1027,9 +1027,11 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error('Erro no n8n-whatsapp-webhook:', error);
+    const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error(`[webhook] fatal: ${msg}${stack ? `\n${stack}` : ''}`);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro desconhecido' }),
+      JSON.stringify({ error: msg }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
