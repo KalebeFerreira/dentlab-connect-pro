@@ -576,9 +576,13 @@ serve(async (req) => {
         .maybeSingle();
 
       // Send via WhatsApp
-      let sent = false;
+      let sendResult: SendResult = {
+        ok: false,
+        stage: 'config',
+        error: 'missing config: agent settings',
+      };
       if (agentSettings?.evolution_api_url && agentSettings?.evolution_instance_name) {
-        sent = await sendWhatsAppReply(
+        sendResult = await safeSendWhatsAppReply(
           agentSettings.evolution_api_url,
           agentSettings.evolution_instance_name,
           phone_number,
@@ -603,7 +607,7 @@ serve(async (req) => {
         .eq('id', conversation_id);
 
       return new Response(
-        JSON.stringify({ success: true, whatsapp_sent: sent }),
+        JSON.stringify({ success: true, ...buildWhatsAppResponseFields(sendResult) }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
