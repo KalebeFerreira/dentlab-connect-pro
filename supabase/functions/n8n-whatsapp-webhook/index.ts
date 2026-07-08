@@ -78,13 +78,16 @@ function isTrialExpired(trialStartedAt: string | null): boolean {
   return diffDays > TRIAL_DAYS;
 }
 
-const HARDCODED_EVOLUTION_URL = "https://dentlab-evolution-api.sfwgy9.easypanel.host";
-function normalizeEvolutionApiUrl(rawUrl: string): string {
-  const trimmed = (rawUrl || '').trim();
-  const markdownUrl = trimmed.match(/\]\((https?:\/\/[^)]+)\)/i)?.[1];
-  const plainUrl = markdownUrl || trimmed.match(/https?:\/\/[^\s)\]]+/i)?.[0] || '';
-  const cleaned = plainUrl.replace(/\/+$/, '');
-  return cleaned && /^https?:\/\/[^\s]+\.[^\s]+$/.test(cleaned) ? cleaned : HARDCODED_EVOLUTION_URL;
+function requireEvolutionApiUrl(): string {
+  const raw = Deno.env.get('EVOLUTION_API_URL');
+  if (!raw || !raw.trim()) {
+    throw new Error('EVOLUTION_API_URL is not configured');
+  }
+  const url = raw.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\/[^\s]+\.[^\s]+$/.test(url)) {
+    throw new Error(`EVOLUTION_API_URL is invalid: ${raw}`);
+  }
+  return url;
 }
 
 
@@ -107,12 +110,19 @@ async function sendWhatsAppReply(
 ): Promise<SendResult> {
   const EVOLUTION_TOKEN =
     Deno.env.get('EVOLUTION_API_TOKEN') || Deno.env.get('EVOLUTION_API_KEY') || '';
-  const resolvedUrl =
-    evolutionApiUrl || Deno.env.get('EVOLUTION_API_URL') || HARDCODED_EVOLUTION_URL;
+
+  let baseUrl: string;
+  try {
+    baseUrl = evolutionApiUrl ? evolutionApiUrl.trim().replace(/\/+$/, '') : requireEvolutionApiUrl();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[sendWhatsAppReply] config error: ${msg}`);
+    return { ok: false, stage: 'config', error: msg };
+  }
 
   const missing: string[] = [];
   if (!EVOLUTION_TOKEN) missing.push('token');
-  if (!resolvedUrl) missing.push('url');
+  if (!baseUrl) missing.push('url');
   if (!instanceName) missing.push('instance');
   if (!phoneNumber) missing.push('phone');
   if (!message) missing.push('message');
@@ -120,7 +130,7 @@ async function sendWhatsAppReply(
     const error = `missing config: ${missing.join(',')}`;
     console.error(`[sendWhatsAppReply] ${error}`, {
       hasToken: !!EVOLUTION_TOKEN,
-      url: resolvedUrl,
+      url: baseUrl,
       instance: instanceName,
       hasPhone: !!phoneNumber,
       hasMsg: !!message,
@@ -128,7 +138,6 @@ async function sendWhatsAppReply(
     return { ok: false, stage: 'config', error };
   }
 
-  const baseUrl = normalizeEvolutionApiUrl(resolvedUrl);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
   let number = (phoneNumber || '').replace(/\D/g, '');
   if (number && !number.startsWith('55')) number = '55' + number;
@@ -342,7 +351,13 @@ serve(async (req) => {
     };
 
     const userInstanceName = (userId: string) => `user-${userId.replace(/-/g, '').slice(0, 24)}`;
-    const sharedEvoUrl = () => normalizeEvolutionApiUrl(Deno.env.get('EVOLUTION_API_URL') || '');
+    const sharedEvoUrl = () => {
+      try {
+        return requireEvolutionApiUrl();
+      } catch {
+        return '';
+      }
+    };
     const sharedEvoKey = () => Deno.env.get('EVOLUTION_API_KEY') || '';
     const webhookCallbackUrl = () => `${Deno.env.get('SUPABASE_URL')}/functions/v1/n8n-whatsapp-webhook`;
 
