@@ -858,10 +858,14 @@ serve(async (req) => {
       if ((isOutsideHours || isClosedDay) && agentSettings.auto_reply_outside_hours) {
         const outsideMsg = agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.';
 
-        let outsideSent = false;
+        let outsideResult: SendResult = {
+          ok: false,
+          stage: 'config',
+          error: 'missing config: evolution url/instance',
+        };
         if (evoUrl && evoInstance) {
-          outsideSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, outsideMsg);
-          console.log(`[process_message] outside-hours sent=${outsideSent}`);
+          outsideResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, outsideMsg);
+          console.log(`[process_message] outside-hours result=${JSON.stringify(outsideResult)}`);
         } else {
           console.warn('[process_message] outside-hours: Evolution config missing, not sending');
         }
@@ -872,7 +876,7 @@ serve(async (req) => {
             agent_name: agentSettings.agent_name,
             requires_human: false,
             outside_hours: true,
-            whatsapp_sent: outsideSent,
+            ...buildWhatsAppResponseFields(outsideResult),
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
