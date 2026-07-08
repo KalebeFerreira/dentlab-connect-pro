@@ -351,7 +351,13 @@ serve(async (req) => {
     };
 
     const userInstanceName = (userId: string) => `user-${userId.replace(/-/g, '').slice(0, 24)}`;
-    const sharedEvoUrl = () => normalizeEvolutionApiUrl(Deno.env.get('EVOLUTION_API_URL') || '');
+    const sharedEvoUrl = () => {
+      try {
+        return requireEvolutionApiUrl();
+      } catch {
+        return '';
+      }
+    };
     const sharedEvoKey = () => Deno.env.get('EVOLUTION_API_KEY') || '';
     const webhookCallbackUrl = () => `${Deno.env.get('SUPABASE_URL')}/functions/v1/n8n-whatsapp-webhook`;
 
