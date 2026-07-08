@@ -88,54 +88,124 @@ function normalizeEvolutionApiUrl(rawUrl: string): string {
 }
 
 
+export type SendResult =
+  | { ok: true; status: number; providerResponse: string; url: string }
+  | {
+      ok: false;
+      stage: 'config' | 'fetch' | 'http' | 'timeout';
+      status?: number;
+      error: string;
+      url?: string;
+      providerBody?: string;
+    };
+
 async function sendWhatsAppReply(
   evolutionApiUrl: string,
   instanceName: string,
   phoneNumber: string,
   message: string,
-): Promise<boolean> {
-  // Aceita ambos os nomes de secret (TOKEN preferencial, KEY como fallback).
+): Promise<SendResult> {
   const EVOLUTION_TOKEN =
     Deno.env.get('EVOLUTION_API_TOKEN') || Deno.env.get('EVOLUTION_API_KEY') || '';
   const resolvedUrl =
     evolutionApiUrl || Deno.env.get('EVOLUTION_API_URL') || HARDCODED_EVOLUTION_URL;
 
-  if (!EVOLUTION_TOKEN || !resolvedUrl || !instanceName || !phoneNumber || !message) {
-    console.error('[sendWhatsAppReply] missing config', {
+  const missing: string[] = [];
+  if (!EVOLUTION_TOKEN) missing.push('token');
+  if (!resolvedUrl) missing.push('url');
+  if (!instanceName) missing.push('instance');
+  if (!phoneNumber) missing.push('phone');
+  if (!message) missing.push('message');
+  if (missing.length) {
+    const error = `missing config: ${missing.join(',')}`;
+    console.error(`[sendWhatsAppReply] ${error}`, {
       hasToken: !!EVOLUTION_TOKEN,
       url: resolvedUrl,
       instance: instanceName,
       hasPhone: !!phoneNumber,
       hasMsg: !!message,
     });
-    return false;
+    return { ok: false, stage: 'config', error };
   }
 
   const baseUrl = normalizeEvolutionApiUrl(resolvedUrl);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
-  // Normaliza número: só dígitos, prefixo 55 do Brasil.
   let number = (phoneNumber || '').replace(/\D/g, '');
   if (number && !number.startsWith('55')) number = '55' + number;
 
   const payload = { number, text: message, delay: 1200 };
-  console.log(`[sendWhatsAppReply] POST ${url} number=${number} msgLen=${message.length}`);
+  console.log(
+    `[sendWhatsAppReply] POST url=${url} instance=${instanceName} number=${number} msgLen=${message.length}`,
+  );
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
 
   try {
     const resp = await fetch(url, {
       method: 'POST',
       headers: { apikey: EVOLUTION_TOKEN, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
     const text = await resp.text().catch(() => '');
     if (!resp.ok) {
-      console.error(`[sendWhatsAppReply] Evolution ${resp.status} url=${url} body=${text.slice(0, 400)}`);
-      return false;
+      console.error(
+        `[sendWhatsAppReply] Evolution HTTP ${resp.status} url=${url} body=${text.slice(0, 800)}`,
+      );
+      return {
+        ok: false,
+        stage: 'http',
+        status: resp.status,
+        error: `Evolution HTTP ${resp.status}`,
+        url,
+        providerBody: text.slice(0, 800),
+      };
     }
     console.log(`[sendWhatsAppReply] ok → ${number} (${resp.status})`);
-    return true;
+    return { ok: true, status: resp.status, providerResponse: text.slice(0, 300), url };
   } catch (err) {
-    console.error('[sendWhatsAppReply] erro:', err);
-    return false;
+    const msg = err instanceof Error ? err.message : String(err);
+    const isAbort = err instanceof Error && err.name === 'AbortError';
+    console.error(`[sendWhatsAppReply] ${isAbort ? 'timeout' : 'fetch error'} url=${url} err=${msg}`);
+    return {
+      ok: false,
+      stage: isAbort ? 'timeout' : 'fetch',
+      error: msg,
+      url,
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function buildWhatsAppResponseFields(sendResult: SendResult) {
+  return {
+    whatsapp_sent: sendResult.ok,
+    whatsapp_status: sendResult.ok ? sendResult.status : sendResult.status ?? null,
+    whatsapp_error_details: sendResult.ok
+      ? null
+      : {
+          stage: sendResult.stage,
+          error: sendResult.error,
+          provider_body: sendResult.providerBody ?? null,
+          url: sendResult.url ?? null,
+        },
+  };
+}
+
+async function safeSendWhatsAppReply(
+  evolutionApiUrl: string,
+  instanceName: string,
+  phoneNumber: string,
+  message: string,
+): Promise<SendResult> {
+  try {
+    return await sendWhatsAppReply(evolutionApiUrl, instanceName, phoneNumber, message);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[sendWhatsAppReply] unexpected exception:', msg);
+    return { ok: false, stage: 'fetch', error: `unexpected: ${msg}` };
   }
 }
 
@@ -506,9 +576,13 @@ serve(async (req) => {
         .maybeSingle();
 
       // Send via WhatsApp
-      let sent = false;
+      let sendResult: SendResult = {
+        ok: false,
+        stage: 'config',
+        error: 'missing config: agent settings',
+      };
       if (agentSettings?.evolution_api_url && agentSettings?.evolution_instance_name) {
-        sent = await sendWhatsAppReply(
+        sendResult = await safeSendWhatsAppReply(
           agentSettings.evolution_api_url,
           agentSettings.evolution_instance_name,
           phone_number,
@@ -533,7 +607,7 @@ serve(async (req) => {
         .eq('id', conversation_id);
 
       return new Response(
-        JSON.stringify({ success: true, whatsapp_sent: sent }),
+        JSON.stringify({ success: true, ...buildWhatsAppResponseFields(sendResult) }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -784,10 +858,14 @@ serve(async (req) => {
       if ((isOutsideHours || isClosedDay) && agentSettings.auto_reply_outside_hours) {
         const outsideMsg = agentSettings.outside_hours_message || 'Estamos fora do horário de atendimento.';
 
-        let outsideSent = false;
+        let outsideResult: SendResult = {
+          ok: false,
+          stage: 'config',
+          error: 'missing config: evolution url/instance',
+        };
         if (evoUrl && evoInstance) {
-          outsideSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, outsideMsg);
-          console.log(`[process_message] outside-hours sent=${outsideSent}`);
+          outsideResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, outsideMsg);
+          console.log(`[process_message] outside-hours result=${JSON.stringify(outsideResult)}`);
         } else {
           console.warn('[process_message] outside-hours: Evolution config missing, not sending');
         }
@@ -798,7 +876,7 @@ serve(async (req) => {
             agent_name: agentSettings.agent_name,
             requires_human: false,
             outside_hours: true,
-            whatsapp_sent: outsideSent,
+            ...buildWhatsAppResponseFields(outsideResult),
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -919,10 +997,14 @@ serve(async (req) => {
       }
 
       // Send reply via WhatsApp (uses evoUrl/evoInstance resolved above with env fallback)
-      let whatsappSent = false;
+      let replyResult: SendResult = {
+        ok: false,
+        stage: 'config',
+        error: 'missing config: evolution url/instance',
+      };
       if (evoUrl && evoInstance) {
-        whatsappSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
-        console.log(`[process_message] reply sent=${whatsappSent}`);
+        replyResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
+        console.log(`[process_message] reply result=${JSON.stringify(replyResult)}`);
       } else {
         console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
       }
@@ -933,7 +1015,7 @@ serve(async (req) => {
           agent_name: agentName,
           requires_human: requiresHuman,
           conversation_id: conversation?.id,
-          whatsapp_sent: whatsappSent,
+          ...buildWhatsAppResponseFields(replyResult),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -945,9 +1027,11 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error('Erro no n8n-whatsapp-webhook:', error);
+    const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error(`[webhook] fatal: ${msg}${stack ? `\n${stack}` : ''}`);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro desconhecido' }),
+      JSON.stringify({ error: msg }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
