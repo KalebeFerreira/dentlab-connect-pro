@@ -997,10 +997,14 @@ serve(async (req) => {
       }
 
       // Send reply via WhatsApp (uses evoUrl/evoInstance resolved above with env fallback)
-      let whatsappSent = false;
+      let replyResult: SendResult = {
+        ok: false,
+        stage: 'config',
+        error: 'missing config: evolution url/instance',
+      };
       if (evoUrl && evoInstance) {
-        whatsappSent = await sendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
-        console.log(`[process_message] reply sent=${whatsappSent}`);
+        replyResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
+        console.log(`[process_message] reply result=${JSON.stringify(replyResult)}`);
       } else {
         console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
       }
@@ -1011,7 +1015,7 @@ serve(async (req) => {
           agent_name: agentName,
           requires_human: requiresHuman,
           conversation_id: conversation?.id,
-          whatsapp_sent: whatsappSent,
+          ...buildWhatsAppResponseFields(replyResult),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
