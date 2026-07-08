@@ -111,13 +111,19 @@ async function sendWhatsAppReply(
   const EVOLUTION_TOKEN =
     Deno.env.get('EVOLUTION_API_TOKEN') || Deno.env.get('EVOLUTION_API_KEY') || '';
 
+  // STRICT: always use EVOLUTION_API_URL env var. Never trust caller-supplied
+  // URLs (DB settings, request origin, headers) — those have leaked wrong hosts
+  // like the n8n webhook base into the dispatch path.
   let baseUrl: string;
   try {
-    baseUrl = evolutionApiUrl ? evolutionApiUrl.trim().replace(/\/+$/, '') : requireEvolutionApiUrl();
+    baseUrl = requireEvolutionApiUrl();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[sendWhatsAppReply] config error: ${msg}`);
     return { ok: false, stage: 'config', error: msg };
+  }
+  if (evolutionApiUrl && evolutionApiUrl.trim().replace(/\/+$/, '') !== baseUrl) {
+    console.warn(`[sendWhatsAppReply] ignoring caller-supplied evolutionApiUrl='${evolutionApiUrl}', forcing env='${baseUrl}'`);
   }
 
   const missing: string[] = [];
