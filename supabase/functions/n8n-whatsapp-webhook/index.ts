@@ -865,7 +865,7 @@ serve(async (req) => {
       // server and causes Evolution 400 "Cannot read properties of undefined (reading 'id')".
       // Derive the per-user instance the same way evolution-manager does.
       const derivedInstance = `clinic-${agentSettings.user_id.replace(/-/g, '').slice(0, 24)}`;
-      const evoUrl = agentSettings.evolution_api_url || Deno.env.get('EVOLUTION_API_URL') || '';
+      const evoUrl = Deno.env.get('EVOLUTION_API_URL') || '';
       const evoInstance = agentSettings.evolution_instance_name || derivedInstance;
       console.log(`[process_message] evolution config url=${evoUrl ? 'set' : 'MISSING'} instance=${evoInstance} (source=${agentSettings.evolution_instance_name ? 'db' : 'derived'})`);
 
