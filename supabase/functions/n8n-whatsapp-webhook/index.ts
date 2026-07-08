@@ -110,12 +110,19 @@ async function sendWhatsAppReply(
 ): Promise<SendResult> {
   const EVOLUTION_TOKEN =
     Deno.env.get('EVOLUTION_API_TOKEN') || Deno.env.get('EVOLUTION_API_KEY') || '';
-  const resolvedUrl =
-    evolutionApiUrl || Deno.env.get('EVOLUTION_API_URL') || HARDCODED_EVOLUTION_URL;
+
+  let baseUrl: string;
+  try {
+    baseUrl = evolutionApiUrl ? evolutionApiUrl.trim().replace(/\/+$/, '') : requireEvolutionApiUrl();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[sendWhatsAppReply] config error: ${msg}`);
+    return { ok: false, stage: 'config', error: msg };
+  }
 
   const missing: string[] = [];
   if (!EVOLUTION_TOKEN) missing.push('token');
-  if (!resolvedUrl) missing.push('url');
+  if (!baseUrl) missing.push('url');
   if (!instanceName) missing.push('instance');
   if (!phoneNumber) missing.push('phone');
   if (!message) missing.push('message');
@@ -123,7 +130,7 @@ async function sendWhatsAppReply(
     const error = `missing config: ${missing.join(',')}`;
     console.error(`[sendWhatsAppReply] ${error}`, {
       hasToken: !!EVOLUTION_TOKEN,
-      url: resolvedUrl,
+      url: baseUrl,
       instance: instanceName,
       hasPhone: !!phoneNumber,
       hasMsg: !!message,
@@ -131,7 +138,6 @@ async function sendWhatsAppReply(
     return { ok: false, stage: 'config', error };
   }
 
-  const baseUrl = normalizeEvolutionApiUrl(resolvedUrl);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
   let number = (phoneNumber || '').replace(/\D/g, '');
   if (number && !number.startsWith('55')) number = '55' + number;
