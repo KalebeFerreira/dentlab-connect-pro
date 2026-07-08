@@ -78,13 +78,16 @@ function isTrialExpired(trialStartedAt: string | null): boolean {
   return diffDays > TRIAL_DAYS;
 }
 
-const HARDCODED_EVOLUTION_URL = "https://dentlab-evolution-api.sfwgy9.easypanel.host";
-function normalizeEvolutionApiUrl(rawUrl: string): string {
-  const trimmed = (rawUrl || '').trim();
-  const markdownUrl = trimmed.match(/\]\((https?:\/\/[^)]+)\)/i)?.[1];
-  const plainUrl = markdownUrl || trimmed.match(/https?:\/\/[^\s)\]]+/i)?.[0] || '';
-  const cleaned = plainUrl.replace(/\/+$/, '');
-  return cleaned && /^https?:\/\/[^\s]+\.[^\s]+$/.test(cleaned) ? cleaned : HARDCODED_EVOLUTION_URL;
+function requireEvolutionApiUrl(): string {
+  const raw = Deno.env.get('EVOLUTION_API_URL');
+  if (!raw || !raw.trim()) {
+    throw new Error('EVOLUTION_API_URL is not configured');
+  }
+  const url = raw.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\/[^\s]+\.[^\s]+$/.test(url)) {
+    throw new Error(`EVOLUTION_API_URL is invalid: ${raw}`);
+  }
+  return url;
 }
 
 
