@@ -183,6 +183,17 @@ export const SupportChatWidget = () => {
           </div>
         ))}
         {isTyping && <TypingIndicator />}
+        {userMessagesCount >= 2 && !isLoading && (
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={() => { setIsOpen(false); navigate('/ai-agent?connect_whatsapp=1'); }}
+              className="text-xs text-primary underline underline-offset-2 hover:opacity-80"
+            >
+              Ainda com dúvida? Falar com atendente no WhatsApp
+            </button>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
