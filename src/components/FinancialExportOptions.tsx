@@ -171,7 +171,7 @@ export const FinancialExportOptions = ({
         ` : ""}
 
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
-          <p>Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
+          <p>Gerado em ${new Date().toLocaleDateString("pt-BR")}</p>
         </div>
       </div>
     `;
