@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircleQuestion, X, Send, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,6 +52,8 @@ export const SupportChatWidget = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
+  const userMessagesCount = messages.filter(m => m.role === 'user').length;
 
   // Update greeting when chat opens
   useEffect(() => {
@@ -128,16 +131,16 @@ export const SupportChatWidget = () => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-5 right-5 z-[9999] bg-primary text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+        className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[9999] bg-primary/85 hover:bg-primary text-primary-foreground rounded-full w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shadow-md hover:shadow-lg opacity-80 hover:opacity-100 transition-all"
         aria-label="Abrir suporte"
       >
-        <MessageCircleQuestion className="w-7 h-7" />
+        <MessageCircleQuestion className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[9999] w-[360px] max-w-[calc(100vw-1.5rem)] h-[500px] max-h-[calc(100vh-1.5rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground rounded-t-2xl">
         <div className="flex items-center gap-2">
@@ -180,6 +183,17 @@ export const SupportChatWidget = () => {
           </div>
         ))}
         {isTyping && <TypingIndicator />}
+        {userMessagesCount >= 2 && !isLoading && (
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={() => { setIsOpen(false); navigate('/ai-agent?connect_whatsapp=1'); }}
+              className="text-xs text-primary underline underline-offset-2 hover:opacity-80"
+            >
+              Ainda com dúvida? Falar com atendente no WhatsApp
+            </button>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 

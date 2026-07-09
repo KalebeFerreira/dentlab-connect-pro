@@ -320,7 +320,7 @@ serve(async (req) => {
             <p style="font-size: 9px; color: #888; margin-top: 5px;">Gerado com Essência Dental-Lab</p>
           </div>
         ` : ''}
-        <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+        <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
         <p>${companyInfo?.email ? `${companyInfo.email} | ` : ''}${companyInfo?.phone || ''}</p>
       </div>
     </body>

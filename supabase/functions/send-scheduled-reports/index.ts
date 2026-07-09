@@ -419,7 +419,7 @@ function generateEmailHTML(
         ${insightsSection}
         
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; text-align: center; color: #999; font-size: 12px;">
-          <p>📧 Este é um relatório automático gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+          <p>📧 Este é um relatório automático gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
           <p style="margin-top: 10px;">
             <a href="#" style="color: #1c4587; text-decoration: none;">Gerenciar preferências de email</a>
           </p>

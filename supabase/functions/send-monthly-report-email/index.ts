@@ -173,7 +173,7 @@ serve(async (req) => {
 
         <div class="footer">
           <p>Este é um relatório gerencial gerado automaticamente.</p>
-          <p>Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+          <p>Emitido em ${new Date().toLocaleDateString('pt-BR')}</p>
         </div>
       </body>
       </html>

@@ -374,7 +374,7 @@ serve(async (req) => {
       </div>
     ` : ''}
     <p>DentLab Connect - Sistema de Gestão de Ordens de Trabalho</p>
-    <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+    <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
   </div>
 
   ${signaturePosition === 'bottom' ? signatureBlock : ''}

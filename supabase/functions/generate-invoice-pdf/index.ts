@@ -148,7 +148,6 @@ serve(async (req) => {
               <h2>Informações da Nota</h2>
               <p><strong>Número:</strong> ${invoiceNumber}</p>
               <p><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
-              <p><strong>Hora:</strong> ${new Date().toLocaleTimeString('pt-BR')}</p>
             </div>
           </div>
           

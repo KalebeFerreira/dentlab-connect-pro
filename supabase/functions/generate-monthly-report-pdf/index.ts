@@ -87,17 +87,32 @@ serve(async (req) => {
     const essenciaLogoSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMjAgNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiMxYzQ1ODciIHJ4PSI1Ii8+PHRleHQgeD0iNjAiIHk9IjI1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXNzw6puY2lhIERlbnRhbC1MYWI8L3RleHQ+PC9zdmc+`;
     const showFreemiumLogo = !isSubscribed;
 
-    // Agrupar serviços por clínica
-    const servicesByClinic = services.reduce((acc: any, service: any) => {
-      const clinicName = service.client_name || "Sem Clínica";
-      if (!acc[clinicName]) {
-        acc[clinicName] = [];
-      }
-      acc[clinicName].push(service);
-      return acc;
-    }, {});
+    // Agrupar por MÊS e, dentro de cada mês, por clínica (evita mistura entre meses)
+    const monthLabel = (dateStr: string) => {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return 'Sem data';
+      return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    };
+    const monthKey = (dateStr: string) => {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '0000-00';
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    };
 
-    const clinicNames = Object.keys(servicesByClinic).sort();
+    const servicesByMonth: Record<string, { label: string; byClinic: Record<string, any[]> }> = {};
+    for (const service of services) {
+      const key = monthKey(service.service_date);
+      if (!servicesByMonth[key]) {
+        servicesByMonth[key] = { label: monthLabel(service.service_date), byClinic: {} };
+      }
+      const clinicName = service.client_name || 'Sem Clínica';
+      if (!servicesByMonth[key].byClinic[clinicName]) {
+        servicesByMonth[key].byClinic[clinicName] = [];
+      }
+      servicesByMonth[key].byClinic[clinicName].push(service);
+    }
+    const monthKeys = Object.keys(servicesByMonth).sort();
+
 
     const html = `
       <!DOCTYPE html>
@@ -228,49 +243,66 @@ serve(async (req) => {
 
 
 
-        ${clinicNames.map((clinicName: string) => {
-          const clinicServices = servicesByClinic[clinicName];
-          const clinicTotal = clinicServices.reduce(
-            (sum: number, service: any) => sum + Number(service.service_value),
+        ${monthKeys.map((mKey) => {
+          const { label: mLabel, byClinic } = servicesByMonth[mKey];
+          const clinicNames = Object.keys(byClinic).sort();
+          const monthTotal = clinicNames.reduce(
+            (sum, name) => sum + byClinic[name].reduce((s: number, sv: any) => s + Number(sv.service_value), 0),
             0
           );
+          const monthCount = clinicNames.reduce((sum, name) => sum + byClinic[name].length, 0);
 
           return `
-            <div class="clinic-section">
-              <div class="clinic-header">
-                <h2>${clinicName}</h2>
-                <div class="clinic-total">
-                  Subtotal: R$ ${clinicTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-                <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                  ${clinicServices.length} ${clinicServices.length === 1 ? 'serviço' : 'serviços'}
-                </div>
-              </div>
+            <div style="margin-bottom: 40px;">
+              <h2 style="background:#000;color:#fff;padding:12px 16px;border-radius:5px;margin:0 0 20px 0;font-size:20px;text-transform:capitalize;">
+                ${mLabel} — ${monthCount} ${monthCount === 1 ? 'serviço' : 'serviços'} • Subtotal do mês: R$ ${monthTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </h2>
 
-              <table>
-                <thead>
-                  <tr>
-                    <th>Serviço</th>
-                    <th>Paciente</th>
-                    <th>Data</th>
-                    <th>Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${clinicServices.map((service: any) => `
-                    <tr>
-                      <td>${service.service_name}</td>
-                      <td>${service.patient_name || '-'}</td>
-                      <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
-                      <td>R$ ${Number(service.service_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+              ${clinicNames.map((clinicName) => {
+                const clinicServices = byClinic[clinicName];
+                const clinicTotal = clinicServices.reduce(
+                  (sum: number, service: any) => sum + Number(service.service_value),
+                  0
+                );
+                return `
+                  <div class="clinic-section">
+                    <div class="clinic-header">
+                      <h2>${clinicName}</h2>
+                      <div class="clinic-total">
+                        Subtotal: R$ ${clinicTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        ${clinicServices.length} ${clinicServices.length === 1 ? 'serviço' : 'serviços'}
+                      </div>
+                    </div>
 
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Serviço</th>
+                          <th>Paciente</th>
+                          <th>Data</th>
+                          <th>Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${clinicServices.map((service: any) => `
+                          <tr>
+                            <td>${service.service_name}</td>
+                            <td>${service.patient_name || '-'}</td>
+                            <td>${new Date(service.service_date).toLocaleDateString('pt-BR')}</td>
+                            <td>R$ ${Number(service.service_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `;
+              }).join('')}
             </div>
           `;
         }).join('')}
+
 
         <div class="total">
           Total do Relatório: R$ ${Number(totalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
