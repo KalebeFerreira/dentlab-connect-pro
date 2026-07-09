@@ -1,63 +1,46 @@
-# Plano — Blindar o disparo do WhatsApp na Edge Function
 
-## Diagnóstico
-`sendWhatsAppReply` hoje devolve apenas `boolean`. Quando algo falha (fetch rejeitado, 401, 404, timeout, DNS), o erro só aparece via `console.error` — mas o JSON de resposta ao n8n perde totalmente a causa, e nada garante que o log tenha sido flushado antes do `return`. Também não há timeout: um fetch travado pode fazer a Edge Function encerrar por wall-clock antes do log sair, dando a impressão de "falha silenciosa".
+## 1. Floating widgets (mobile + desktop)
 
-## Objetivo
-Toda resposta com `whatsapp_sent: false` precisa carregar `whatsapp_error_details` explicando exatamente o que aconteceu, e os logs do Supabase precisam mostrar a URL final, status HTTP e corpo de erro da Evolution.
+**File:** `src/components/FloatingWidgets.tsx`
+- Remove the standalone floating WhatsApp button entirely from the screen.
+- Keep only the Support Assistant (`SupportChatWidget`) as the single floating button.
 
-## Mudanças na Edge Function `n8n-whatsapp-webhook`
+**File:** `src/components/SupportChatWidget.tsx`
+- Make the closed-state bubble more discreet, especially on mobile:
+  - Reduce size from `w-14 h-14` → `w-11 h-11` on mobile, `w-12 h-12` on desktop.
+  - Reduce icon from `w-7 h-7` → `w-5 h-5`.
+  - Lower opacity when idle (`opacity-80 hover:opacity-100`) so it doesn't dominate the screen.
+  - Adjust position on mobile (`bottom-3 right-3` on mobile, `bottom-5 right-5` on desktop).
+- Inside the open chat panel, add a small secondary action at the bottom of the messages area: **"Falar com atendente no WhatsApp"** link/button that only appears after the user has sent at least 2 messages (i.e. the assistant didn't resolve the doubt on first try). Clicking it navigates to `/ai-agent?connect_whatsapp=1` (same target the removed floating button used), preserving access without cluttering the screen.
 
-### 1. `sendWhatsAppReply` passa a retornar um resultado estruturado
-Novo tipo:
-```ts
-type SendResult =
-  | { ok: true; status: number; providerResponse: string }
-  | { ok: false; stage: 'config'|'fetch'|'http'|'timeout'; status?: number; error: string; url?: string; providerBody?: string };
-```
-- Valida config e retorna `{ ok:false, stage:'config', error:'missing X,Y' }` listando exatamente quais campos faltam (token, url, instance, phone, message).
-- Loga `url`, `instanceName`, `numberNormalizado`, `msgLen` antes do fetch.
-- `AbortController` com timeout de 10s → em timeout retorna `{ ok:false, stage:'timeout' }`.
-- Try/catch envolvendo o `fetch`:
-  - Erro de rede/DNS → `{ ok:false, stage:'fetch', error: err.message }`.
-  - `!resp.ok` → lê body (até 800 chars), loga `status + body`, retorna `{ ok:false, stage:'http', status, providerBody }`.
-  - OK → `{ ok:true, status, providerResponse: body.slice(0,300) }`.
-- Todo `console.error/log` usa prefixo `[sendWhatsAppReply]` para facilitar `grep`.
+## 2. Remove time from all generated reports (keep date only)
 
-### 2. Chamadas passam a ser `await`-adas e o resultado é propagado
-Nos três pontos de chamada (aprox. linhas 511, 789, 924):
-- Substituir `const sent = await sendWhatsAppReply(...)` (booleano) por `const sendResult = await sendWhatsAppReply(...)`.
-- Antes de qualquer `return new Response(...)`, garantir que `await` ocorreu — nada de disparar e retornar em paralelo.
-- Se o handler já estava embrulhado em `try/catch`, adicionar `catch` local ao redor da chamada só para transformar exceção inesperada em `SendResult` de fallback (nunca deixar o handler cair silenciosamente).
+Sweep every PDF/HTML report generator and remove `toLocaleTimeString`, `HH:mm`, "às HH:mm", and similar time formatting. Keep the date in `pt-BR` format.
 
-### 3. JSON de resposta enriquecido
-Todo `return new Response(JSON.stringify({ success: true, whatsapp_sent: sent }))` vira:
-```ts
-return new Response(JSON.stringify({
-  success: true,
-  whatsapp_sent: sendResult.ok,
-  whatsapp_status: sendResult.ok ? sendResult.status : sendResult.status ?? null,
-  whatsapp_error_details: sendResult.ok ? null : {
-    stage: sendResult.stage,
-    error: sendResult.error,
-    provider_body: sendResult.providerBody ?? null,
-    url: sendResult.url ?? null,
-  },
-}), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-```
-Aplicar o mesmo shape nos três returns (fluxo normal, fora-de-horário, teste manual).
+Files to update:
+- `supabase/functions/generate-monthly-report-pdf/index.ts`
+- `supabase/functions/send-monthly-report-email/index.ts` (footer "Emitido em ... às ...")
+- `supabase/functions/generate-financial-pdf/index.ts`
+- `supabase/functions/generate-invoice-pdf/index.ts`
+- `supabase/functions/generate-receipt-pdf/index.ts`
+- `supabase/functions/generate-order-pdf/index.ts`
+- `supabase/functions/generate-price-table-pdf/index.ts`
+- `supabase/functions/generate-certificate-pdf/index.ts`
+- `supabase/functions/generate-service-contract/index.ts`
+- `src/lib/pdfGenerator.ts` and `src/lib/reportExport.ts` if they render timestamps
+- `src/components/employee/EmployeeMonthlyReportExport.tsx` and `src/components/laboratory/ProductionExport.tsx` if applicable
 
-### 4. Log de "checkpoint" no wrapper principal
-No `serve(async (req) => { ... })`, envolver o bloco final com `try/catch` que loga `[webhook] fatal:` antes de retornar 500 — para que qualquer exceção não-tratada apareça no Supabase mesmo se ocorrer depois do `sendWhatsAppReply`.
+I'll grep for `toLocaleTimeString` / `getHours` / `às ${` across the report generators and remove those tokens; keep only `toLocaleDateString('pt-BR')`.
 
-### 5. Sem mudanças em outros arquivos
-Frontend/n8n não precisam ser alterados; passam apenas a receber `whatsapp_error_details` quando o disparo falhar. Nenhuma migration.
+## 3. Monthly service reports – no mixing between months
 
-## Como validar após aplicar
-1. Reenviar uma mensagem de teste pelo WhatsApp.
-2. No log da Edge Function, procurar `[sendWhatsAppReply] POST` e a linha `ok → ...` ou `Evolution <status>`.
-3. Se `whatsapp_sent:false`, o próprio JSON de resposta agora diz o motivo (`stage` + `error` + `provider_body`) — sem depender só do log.
+**Files:** `src/components/billing/MonthlyReports.tsx` + `supabase/functions/generate-monthly-report-pdf/index.ts`
 
-## Fora de escopo
-- Não mudar autenticação, checagem de assinatura, roteamento por `instance_name`, nem parse de datas.
-- Não alterar `evolution-manager` nem tabelas.
+Currently a report can include services from adjacent months if the selected date range is loose. Fix:
+- In `MonthlyReports.tsx`, when the user selects a month, force the query window to strict `[firstDayOfMonth 00:00, lastDayOfMonth 23:59:59]` of that specific month/year — reject any service whose `service_date` falls outside.
+- Pass an explicit `month` + `year` (or ISO range) to the edge function; the edge function will re-filter defensively before rendering, so services from other months can never leak in.
+- Group the rendered table strictly under a single "Período: <Mês>/<Ano>" header. If the user later requests multiple months, each month gets its own separated section with its own subtotal and a "Total geral" at the end.
+
+## Notes
+- No changes to business logic, subscription gating, or auth — only UI presentation of the widgets and formatting/filtering of reports.
+- The WhatsApp connection page (`/ai-agent`) itself remains unchanged; only the always-visible screen button is removed. Access from the assistant chat is preserved as a soft, contextual link.
