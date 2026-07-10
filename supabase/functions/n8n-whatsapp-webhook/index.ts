@@ -1136,112 +1136,241 @@ serve(async (req) => {
         );
       }
 
-      // Store conversation
+      // ============ MEMÓRIA: upsert conversa ============
       const ownerUserId = agentSettings.user_id;
-      const { data: conversation } = await supabase
+      const clinicId = agentSettings.clinic_id || null;
+
+      const { data: conversation, error: convErr } = await supabase
         .from('whatsapp_conversations')
         .upsert({
           user_id: ownerUserId,
           phone_number,
-          patient_name: patient_name || null,
+          patient_name: patient_name || undefined,
           last_message_at: new Date().toISOString(),
           is_active: true,
+          clinic_id: clinicId,
         }, { onConflict: 'user_id,phone_number' })
         .select()
         .single();
 
+      if (convErr) console.error('[process_message] conversation upsert error:', convErr);
+
+      // Handoff humano: se conversa marcada, não chamamos a IA
+      if (conversation?.requires_human) {
+        console.log('[process_message] conversa com requires_human=true, pulando IA');
+        return new Response(
+          JSON.stringify({
+            response: '',
+            requires_human: true,
+            handoff: true,
+            conversation_id: conversation.id,
+            tool_calls_executed: [],
+            whatsapp_sent: false,
+            whatsapp_error_details: null,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Salva mensagem recebida
+      const incomingSanitized = sanitizeForWhatsApp(message);
       if (conversation) {
         await supabase.from('whatsapp_messages').insert({
           conversation_id: conversation.id,
           user_id: ownerUserId,
-          content: message,
-          direction: 'inbound',
+          content: incomingSanitized,
+          direction: 'incoming',
           message_type: 'text',
+          is_from_ai: false,
         });
       }
 
-      // Get conversation history for context
-      let conversationHistory: { role: string; content: string }[] = [];
+      // Carrega últimas 20 mensagens da conversa e mapeia para OpenAI
+      let conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
       if (conversation) {
         const { data: history } = await supabase
           .from('whatsapp_messages')
-          .select('content, direction, is_from_ai')
+          .select('content, direction, created_at')
           .eq('conversation_id', conversation.id)
           .order('created_at', { ascending: false })
-          .limit(10);
-
+          .limit(20);
         if (history) {
-          conversationHistory = history.reverse().map(msg => ({
-            role: msg.direction === 'inbound' ? 'user' : 'assistant',
-            content: msg.content,
-          }));
+          conversationHistory = history
+            .slice()
+            .reverse()
+            .map((m: any) => ({
+              role: (m.direction === 'incoming' ? 'user' : 'assistant') as 'user' | 'assistant',
+              content: m.content || '',
+            }));
         }
       }
 
-      // Build system prompt
+      // System prompt com contexto de ferramentas e timezone
       const agentName = agentSettings.agent_name || 'Assistente';
       const personality = agentSettings.agent_personality || '';
-      const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\nSeu nome é: ${agentName}\n${personality ? `\nInstruções adicionais: ${personality}` : ''}`;
+      const nowBrText = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const systemPrompt = `${SYSTEM_PROMPT_BASE}
 
-      // Call AI
+Seu nome é: ${agentName}
+${personality ? `\nInstruções adicionais: ${personality}\n` : ''}
+## Contexto operacional
+- Timezone: America/Sao_Paulo. Data/hora atual: ${nowBrText}.
+- Horário de atendimento: ${agentSettings.working_hours_start || '08:00'} às ${agentSettings.working_hours_end || '18:00'}.
+
+## Ferramentas disponíveis (function calling)
+Você tem 4 ferramentas para executar ações reais na agenda da clínica:
+- buscar_paciente: verifique se o paciente já existe antes de cadastrar.
+- consultar_disponibilidade: chame SEMPRE antes de propor um horário; nunca invente disponibilidade.
+- criar_agendamento: só chame APÓS confirmar com o paciente (nome, telefone, data/hora, procedimento).
+- cancelar_ou_remarcar_agendamento: use para cancelar ou remarcar um agendamento existente.
+
+Regras:
+1. Confirme os dados com o paciente antes de criar/alterar agendamentos.
+2. Se a data ou horário estiver ambíguo, pergunte antes.
+3. Sempre responda em português brasileiro, curto e cordial.`;
+
+      // Call AI (Lovable AI Gateway - OpenAI compatible)
       const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       if (!LOVABLE_API_KEY) {
         throw new Error('LOVABLE_API_KEY não configurada');
       }
 
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-3-flash-preview',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...conversationHistory,
-            { role: 'user', content: message },
-          ],
-          temperature: 0.5,
-          max_tokens: 500,
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        if (aiResponse.status === 429) {
-          return new Response(
-            JSON.stringify({ error: 'Muitas requisições. Aguarde alguns segundos.' }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        if (aiResponse.status === 402) {
-          return new Response(
-            JSON.stringify({ error: 'Serviço temporariamente indisponível.' }),
-            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        throw new Error(`AI error: ${aiResponse.status}`);
+      const aiMessages: any[] = [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory,
+      ];
+      const lastHist = aiMessages[aiMessages.length - 1];
+      if (!(lastHist && lastHist.role === 'user' && lastHist.content === incomingSanitized)) {
+        aiMessages.push({ role: 'user', content: incomingSanitized });
       }
 
-      const aiData = await aiResponse.json();
-      const reply = aiData.choices?.[0]?.message?.content || 'Desculpe, não entendi. Pode repetir?';
+      const toolCtx: ToolContext = { supabase, userId: ownerUserId, clinicId };
+      const toolCallsExecuted: string[] = [];
 
-      // Detect if human transfer is needed
+      const callGateway = async (payloadMessages: any[], withTools: boolean) => {
+        return await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: payloadMessages,
+            temperature: 0.5,
+            max_tokens: 800,
+            ...(withTools ? { tools: AGENT_TOOLS, tool_choice: 'auto' } : {}),
+          }),
+        });
+      };
+
+      let reply = '';
+      let toolsSupported = true;
+      const maxIters = 5;
+
+      try {
+        for (let iter = 0; iter < maxIters; iter++) {
+          const aiResp = await callGateway(aiMessages, toolsSupported);
+
+          if (!aiResp.ok) {
+            if (aiResp.status === 429) {
+              return new Response(
+                JSON.stringify({ error: 'Muitas requisições. Aguarde alguns segundos.' }),
+                { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+            if (aiResp.status === 402) {
+              return new Response(
+                JSON.stringify({ error: 'Serviço temporariamente indisponível.' }),
+                { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+            const errText = await aiResp.text().catch(() => '');
+            if (toolsSupported && /tool|function/i.test(errText)) {
+              console.warn('[process_message] tools rejeitadas, fallback sem tools:', errText.slice(0, 200));
+              toolsSupported = false;
+              continue;
+            }
+            throw new Error(`AI error ${aiResp.status}: ${errText.slice(0, 200)}`);
+          }
+
+          const aiData = await aiResp.json();
+          const choice = aiData.choices?.[0];
+          const msg = choice?.message;
+          const toolCalls = msg?.tool_calls || [];
+
+          if (toolsSupported && Array.isArray(toolCalls) && toolCalls.length > 0) {
+            aiMessages.push({
+              role: 'assistant',
+              content: msg.content || '',
+              tool_calls: toolCalls,
+            });
+            for (const tc of toolCalls) {
+              const fnName = tc.function?.name || '';
+              let fnArgs: any = {};
+              try { fnArgs = JSON.parse(tc.function?.arguments || '{}'); } catch { fnArgs = {}; }
+              console.log(`[process_message] tool_call ${fnName}`, fnArgs);
+              const result = await executeAgentTool(fnName, fnArgs, toolCtx);
+              toolCallsExecuted.push(fnName);
+              aiMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: JSON.stringify(result),
+              });
+            }
+            continue;
+          }
+
+          reply = msg?.content || '';
+          break;
+        }
+      } catch (err) {
+        console.error('[process_message] AI loop error:', err);
+        reply = 'Desculpe, tive uma instabilidade. Pode repetir sua última mensagem?';
+      }
+
+      if (!reply) reply = 'Desculpe, não entendi. Pode repetir?';
+      const replySanitized = sanitizeForWhatsApp(reply);
+
+      // Detecta pedido de transferência humana
       const humanKeywords = ['falar com atendente', 'pessoa real', 'humano', 'atendimento humano', 'falar com alguém', 'quero um atendente'];
-      const requiresHuman = humanKeywords.some(kw => message.toLowerCase().includes(kw));
+      const requiresHuman = humanKeywords.some(kw => incomingSanitized.toLowerCase().includes(kw));
 
-      // Store AI response
+      // Envio via WhatsApp (Evolution)
+      let replyResult: SendResult = {
+        ok: false,
+        stage: 'config',
+        error: 'missing config: evolution url/instance',
+      };
+      if (evoUrl && evoInstance) {
+        replyResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, replySanitized);
+        console.log(`[process_message] reply result=${JSON.stringify(replyResult)}`);
+      } else {
+        console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
+      }
+
+      // Extrai evolution_message_id, se retornado pelo provider
+      let evolutionMessageId: string | null = null;
+      if (replyResult.ok && replyResult.providerResponse) {
+        try {
+          const p = JSON.parse(replyResult.providerResponse);
+          evolutionMessageId = p?.key?.id || p?.messageId || p?.id || null;
+        } catch { /* ignore */ }
+      }
+
+      // Persiste resposta da IA
       if (conversation) {
         await supabase.from('whatsapp_messages').insert({
           conversation_id: conversation.id,
           user_id: ownerUserId,
-          content: reply,
-          direction: 'outbound',
+          content: replySanitized,
+          direction: 'outgoing',
           message_type: 'text',
           is_from_ai: true,
+          evolution_message_id: evolutionMessageId,
+          status: replyResult.ok ? 'sent' : 'failed',
         });
 
-        // Update conversation with requires_human flag
         if (requiresHuman) {
           await supabase
             .from('whatsapp_conversations')
@@ -1250,25 +1379,17 @@ serve(async (req) => {
         }
       }
 
-      // Send reply via WhatsApp (uses evoUrl/evoInstance resolved above with env fallback)
-      let replyResult: SendResult = {
-        ok: false,
-        stage: 'config',
-        error: 'missing config: evolution url/instance',
-      };
-      if (evoUrl && evoInstance) {
-        replyResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
-        console.log(`[process_message] reply result=${JSON.stringify(replyResult)}`);
-      } else {
-        console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
-      }
-
       return new Response(
         JSON.stringify({
-          response: reply,
+          response: replySanitized,
           agent_name: agentName,
           requires_human: requiresHuman,
           conversation_id: conversation?.id,
+          tool_calls_executed: toolCallsExecuted,
+          meta: {
+            iterations: toolCallsExecuted.length,
+            tools_enabled: toolsSupported,
+          },
           ...buildWhatsAppResponseFields(replyResult),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
