@@ -224,6 +224,239 @@ async function safeSendWhatsAppReply(
   }
 }
 
+// ============================================================
+// Sanitização anti-crash JSON para envio ao WhatsApp
+// ============================================================
+function sanitizeForWhatsApp(text: string): string {
+  if (!text) return '';
+  let s = String(text);
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  s = s.replace(/\n{3,}/g, '\n\n');
+  s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  s = s.trim();
+  if (s.length > 4000) s = s.slice(0, 4000);
+  return s;
+}
+
+// ============================================================
+// Tool Calling: definições e executores server-side
+// ============================================================
+type ToolContext = { supabase: any; userId: string; clinicId: string | null };
+
+const AGENT_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'buscar_paciente',
+      description: 'Busca pacientes existentes pelo nome (parcial) ou telefone. Retorna até 5 resultados.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nome: { type: 'string', description: 'Nome ou parte do nome do paciente' },
+          telefone: { type: 'string', description: 'Telefone (com ou sem DDD)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'consultar_disponibilidade',
+      description: 'Lista horários já ocupados na agenda no intervalo informado. Use SEMPRE antes de propor um horário livre.',
+      parameters: {
+        type: 'object',
+        properties: {
+          data_inicio: { type: 'string', description: 'Data/hora ISO 8601 de início' },
+          data_fim: { type: 'string', description: 'Data/hora ISO 8601 de fim' },
+          duracao_minutos: { type: 'number', description: 'Duração desejada em minutos (default 60)' },
+        },
+        required: ['data_inicio', 'data_fim'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'criar_agendamento',
+      description: 'Cria um agendamento após confirmar os dados com o paciente. Se o paciente não existir, cadastra automaticamente.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nome_paciente: { type: 'string' },
+          telefone: { type: 'string' },
+          data_hora_iso: { type: 'string', description: 'Data e hora ISO 8601' },
+          procedimento: { type: 'string' },
+          duracao_minutos: { type: 'number' },
+          observacoes: { type: 'string' },
+        },
+        required: ['nome_paciente', 'telefone', 'data_hora_iso'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'cancelar_ou_remarcar_agendamento',
+      description: 'Cancela (sem nova_data_hora_iso) ou remarca (com nova_data_hora_iso) um agendamento. Se appointment_id não for informado, localiza o próximo agendamento futuro pelo telefone.',
+      parameters: {
+        type: 'object',
+        properties: {
+          appointment_id: { type: 'string' },
+          telefone: { type: 'string' },
+          nova_data_hora_iso: { type: 'string' },
+        },
+      },
+    },
+  },
+];
+
+async function executeAgentTool(name: string, args: any, ctx: ToolContext): Promise<any> {
+  try {
+    if (name === 'buscar_paciente') {
+      const nome = (args?.nome || '').trim();
+      const telefone = (args?.telefone || '').replace(/\D/g, '');
+      let query = ctx.supabase
+        .from('patients')
+        .select('id, name, phone, email')
+        .eq('user_id', ctx.userId)
+        .limit(5);
+      if (telefone) query = query.ilike('phone', `%${telefone.slice(-8)}%`);
+      else if (nome) query = query.ilike('name', `%${nome}%`);
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { pacientes: data || [] };
+    }
+
+    if (name === 'consultar_disponibilidade') {
+      const start = args?.data_inicio;
+      const end = args?.data_fim;
+      if (!start || !end) return { error: 'data_inicio e data_fim são obrigatórios' };
+      const { data, error } = await ctx.supabase
+        .from('appointments')
+        .select('id, appointment_date, duration_minutes, type, status')
+        .eq('user_id', ctx.userId)
+        .neq('status', 'cancelled')
+        .gte('appointment_date', start)
+        .lte('appointment_date', end)
+        .order('appointment_date', { ascending: true });
+      if (error) return { error: error.message };
+      return {
+        duracao_solicitada: args?.duracao_minutos || 60,
+        horarios_ocupados: (data || []).map((a: any) => ({
+          id: a.id,
+          inicio: a.appointment_date,
+          duracao_minutos: a.duration_minutes,
+          tipo: a.type,
+          status: a.status,
+        })),
+      };
+    }
+
+    if (name === 'criar_agendamento') {
+      const { nome_paciente, telefone, data_hora_iso, procedimento, duracao_minutos, observacoes } = args || {};
+      if (!nome_paciente || !telefone || !data_hora_iso) {
+        return { error: 'nome_paciente, telefone e data_hora_iso são obrigatórios' };
+      }
+      const phoneDigits = String(telefone).replace(/\D/g, '');
+
+      let patientId: string | null = null;
+      const { data: existing } = await ctx.supabase
+        .from('patients')
+        .select('id')
+        .eq('user_id', ctx.userId)
+        .ilike('phone', `%${phoneDigits.slice(-8)}%`)
+        .maybeSingle();
+
+      if (existing?.id) {
+        patientId = existing.id;
+      } else {
+        const insertPatient: any = {
+          user_id: ctx.userId,
+          name: String(nome_paciente).trim(),
+          phone: phoneDigits,
+        };
+        if (ctx.clinicId) insertPatient.clinic_id = ctx.clinicId;
+        const { data: created, error: patErr } = await ctx.supabase
+          .from('patients')
+          .insert(insertPatient)
+          .select('id')
+          .single();
+        if (patErr) return { error: `falha ao criar paciente: ${patErr.message}` };
+        patientId = created.id;
+      }
+
+      const insertAppt: any = {
+        user_id: ctx.userId,
+        patient_id: patientId,
+        appointment_date: data_hora_iso,
+        duration_minutes: duracao_minutos || 60,
+        type: 'avaliacao',
+        status: 'scheduled',
+        procedure_type: procedimento || null,
+        notes: observacoes || null,
+      };
+      if (ctx.clinicId) insertAppt.clinic_id = ctx.clinicId;
+      const { data: appt, error: apptErr } = await ctx.supabase
+        .from('appointments')
+        .insert(insertAppt)
+        .select('id, appointment_date')
+        .single();
+      if (apptErr) return { error: `falha ao criar agendamento: ${apptErr.message}` };
+      return { ok: true, appointment_id: appt.id, appointment_date: appt.appointment_date };
+    }
+
+    if (name === 'cancelar_ou_remarcar_agendamento') {
+      let { appointment_id, telefone, nova_data_hora_iso } = args || {};
+      if (!appointment_id && telefone) {
+        const phoneDigits = String(telefone).replace(/\D/g, '');
+        const { data: pat } = await ctx.supabase
+          .from('patients')
+          .select('id')
+          .eq('user_id', ctx.userId)
+          .ilike('phone', `%${phoneDigits.slice(-8)}%`)
+          .maybeSingle();
+        if (pat?.id) {
+          const nowIso = new Date().toISOString();
+          const { data: next } = await ctx.supabase
+            .from('appointments')
+            .select('id')
+            .eq('user_id', ctx.userId)
+            .eq('patient_id', pat.id)
+            .neq('status', 'cancelled')
+            .gte('appointment_date', nowIso)
+            .order('appointment_date', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          appointment_id = next?.id;
+        }
+      }
+      if (!appointment_id) return { error: 'agendamento não encontrado' };
+
+      if (nova_data_hora_iso) {
+        const { error } = await ctx.supabase
+          .from('appointments')
+          .update({ appointment_date: nova_data_hora_iso, status: 'scheduled' })
+          .eq('id', appointment_id)
+          .eq('user_id', ctx.userId);
+        if (error) return { error: error.message };
+        return { ok: true, action: 'remarcado', appointment_id, nova_data_hora: nova_data_hora_iso };
+      } else {
+        const { error } = await ctx.supabase
+          .from('appointments')
+          .update({ status: 'cancelled' })
+          .eq('id', appointment_id)
+          .eq('user_id', ctx.userId);
+        if (error) return { error: error.message };
+        return { ok: true, action: 'cancelado', appointment_id };
+      }
+    }
+
+    return { error: `ferramenta desconhecida: ${name}` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
