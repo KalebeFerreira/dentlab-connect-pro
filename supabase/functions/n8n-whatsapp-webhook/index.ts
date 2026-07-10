@@ -224,6 +224,239 @@ async function safeSendWhatsAppReply(
   }
 }
 
+// ============================================================
+// Sanitização anti-crash JSON para envio ao WhatsApp
+// ============================================================
+function sanitizeForWhatsApp(text: string): string {
+  if (!text) return '';
+  let s = String(text);
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  s = s.replace(/\n{3,}/g, '\n\n');
+  s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  s = s.trim();
+  if (s.length > 4000) s = s.slice(0, 4000);
+  return s;
+}
+
+// ============================================================
+// Tool Calling: definições e executores server-side
+// ============================================================
+type ToolContext = { supabase: any; userId: string; clinicId: string | null };
+
+const AGENT_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'buscar_paciente',
+      description: 'Busca pacientes existentes pelo nome (parcial) ou telefone. Retorna até 5 resultados.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nome: { type: 'string', description: 'Nome ou parte do nome do paciente' },
+          telefone: { type: 'string', description: 'Telefone (com ou sem DDD)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'consultar_disponibilidade',
+      description: 'Lista horários já ocupados na agenda no intervalo informado. Use SEMPRE antes de propor um horário livre.',
+      parameters: {
+        type: 'object',
+        properties: {
+          data_inicio: { type: 'string', description: 'Data/hora ISO 8601 de início' },
+          data_fim: { type: 'string', description: 'Data/hora ISO 8601 de fim' },
+          duracao_minutos: { type: 'number', description: 'Duração desejada em minutos (default 60)' },
+        },
+        required: ['data_inicio', 'data_fim'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'criar_agendamento',
+      description: 'Cria um agendamento após confirmar os dados com o paciente. Se o paciente não existir, cadastra automaticamente.',
+      parameters: {
+        type: 'object',
+        properties: {
+          nome_paciente: { type: 'string' },
+          telefone: { type: 'string' },
+          data_hora_iso: { type: 'string', description: 'Data e hora ISO 8601' },
+          procedimento: { type: 'string' },
+          duracao_minutos: { type: 'number' },
+          observacoes: { type: 'string' },
+        },
+        required: ['nome_paciente', 'telefone', 'data_hora_iso'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'cancelar_ou_remarcar_agendamento',
+      description: 'Cancela (sem nova_data_hora_iso) ou remarca (com nova_data_hora_iso) um agendamento. Se appointment_id não for informado, localiza o próximo agendamento futuro pelo telefone.',
+      parameters: {
+        type: 'object',
+        properties: {
+          appointment_id: { type: 'string' },
+          telefone: { type: 'string' },
+          nova_data_hora_iso: { type: 'string' },
+        },
+      },
+    },
+  },
+];
+
+async function executeAgentTool(name: string, args: any, ctx: ToolContext): Promise<any> {
+  try {
+    if (name === 'buscar_paciente') {
+      const nome = (args?.nome || '').trim();
+      const telefone = (args?.telefone || '').replace(/\D/g, '');
+      let query = ctx.supabase
+        .from('patients')
+        .select('id, name, phone, email')
+        .eq('user_id', ctx.userId)
+        .limit(5);
+      if (telefone) query = query.ilike('phone', `%${telefone.slice(-8)}%`);
+      else if (nome) query = query.ilike('name', `%${nome}%`);
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { pacientes: data || [] };
+    }
+
+    if (name === 'consultar_disponibilidade') {
+      const start = args?.data_inicio;
+      const end = args?.data_fim;
+      if (!start || !end) return { error: 'data_inicio e data_fim são obrigatórios' };
+      const { data, error } = await ctx.supabase
+        .from('appointments')
+        .select('id, appointment_date, duration_minutes, type, status')
+        .eq('user_id', ctx.userId)
+        .neq('status', 'cancelled')
+        .gte('appointment_date', start)
+        .lte('appointment_date', end)
+        .order('appointment_date', { ascending: true });
+      if (error) return { error: error.message };
+      return {
+        duracao_solicitada: args?.duracao_minutos || 60,
+        horarios_ocupados: (data || []).map((a: any) => ({
+          id: a.id,
+          inicio: a.appointment_date,
+          duracao_minutos: a.duration_minutes,
+          tipo: a.type,
+          status: a.status,
+        })),
+      };
+    }
+
+    if (name === 'criar_agendamento') {
+      const { nome_paciente, telefone, data_hora_iso, procedimento, duracao_minutos, observacoes } = args || {};
+      if (!nome_paciente || !telefone || !data_hora_iso) {
+        return { error: 'nome_paciente, telefone e data_hora_iso são obrigatórios' };
+      }
+      const phoneDigits = String(telefone).replace(/\D/g, '');
+
+      let patientId: string | null = null;
+      const { data: existing } = await ctx.supabase
+        .from('patients')
+        .select('id')
+        .eq('user_id', ctx.userId)
+        .ilike('phone', `%${phoneDigits.slice(-8)}%`)
+        .maybeSingle();
+
+      if (existing?.id) {
+        patientId = existing.id;
+      } else {
+        const insertPatient: any = {
+          user_id: ctx.userId,
+          name: String(nome_paciente).trim(),
+          phone: phoneDigits,
+        };
+        if (ctx.clinicId) insertPatient.clinic_id = ctx.clinicId;
+        const { data: created, error: patErr } = await ctx.supabase
+          .from('patients')
+          .insert(insertPatient)
+          .select('id')
+          .single();
+        if (patErr) return { error: `falha ao criar paciente: ${patErr.message}` };
+        patientId = created.id;
+      }
+
+      const insertAppt: any = {
+        user_id: ctx.userId,
+        patient_id: patientId,
+        appointment_date: data_hora_iso,
+        duration_minutes: duracao_minutos || 60,
+        type: 'avaliacao',
+        status: 'scheduled',
+        procedure_type: procedimento || null,
+        notes: observacoes || null,
+      };
+      if (ctx.clinicId) insertAppt.clinic_id = ctx.clinicId;
+      const { data: appt, error: apptErr } = await ctx.supabase
+        .from('appointments')
+        .insert(insertAppt)
+        .select('id, appointment_date')
+        .single();
+      if (apptErr) return { error: `falha ao criar agendamento: ${apptErr.message}` };
+      return { ok: true, appointment_id: appt.id, appointment_date: appt.appointment_date };
+    }
+
+    if (name === 'cancelar_ou_remarcar_agendamento') {
+      let { appointment_id, telefone, nova_data_hora_iso } = args || {};
+      if (!appointment_id && telefone) {
+        const phoneDigits = String(telefone).replace(/\D/g, '');
+        const { data: pat } = await ctx.supabase
+          .from('patients')
+          .select('id')
+          .eq('user_id', ctx.userId)
+          .ilike('phone', `%${phoneDigits.slice(-8)}%`)
+          .maybeSingle();
+        if (pat?.id) {
+          const nowIso = new Date().toISOString();
+          const { data: next } = await ctx.supabase
+            .from('appointments')
+            .select('id')
+            .eq('user_id', ctx.userId)
+            .eq('patient_id', pat.id)
+            .neq('status', 'cancelled')
+            .gte('appointment_date', nowIso)
+            .order('appointment_date', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          appointment_id = next?.id;
+        }
+      }
+      if (!appointment_id) return { error: 'agendamento não encontrado' };
+
+      if (nova_data_hora_iso) {
+        const { error } = await ctx.supabase
+          .from('appointments')
+          .update({ appointment_date: nova_data_hora_iso, status: 'scheduled' })
+          .eq('id', appointment_id)
+          .eq('user_id', ctx.userId);
+        if (error) return { error: error.message };
+        return { ok: true, action: 'remarcado', appointment_id, nova_data_hora: nova_data_hora_iso };
+      } else {
+        const { error } = await ctx.supabase
+          .from('appointments')
+          .update({ status: 'cancelled' })
+          .eq('id', appointment_id)
+          .eq('user_id', ctx.userId);
+        if (error) return { error: error.message };
+        return { ok: true, action: 'cancelado', appointment_id };
+      }
+    }
+
+    return { error: `ferramenta desconhecida: ${name}` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -903,112 +1136,241 @@ serve(async (req) => {
         );
       }
 
-      // Store conversation
+      // ============ MEMÓRIA: upsert conversa ============
       const ownerUserId = agentSettings.user_id;
-      const { data: conversation } = await supabase
+      const clinicId = agentSettings.clinic_id || null;
+
+      const { data: conversation, error: convErr } = await supabase
         .from('whatsapp_conversations')
         .upsert({
           user_id: ownerUserId,
           phone_number,
-          patient_name: patient_name || null,
+          patient_name: patient_name || undefined,
           last_message_at: new Date().toISOString(),
           is_active: true,
+          clinic_id: clinicId,
         }, { onConflict: 'user_id,phone_number' })
         .select()
         .single();
 
+      if (convErr) console.error('[process_message] conversation upsert error:', convErr);
+
+      // Handoff humano: se conversa marcada, não chamamos a IA
+      if (conversation?.requires_human) {
+        console.log('[process_message] conversa com requires_human=true, pulando IA');
+        return new Response(
+          JSON.stringify({
+            response: '',
+            requires_human: true,
+            handoff: true,
+            conversation_id: conversation.id,
+            tool_calls_executed: [],
+            whatsapp_sent: false,
+            whatsapp_error_details: null,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Salva mensagem recebida
+      const incomingSanitized = sanitizeForWhatsApp(message);
       if (conversation) {
         await supabase.from('whatsapp_messages').insert({
           conversation_id: conversation.id,
           user_id: ownerUserId,
-          content: message,
-          direction: 'inbound',
+          content: incomingSanitized,
+          direction: 'incoming',
           message_type: 'text',
+          is_from_ai: false,
         });
       }
 
-      // Get conversation history for context
-      let conversationHistory: { role: string; content: string }[] = [];
+      // Carrega últimas 20 mensagens da conversa e mapeia para OpenAI
+      let conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
       if (conversation) {
         const { data: history } = await supabase
           .from('whatsapp_messages')
-          .select('content, direction, is_from_ai')
+          .select('content, direction, created_at')
           .eq('conversation_id', conversation.id)
           .order('created_at', { ascending: false })
-          .limit(10);
-
+          .limit(20);
         if (history) {
-          conversationHistory = history.reverse().map(msg => ({
-            role: msg.direction === 'inbound' ? 'user' : 'assistant',
-            content: msg.content,
-          }));
+          conversationHistory = history
+            .slice()
+            .reverse()
+            .map((m: any) => ({
+              role: (m.direction === 'incoming' ? 'user' : 'assistant') as 'user' | 'assistant',
+              content: m.content || '',
+            }));
         }
       }
 
-      // Build system prompt
+      // System prompt com contexto de ferramentas e timezone
       const agentName = agentSettings.agent_name || 'Assistente';
       const personality = agentSettings.agent_personality || '';
-      const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\nSeu nome é: ${agentName}\n${personality ? `\nInstruções adicionais: ${personality}` : ''}`;
+      const nowBrText = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const systemPrompt = `${SYSTEM_PROMPT_BASE}
 
-      // Call AI
+Seu nome é: ${agentName}
+${personality ? `\nInstruções adicionais: ${personality}\n` : ''}
+## Contexto operacional
+- Timezone: America/Sao_Paulo. Data/hora atual: ${nowBrText}.
+- Horário de atendimento: ${agentSettings.working_hours_start || '08:00'} às ${agentSettings.working_hours_end || '18:00'}.
+
+## Ferramentas disponíveis (function calling)
+Você tem 4 ferramentas para executar ações reais na agenda da clínica:
+- buscar_paciente: verifique se o paciente já existe antes de cadastrar.
+- consultar_disponibilidade: chame SEMPRE antes de propor um horário; nunca invente disponibilidade.
+- criar_agendamento: só chame APÓS confirmar com o paciente (nome, telefone, data/hora, procedimento).
+- cancelar_ou_remarcar_agendamento: use para cancelar ou remarcar um agendamento existente.
+
+Regras:
+1. Confirme os dados com o paciente antes de criar/alterar agendamentos.
+2. Se a data ou horário estiver ambíguo, pergunte antes.
+3. Sempre responda em português brasileiro, curto e cordial.`;
+
+      // Call AI (Lovable AI Gateway - OpenAI compatible)
       const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       if (!LOVABLE_API_KEY) {
         throw new Error('LOVABLE_API_KEY não configurada');
       }
 
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-3-flash-preview',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...conversationHistory,
-            { role: 'user', content: message },
-          ],
-          temperature: 0.5,
-          max_tokens: 500,
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        if (aiResponse.status === 429) {
-          return new Response(
-            JSON.stringify({ error: 'Muitas requisições. Aguarde alguns segundos.' }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        if (aiResponse.status === 402) {
-          return new Response(
-            JSON.stringify({ error: 'Serviço temporariamente indisponível.' }),
-            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        throw new Error(`AI error: ${aiResponse.status}`);
+      const aiMessages: any[] = [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory,
+      ];
+      const lastHist = aiMessages[aiMessages.length - 1];
+      if (!(lastHist && lastHist.role === 'user' && lastHist.content === incomingSanitized)) {
+        aiMessages.push({ role: 'user', content: incomingSanitized });
       }
 
-      const aiData = await aiResponse.json();
-      const reply = aiData.choices?.[0]?.message?.content || 'Desculpe, não entendi. Pode repetir?';
+      const toolCtx: ToolContext = { supabase, userId: ownerUserId, clinicId };
+      const toolCallsExecuted: string[] = [];
 
-      // Detect if human transfer is needed
+      const callGateway = async (payloadMessages: any[], withTools: boolean) => {
+        return await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: payloadMessages,
+            temperature: 0.5,
+            max_tokens: 800,
+            ...(withTools ? { tools: AGENT_TOOLS, tool_choice: 'auto' } : {}),
+          }),
+        });
+      };
+
+      let reply = '';
+      let toolsSupported = true;
+      const maxIters = 5;
+
+      try {
+        for (let iter = 0; iter < maxIters; iter++) {
+          const aiResp = await callGateway(aiMessages, toolsSupported);
+
+          if (!aiResp.ok) {
+            if (aiResp.status === 429) {
+              return new Response(
+                JSON.stringify({ error: 'Muitas requisições. Aguarde alguns segundos.' }),
+                { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+            if (aiResp.status === 402) {
+              return new Response(
+                JSON.stringify({ error: 'Serviço temporariamente indisponível.' }),
+                { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+            const errText = await aiResp.text().catch(() => '');
+            if (toolsSupported && /tool|function/i.test(errText)) {
+              console.warn('[process_message] tools rejeitadas, fallback sem tools:', errText.slice(0, 200));
+              toolsSupported = false;
+              continue;
+            }
+            throw new Error(`AI error ${aiResp.status}: ${errText.slice(0, 200)}`);
+          }
+
+          const aiData = await aiResp.json();
+          const choice = aiData.choices?.[0];
+          const msg = choice?.message;
+          const toolCalls = msg?.tool_calls || [];
+
+          if (toolsSupported && Array.isArray(toolCalls) && toolCalls.length > 0) {
+            aiMessages.push({
+              role: 'assistant',
+              content: msg.content || '',
+              tool_calls: toolCalls,
+            });
+            for (const tc of toolCalls) {
+              const fnName = tc.function?.name || '';
+              let fnArgs: any = {};
+              try { fnArgs = JSON.parse(tc.function?.arguments || '{}'); } catch { fnArgs = {}; }
+              console.log(`[process_message] tool_call ${fnName}`, fnArgs);
+              const result = await executeAgentTool(fnName, fnArgs, toolCtx);
+              toolCallsExecuted.push(fnName);
+              aiMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: JSON.stringify(result),
+              });
+            }
+            continue;
+          }
+
+          reply = msg?.content || '';
+          break;
+        }
+      } catch (err) {
+        console.error('[process_message] AI loop error:', err);
+        reply = 'Desculpe, tive uma instabilidade. Pode repetir sua última mensagem?';
+      }
+
+      if (!reply) reply = 'Desculpe, não entendi. Pode repetir?';
+      const replySanitized = sanitizeForWhatsApp(reply);
+
+      // Detecta pedido de transferência humana
       const humanKeywords = ['falar com atendente', 'pessoa real', 'humano', 'atendimento humano', 'falar com alguém', 'quero um atendente'];
-      const requiresHuman = humanKeywords.some(kw => message.toLowerCase().includes(kw));
+      const requiresHuman = humanKeywords.some(kw => incomingSanitized.toLowerCase().includes(kw));
 
-      // Store AI response
+      // Envio via WhatsApp (Evolution)
+      let replyResult: SendResult = {
+        ok: false,
+        stage: 'config',
+        error: 'missing config: evolution url/instance',
+      };
+      if (evoUrl && evoInstance) {
+        replyResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, replySanitized);
+        console.log(`[process_message] reply result=${JSON.stringify(replyResult)}`);
+      } else {
+        console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
+      }
+
+      // Extrai evolution_message_id, se retornado pelo provider
+      let evolutionMessageId: string | null = null;
+      if (replyResult.ok && replyResult.providerResponse) {
+        try {
+          const p = JSON.parse(replyResult.providerResponse);
+          evolutionMessageId = p?.key?.id || p?.messageId || p?.id || null;
+        } catch { /* ignore */ }
+      }
+
+      // Persiste resposta da IA
       if (conversation) {
         await supabase.from('whatsapp_messages').insert({
           conversation_id: conversation.id,
           user_id: ownerUserId,
-          content: reply,
-          direction: 'outbound',
+          content: replySanitized,
+          direction: 'outgoing',
           message_type: 'text',
           is_from_ai: true,
+          evolution_message_id: evolutionMessageId,
+          status: replyResult.ok ? 'sent' : 'failed',
         });
 
-        // Update conversation with requires_human flag
         if (requiresHuman) {
           await supabase
             .from('whatsapp_conversations')
@@ -1017,25 +1379,17 @@ serve(async (req) => {
         }
       }
 
-      // Send reply via WhatsApp (uses evoUrl/evoInstance resolved above with env fallback)
-      let replyResult: SendResult = {
-        ok: false,
-        stage: 'config',
-        error: 'missing config: evolution url/instance',
-      };
-      if (evoUrl && evoInstance) {
-        replyResult = await safeSendWhatsAppReply(evoUrl, evoInstance, phone_number, reply);
-        console.log(`[process_message] reply result=${JSON.stringify(replyResult)}`);
-      } else {
-        console.warn('[process_message] Evolution config missing, reply not sent via WhatsApp');
-      }
-
       return new Response(
         JSON.stringify({
-          response: reply,
+          response: replySanitized,
           agent_name: agentName,
           requires_human: requiresHuman,
           conversation_id: conversation?.id,
+          tool_calls_executed: toolCallsExecuted,
+          meta: {
+            iterations: toolCallsExecuted.length,
+            tools_enabled: toolsSupported,
+          },
           ...buildWhatsAppResponseFields(replyResult),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
