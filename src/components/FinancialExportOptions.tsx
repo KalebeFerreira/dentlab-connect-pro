@@ -280,6 +280,9 @@ export const FinancialExportOptions = ({
       worksheet.addRow(["Despesas", formatCurrency(expense)]);
       worksheet.addRow(["Lucro", formatCurrency(profit)]);
       worksheet.addRow(["Pendentes", formatCurrency(pending)]);
+      worksheet.addRow(["Produção bruta", formatCurrency(bruto)]);
+      worksheet.addRow(["Produção líquida", formatCurrency(liquido)]);
+
       worksheet.addRow([]);
 
       // Transactions header
