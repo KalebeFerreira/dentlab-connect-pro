@@ -63,9 +63,15 @@ const Financial = () => {
   useEffect(() => {
     if (!loading) {
       loadTransactions();
-      loadAllYearTransactions();
     }
   }, [loading, filterMonth, filterYear]);
+
+  // Dados do ano inteiro carregam apenas quando o ano muda (evita recarga a cada mês)
+  useEffect(() => {
+    if (!loading) {
+      loadAllYearTransactions();
+    }
+  }, [loading, filterYear]);
 
   useEffect(() => {
     // Setup realtime subscription for financial transactions
@@ -89,6 +95,7 @@ const Financial = () => {
       supabase.removeChannel(channel);
     };
   }, [filterMonth, filterYear]);
+
 
   const checkAuth = async () => {
     try {
@@ -115,17 +122,24 @@ const Financial = () => {
     }
   };
 
+  const TX_COLUMNS =
+    "id, transaction_type, amount, description, status, month, year, created_at, payment_method, due_date, paid_at, payment_status, category";
+
   const loadTransactions = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("financial_transactions")
-        .select("*")
+        .select(TX_COLUMNS)
+        .eq("user_id", user.id)
         .eq("month", filterMonth)
         .eq("year", filterYear)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      setTransactions((data as any) || []);
     } catch (error) {
       console.error("Erro ao carregar transações:", error);
     }
@@ -133,21 +147,32 @@ const Financial = () => {
 
   const loadAllYearTransactions = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("financial_transactions")
-        .select("*")
+        .select(TX_COLUMNS)
+        .eq("user_id", user.id)
         .eq("year", filterYear)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setAllYearTransactions(data || []);
+      setAllYearTransactions((data as any) || []);
     } catch (error) {
       console.error("Erro ao carregar transações do ano:", error);
     }
   };
 
+  const isExpense = (t: Transaction) =>
+    t.transaction_type === "expense" || t.transaction_type === "payment";
+
   const calculateTotals = () => {
-    const receipts = transactions.filter((t) => t.transaction_type === "receipt");
+    // Deduplicação defensiva por id (evita qualquer valor contado duas vezes)
+    const unique = Array.from(new Map(transactions.map((t) => [t.id, t])).values())
+      .filter((t) => t.status !== "cancelled");
+
+    const receipts = unique.filter((t) => t.transaction_type === "receipt");
 
     const cashIn = receipts
       .filter((t) => t.paid_at != null || (t.payment_method !== "a_prazo" && t.status === "completed"))
@@ -164,18 +189,47 @@ const Financial = () => {
 
     const income = cashIn;
 
-    const expense = transactions
-      .filter((t) => t.transaction_type === "payment" && t.status === "completed")
+    const expenses = unique.filter(isExpense);
+
+    const expense = expenses
+      .filter((t) => t.status === "completed")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const pending = transactions
+    const pending = unique
       .filter((t) => t.status === "pending")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    return { income, expense, pending, profit: income - expense, cashIn, toReceive, overdue };
+    // Produção do período: tudo que foi produzido/faturado (pago ou a receber)
+    const producaoBruta = receipts.reduce((sum, t) => sum + Number(t.amount), 0);
+    // Custos do período (mão de obra, dentistas e demais despesas), pagos ou previstos
+    const custosProducao = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
+    const producaoLiquida = producaoBruta - custosProducao;
+
+    return {
+      income,
+      expense,
+      pending,
+      profit: income - expense,
+      cashIn,
+      toReceive,
+      overdue,
+      producaoBruta,
+      producaoLiquida,
+    };
   };
 
-  const { income, expense, pending, profit, cashIn, toReceive, overdue } = calculateTotals();
+  const {
+    income,
+    expense,
+    pending,
+    profit,
+    cashIn,
+    toReceive,
+    overdue,
+    producaoBruta,
+    producaoLiquida,
+  } = calculateTotals();
+
 
   const handleEdit = (transaction: Transaction) => {
     setEditTransaction(transaction);
@@ -243,6 +297,9 @@ const Financial = () => {
                 expense={expense}
                 profit={profit}
                 pending={pending}
+                producaoBruta={producaoBruta}
+                producaoLiquida={producaoLiquida}
+
                 companyName={companyName}
               />
               {!showForm && activeTab === "transactions" && (
@@ -386,6 +443,35 @@ const Financial = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Produção bruta x líquida */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Produção bruta</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-primary">{maskMoney(producaoBruta)}</div>
+              <p className="text-xs text-muted-foreground">Tudo produzido no período (pago e a receber)</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Produção líquida</CardTitle>
+              <Wallet className={`h-4 w-4 ${producaoLiquida >= 0 ? "text-green-600" : "text-red-600"}`} />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className={`text-lg md:text-2xl font-bold ${producaoLiquida >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {maskMoney(producaoLiquida)}
+              </div>
+              <p className="text-xs text-muted-foreground">Produção bruta menos custos do período</p>
+            </CardContent>
+          </Card>
+        </div>
+
+
 
         {/* Bons pagadores vs inadimplentes */}
         <ClientPaymentInsights />

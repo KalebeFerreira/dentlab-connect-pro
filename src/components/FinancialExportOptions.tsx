@@ -30,6 +30,8 @@ interface FinancialExportOptionsProps {
   expense: number;
   profit: number;
   pending: number;
+  producaoBruta?: number;
+  producaoLiquida?: number;
   companyName?: string;
   disabled?: boolean;
 }
@@ -49,9 +51,12 @@ export const FinancialExportOptions = ({
   expense,
   profit,
   pending,
+  producaoBruta,
+  producaoLiquida,
   companyName = "Minha Empresa",
   disabled = false,
 }: FinancialExportOptionsProps) => {
+
   const [exporting, setExporting] = useState<ExportFormat>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -87,9 +92,19 @@ export const FinancialExportOptions = ({
     URL.revokeObjectURL(url);
   };
 
+  const uniqueTransactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
+  const bruto = producaoBruta ?? uniqueTransactions
+    .filter(t => t.transaction_type === "receipt" && t.status !== "cancelled")
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const custos = uniqueTransactions
+    .filter(t => (t.transaction_type === "expense" || t.transaction_type === "payment") && t.status !== "cancelled")
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const liquido = producaoLiquida ?? (bruto - custos);
+
   const createReportHTML = () => {
-    const incomeTransactions = transactions.filter(t => t.transaction_type === "receipt");
-    const expenseTransactions = transactions.filter(t => t.transaction_type === "payment");
+    const incomeTransactions = uniqueTransactions.filter(t => t.transaction_type === "receipt");
+    const expenseTransactions = uniqueTransactions.filter(t => t.transaction_type === "expense" || t.transaction_type === "payment");
+
 
     return `
       <div style="font-family: Arial, sans-serif; padding: 40px; background: white; color: #1f2937;">
@@ -117,6 +132,18 @@ export const FinancialExportOptions = ({
             <p style="font-size: 24px; font-weight: 700; color: #d97706;">${formatCurrency(pending)}</p>
           </div>
         </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 40px;">
+          <div style="padding: 20px; border-radius: 12px; text-align: center; background: #eef2ff;">
+            <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Produção bruta</p>
+            <p style="font-size: 24px; font-weight: 700; color: #1c4587;">${formatCurrency(bruto)}</p>
+          </div>
+          <div style="padding: 20px; border-radius: 12px; text-align: center; background: #ecfdf5;">
+            <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Produção líquida</p>
+            <p style="font-size: 24px; font-weight: 700; color: ${liquido >= 0 ? '#16a34a' : '#dc2626'};">${formatCurrency(liquido)}</p>
+          </div>
+        </div>
+
 
         ${incomeTransactions.length > 0 ? `
           <div style="margin-bottom: 32px;">
@@ -253,6 +280,9 @@ export const FinancialExportOptions = ({
       worksheet.addRow(["Despesas", formatCurrency(expense)]);
       worksheet.addRow(["Lucro", formatCurrency(profit)]);
       worksheet.addRow(["Pendentes", formatCurrency(pending)]);
+      worksheet.addRow(["Produção bruta", formatCurrency(bruto)]);
+      worksheet.addRow(["Produção líquida", formatCurrency(liquido)]);
+
       worksheet.addRow([]);
 
       // Transactions header

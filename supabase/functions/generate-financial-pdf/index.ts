@@ -46,20 +46,33 @@ serve(async (req) => {
     const essenciaLogoSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMjAgNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiMxYzQ1ODciIHJ4PSI1Ii8+PHRleHQgeD0iNjAiIHk9IjI1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXNzw6puY2lhIERlbnRhbC1MYWI8L3RleHQ+PC9zdmc+`;
     const showFreemiumLogo = !isSubscribed;
 
-    // Calculate totals
-    const income = transactions
-      .filter(t => t.transaction_type === 'receipt' && t.status === 'completed')
-      .reduce((sum, t) => sum + t.amount, 0);
+    // Calculate totals (deduplicando por id e considerando 'expense' e 'payment')
+    const uniqueTx = Array.from(new Map(transactions.map((t: Transaction) => [t.id, t])).values())
+      .filter((t: any) => t.status !== 'cancelled');
+    const isExpenseTx = (t: any) => t.transaction_type === 'expense' || t.transaction_type === 'payment';
 
-    const expense = transactions
-      .filter(t => t.transaction_type === 'payment' && t.status === 'completed')
-      .reduce((sum, t) => sum + t.amount, 0);
+    const income = uniqueTx
+      .filter((t: any) => t.transaction_type === 'receipt' && t.status === 'completed')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
-    const pending = transactions
-      .filter(t => t.status === 'pending')
-      .reduce((sum, t) => sum + t.amount, 0);
+    const expense = uniqueTx
+      .filter((t: any) => isExpenseTx(t) && t.status === 'completed')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+    const pending = uniqueTx
+      .filter((t: any) => t.status === 'pending')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
     const profit = income - expense;
+
+    const producaoBruta = uniqueTx
+      .filter((t: any) => t.transaction_type === 'receipt')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+    const custosProducao = uniqueTx
+      .filter((t: any) => isExpenseTx(t))
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+    const producaoLiquida = producaoBruta - custosProducao;
+
 
     const monthNames = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -79,8 +92,9 @@ serve(async (req) => {
     };
 
     // Separate transactions by type
-    const incomeTransactions = transactions.filter(t => t.transaction_type === 'receipt');
-    const expenseTransactions = transactions.filter(t => t.transaction_type === 'payment');
+    const incomeTransactions = uniqueTx.filter((t: any) => t.transaction_type === 'receipt');
+    const expenseTransactions = uniqueTx.filter((t: any) => isExpenseTx(t));
+
 
     // Generate transactions HTML
     const generateTransactionRows = (txs: Transaction[], type: 'income' | 'expense') => {
@@ -276,7 +290,19 @@ serve(async (req) => {
         <div class="summary-card pending">
           <div class="summary-label">Pendentes</div>
           <div class="summary-value">${formatCurrency(pending)}</div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card income">
+          <div class="summary-label">Produção Bruta</div>
+          <div class="summary-value">${formatCurrency(producaoBruta)}</div>
         </div>
+        <div class="summary-card profit">
+          <div class="summary-label">Produção Líquida</div>
+          <div class="summary-value">${formatCurrency(producaoLiquida)}</div>
+        </div>
+      </div>
+
       </div>
       
       <div class="section">
