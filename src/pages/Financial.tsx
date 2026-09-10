@@ -441,6 +441,35 @@ const Financial = () => {
           </Card>
         </div>
 
+        {/* Produção bruta x líquida */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Produção bruta</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className="text-lg md:text-2xl font-bold text-primary">{maskMoney(producaoBruta)}</div>
+              <p className="text-xs text-muted-foreground">Tudo produzido no período (pago e a receber)</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Produção líquida</CardTitle>
+              <Wallet className={`h-4 w-4 ${producaoLiquida >= 0 ? "text-green-600" : "text-red-600"}`} />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6">
+              <div className={`text-lg md:text-2xl font-bold ${producaoLiquida >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {maskMoney(producaoLiquida)}
+              </div>
+              <p className="text-xs text-muted-foreground">Produção bruta menos custos do período</p>
+            </CardContent>
+          </Card>
+        </div>
+
+
+
         {/* Bons pagadores vs inadimplentes */}
         <ClientPaymentInsights />
 
