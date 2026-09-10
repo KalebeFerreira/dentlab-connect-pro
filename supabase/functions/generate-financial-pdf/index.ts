@@ -290,7 +290,19 @@ serve(async (req) => {
         <div class="summary-card pending">
           <div class="summary-label">Pendentes</div>
           <div class="summary-value">${formatCurrency(pending)}</div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card income">
+          <div class="summary-label">Produção Bruta</div>
+          <div class="summary-value">${formatCurrency(producaoBruta)}</div>
         </div>
+        <div class="summary-card profit">
+          <div class="summary-label">Produção Líquida</div>
+          <div class="summary-value">${formatCurrency(producaoLiquida)}</div>
+        </div>
+      </div>
+
       </div>
       
       <div class="section">
