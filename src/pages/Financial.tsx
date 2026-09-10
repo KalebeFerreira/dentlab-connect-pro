@@ -18,7 +18,7 @@ import { FinancialInsights } from "@/components/FinancialInsights";
 import { ClientPaymentInsights } from "@/components/billing/ClientPaymentInsights";
 import { PaymentTypeReports } from "@/components/billing/PaymentTypeReports";
 import { AppointmentsFinancialTab } from "@/components/billing/AppointmentsFinancialTab";
-import { Wallet, Clock, AlertCircle } from "lucide-react";
+import { Wallet, Clock, AlertCircle, TrendingUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { useHideValues } from "@/hooks/useHideValues";
@@ -297,6 +297,9 @@ const Financial = () => {
                 expense={expense}
                 profit={profit}
                 pending={pending}
+                producaoBruta={producaoBruta}
+                producaoLiquida={producaoLiquida}
+
                 companyName={companyName}
               />
               {!showForm && activeTab === "transactions" && (
