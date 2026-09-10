@@ -122,17 +122,24 @@ const Financial = () => {
     }
   };
 
+  const TX_COLUMNS =
+    "id, transaction_type, amount, description, status, month, year, created_at, payment_method, due_date, paid_at, payment_status, category";
+
   const loadTransactions = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("financial_transactions")
-        .select("*")
+        .select(TX_COLUMNS)
+        .eq("user_id", user.id)
         .eq("month", filterMonth)
         .eq("year", filterYear)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      setTransactions((data as any) || []);
     } catch (error) {
       console.error("Erro ao carregar transações:", error);
     }
@@ -140,21 +147,32 @@ const Financial = () => {
 
   const loadAllYearTransactions = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("financial_transactions")
-        .select("*")
+        .select(TX_COLUMNS)
+        .eq("user_id", user.id)
         .eq("year", filterYear)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setAllYearTransactions(data || []);
+      setAllYearTransactions((data as any) || []);
     } catch (error) {
       console.error("Erro ao carregar transações do ano:", error);
     }
   };
 
+  const isExpense = (t: Transaction) =>
+    t.transaction_type === "expense" || t.transaction_type === "payment";
+
   const calculateTotals = () => {
-    const receipts = transactions.filter((t) => t.transaction_type === "receipt");
+    // Deduplicação defensiva por id (evita qualquer valor contado duas vezes)
+    const unique = Array.from(new Map(transactions.map((t) => [t.id, t])).values())
+      .filter((t) => t.status !== "cancelled");
+
+    const receipts = unique.filter((t) => t.transaction_type === "receipt");
 
     const cashIn = receipts
       .filter((t) => t.paid_at != null || (t.payment_method !== "a_prazo" && t.status === "completed"))
@@ -171,18 +189,47 @@ const Financial = () => {
 
     const income = cashIn;
 
-    const expense = transactions
-      .filter((t) => t.transaction_type === "payment" && t.status === "completed")
+    const expenses = unique.filter(isExpense);
+
+    const expense = expenses
+      .filter((t) => t.status === "completed")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const pending = transactions
+    const pending = unique
       .filter((t) => t.status === "pending")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    return { income, expense, pending, profit: income - expense, cashIn, toReceive, overdue };
+    // Produção do período: tudo que foi produzido/faturado (pago ou a receber)
+    const producaoBruta = receipts.reduce((sum, t) => sum + Number(t.amount), 0);
+    // Custos do período (mão de obra, dentistas e demais despesas), pagos ou previstos
+    const custosProducao = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
+    const producaoLiquida = producaoBruta - custosProducao;
+
+    return {
+      income,
+      expense,
+      pending,
+      profit: income - expense,
+      cashIn,
+      toReceive,
+      overdue,
+      producaoBruta,
+      producaoLiquida,
+    };
   };
 
-  const { income, expense, pending, profit, cashIn, toReceive, overdue } = calculateTotals();
+  const {
+    income,
+    expense,
+    pending,
+    profit,
+    cashIn,
+    toReceive,
+    overdue,
+    producaoBruta,
+    producaoLiquida,
+  } = calculateTotals();
+
 
   const handleEdit = (transaction: Transaction) => {
     setEditTransaction(transaction);
