@@ -92,9 +92,19 @@ export const FinancialExportOptions = ({
     URL.revokeObjectURL(url);
   };
 
+  const uniqueTransactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
+  const bruto = producaoBruta ?? uniqueTransactions
+    .filter(t => t.transaction_type === "receipt" && t.status !== "cancelled")
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const custos = uniqueTransactions
+    .filter(t => (t.transaction_type === "expense" || t.transaction_type === "payment") && t.status !== "cancelled")
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const liquido = producaoLiquida ?? (bruto - custos);
+
   const createReportHTML = () => {
-    const incomeTransactions = transactions.filter(t => t.transaction_type === "receipt");
-    const expenseTransactions = transactions.filter(t => t.transaction_type === "payment");
+    const incomeTransactions = uniqueTransactions.filter(t => t.transaction_type === "receipt");
+    const expenseTransactions = uniqueTransactions.filter(t => t.transaction_type === "expense" || t.transaction_type === "payment");
+
 
     return `
       <div style="font-family: Arial, sans-serif; padding: 40px; background: white; color: #1f2937;">
