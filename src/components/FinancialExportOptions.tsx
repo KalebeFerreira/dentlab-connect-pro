@@ -30,6 +30,8 @@ interface FinancialExportOptionsProps {
   expense: number;
   profit: number;
   pending: number;
+  producaoBruta?: number;
+  producaoLiquida?: number;
   companyName?: string;
   disabled?: boolean;
 }
@@ -49,9 +51,12 @@ export const FinancialExportOptions = ({
   expense,
   profit,
   pending,
+  producaoBruta,
+  producaoLiquida,
   companyName = "Minha Empresa",
   disabled = false,
 }: FinancialExportOptionsProps) => {
+
   const [exporting, setExporting] = useState<ExportFormat>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
