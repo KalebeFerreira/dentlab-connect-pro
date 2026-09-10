@@ -130,7 +130,19 @@ export const FinancialExportOptions = ({
           <div style="padding: 20px; border-radius: 12px; text-align: center; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
             <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Pendentes</p>
             <p style="font-size: 24px; font-weight: 700; color: #d97706;">${formatCurrency(pending)}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 40px;">
+          <div style="padding: 20px; border-radius: 12px; text-align: center; background: #eef2ff;">
+            <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Produção bruta</p>
+            <p style="font-size: 24px; font-weight: 700; color: #1c4587;">${formatCurrency(bruto)}</p>
           </div>
+          <div style="padding: 20px; border-radius: 12px; text-align: center; background: #ecfdf5;">
+            <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Produção líquida</p>
+            <p style="font-size: 24px; font-weight: 700; color: ${liquido >= 0 ? '#16a34a' : '#dc2626'};">${formatCurrency(liquido)}</p>
+          </div>
+        </div>
+
         </div>
 
         ${incomeTransactions.length > 0 ? `
