@@ -63,9 +63,15 @@ const Financial = () => {
   useEffect(() => {
     if (!loading) {
       loadTransactions();
-      loadAllYearTransactions();
     }
   }, [loading, filterMonth, filterYear]);
+
+  // Dados do ano inteiro carregam apenas quando o ano muda (evita recarga a cada mês)
+  useEffect(() => {
+    if (!loading) {
+      loadAllYearTransactions();
+    }
+  }, [loading, filterYear]);
 
   useEffect(() => {
     // Setup realtime subscription for financial transactions
@@ -89,6 +95,7 @@ const Financial = () => {
       supabase.removeChannel(channel);
     };
   }, [filterMonth, filterYear]);
+
 
   const checkAuth = async () => {
     try {
