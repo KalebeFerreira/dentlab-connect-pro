@@ -92,8 +92,9 @@ serve(async (req) => {
     };
 
     // Separate transactions by type
-    const incomeTransactions = transactions.filter(t => t.transaction_type === 'receipt');
-    const expenseTransactions = transactions.filter(t => t.transaction_type === 'payment');
+    const incomeTransactions = uniqueTx.filter((t: any) => t.transaction_type === 'receipt');
+    const expenseTransactions = uniqueTx.filter((t: any) => isExpenseTx(t));
+
 
     // Generate transactions HTML
     const generateTransactionRows = (txs: Transaction[], type: 'income' | 'expense') => {
