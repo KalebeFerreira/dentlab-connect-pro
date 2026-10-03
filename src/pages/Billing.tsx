@@ -51,7 +51,6 @@ export interface Service {
   due_date?: string | null;
   paid_at?: string | null;
   payment_status?: string;
-  status: string;
 }
 
 const Billing = () => {
