@@ -165,6 +165,7 @@ export type Database = {
       appointments: {
         Row: {
           appointment_date: string
+          archived_at: string | null
           clinic_id: string | null
           created_at: string
           dentist_id: string | null
@@ -187,6 +188,7 @@ export type Database = {
         }
         Insert: {
           appointment_date: string
+          archived_at?: string | null
           clinic_id?: string | null
           created_at?: string
           dentist_id?: string | null
@@ -209,6 +211,7 @@ export type Database = {
         }
         Update: {
           appointment_date?: string
+          archived_at?: string | null
           clinic_id?: string | null
           created_at?: string
           dentist_id?: string | null
@@ -392,6 +395,7 @@ export type Database = {
       }
       client_payment_profiles: {
         Row: {
+          archived_at: string | null
           client_name: string
           created_at: string
           id: string
@@ -401,6 +405,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           client_name: string
           created_at?: string
           id?: string
@@ -410,6 +415,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           client_name?: string
           created_at?: string
           id?: string
@@ -762,6 +768,7 @@ export type Database = {
       }
       employees: {
         Row: {
+          archived_at: string | null
           auth_enabled: boolean | null
           auth_user_id: string | null
           created_at: string
@@ -776,6 +783,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           auth_enabled?: boolean | null
           auth_user_id?: string | null
           created_at?: string
@@ -790,6 +798,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           auth_enabled?: boolean | null
           auth_user_id?: string | null
           created_at?: string
@@ -1548,6 +1557,7 @@ export type Database = {
       orders: {
         Row: {
           amount: number | null
+          archived_at: string | null
           clinic_name: string
           color: string | null
           created_at: string
@@ -1572,6 +1582,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          archived_at?: string | null
           clinic_name: string
           color?: string | null
           created_at?: string
@@ -1596,6 +1607,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          archived_at?: string | null
           clinic_name?: string
           color?: string | null
           created_at?: string
@@ -1631,6 +1643,7 @@ export type Database = {
       patients: {
         Row: {
           address: string | null
+          archived_at: string | null
           birth_date: string | null
           clinic_id: string | null
           cpf: string | null
@@ -1645,6 +1658,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          archived_at?: string | null
           birth_date?: string | null
           clinic_id?: string | null
           cpf?: string | null
@@ -1659,6 +1673,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          archived_at?: string | null
           birth_date?: string | null
           clinic_id?: string | null
           cpf?: string | null
