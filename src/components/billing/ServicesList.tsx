@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search, CheckCircle2 } from "lucide-react";
+import { Archive, ArchiveRestore, FileText, Receipt, Send, FileSpreadsheet, Download, Pencil, FileCheck, Search, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Service, CompanyInfo } from "@/pages/Billing";
 import { format } from "date-fns";
@@ -18,7 +18,6 @@ import { ptBR } from "date-fns/locale";
 import { useHideValues } from "@/hooks/useHideValues";
 import { HideValuesToggle } from "@/components/HideValuesToggle";
 import { supabase } from "@/integrations/supabase/client";
-import ExcelJS from 'exceljs';
 import { EditServiceDialog } from "./EditServiceDialog";
 import { toast } from "sonner";
 
@@ -33,18 +32,20 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const { hidden, toggle } = useHideValues();
   const maskValue = (v: string) => (hidden ? "••••••" : v);
   const deferredSearch = useDeferredValue(search);
   const filteredServices = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
-    if (!q) return services;
-    return services.filter((s) =>
+    const visible = services.filter((service) => showArchived ? service.status === "deleted" : service.status === "active");
+    if (!q) return visible;
+    return visible.filter((s) =>
       [s.service_name, s.client_name, s.patient_name]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q))
     );
-  }, [services, deferredSearch]);
+  }, [services, deferredSearch, showArchived]);
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -160,6 +161,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
   };
 
   const handleExportAllExcel = async () => {
+    const { default: ExcelJS } = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Todos os Serviços');
     
@@ -208,6 +210,13 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
     URL.revokeObjectURL(url);
   };
 
+  const handleRestore = async (id: string) => {
+    const { error } = await supabase.from("services").update({ status: "active" }).eq("id", id);
+    if (error) return toast.error("Não foi possível restaurar o serviço");
+    toast.success("Serviço restaurado");
+    await onServiceUpdate();
+  };
+
   if (services.length === 0) {
     return (
       <Card>
@@ -226,6 +235,10 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Serviços Cadastrados</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant={showArchived ? "secondary" : "outline"} size="sm" onClick={() => setShowArchived((value) => !value)}>
+              {showArchived ? <ArchiveRestore className="h-4 w-4 mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
+              {showArchived ? "Ver ativos" : "Arquivados"}
+            </Button>
             <HideValuesToggle hidden={hidden} onToggle={toggle} />
             {services.length > 0 && (
               <>
@@ -285,7 +298,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    {!service.paid_at && (
+                    {!showArchived && !service.paid_at && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -295,7 +308,7 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
                       </Button>
                     )}
-                    <Button
+                    {!showArchived && <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
@@ -305,16 +318,16 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                       title="Editar"
                     >
                       <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
+                    </Button>}
+                    {!showArchived && <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleGenerateReceipt(service)}
                       title="Gerar Recibo"
                     >
                       <Receipt className="h-4 w-4" />
-                    </Button>
-                    <Button
+                    </Button>}
+                    {!showArchived && <Button
                       variant="ghost"
                       size="icon"
                       onClick={async () => {
@@ -336,30 +349,30 @@ export const ServicesList = ({ services, onDelete, onServiceUpdate, companyInfo 
                       title="Emitir NFS-e"
                     >
                       <FileCheck className="h-4 w-4" />
-                    </Button>
-                    <Button
+                    </Button>}
+                    {!showArchived && <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleGenerateInvoice(service)}
                       title="Gerar Nota Fiscal PDF"
                     >
                       <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button
+                    </Button>}
+                    {!showArchived && <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleSendWhatsApp(service)}
                       title="Enviar por WhatsApp"
                     >
                       <Send className="h-4 w-4" />
-                    </Button>
+                    </Button>}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onDelete(service.id)}
-                      title="Excluir"
+                      onClick={() => showArchived ? handleRestore(service.id) : onDelete(service.id)}
+                      title={showArchived ? "Restaurar" : "Arquivar"}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                     </Button>
                   </div>
                 </TableCell>
