@@ -68,7 +68,6 @@ const Appointments = () => {
     checkAuth();
     loadPatients();
     loadDentists();
-    loadAppointments();
   }, []);
 
   const checkAuth = async () => {
@@ -372,7 +371,12 @@ const Appointments = () => {
 
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-3xl font-bold">Agendamentos</h1>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
+        <div className="flex items-center gap-2">
+        <Button variant={showArchived ? "secondary" : "outline"} onClick={() => setShowArchived((value) => !value)}>
+          {showArchived ? <ArchiveRestore className="h-4 w-4 mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
+          {showArchived ? "Ver ativos" : "Arquivados"}
+        </Button>
+        {!showArchived && <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -584,7 +588,8 @@ const Appointments = () => {
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
+        </div>
       </div>
       <p className="text-xs text-muted-foreground mb-6">
         💡 Os lançamentos financeiros (receita do tratamento / pagamento ao dentista) só são criados ao marcar o agendamento como <strong>Concluído</strong>.

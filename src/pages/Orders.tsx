@@ -72,7 +72,7 @@ const Orders = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     filterOrders();
@@ -110,10 +110,6 @@ const Orders = () => {
     }
   };
 
-  useEffect(() => {
-    checkAuthAndLoadOrders();
-  }, [showArchived]);
-
   const loadLaboratories = async () => {
     try {
       const { data, error } = await supabase
@@ -148,7 +144,7 @@ const Orders = () => {
       toast.success(archive ? "Ordem arquivada" : "Ordem restaurada");
     } catch (error: any) {
       console.error("Error deleting order:", error);
-      toast.error("Erro ao excluir ordem: " + (error.message || ""));
+      toast.error("Erro ao atualizar ordem: " + (error.message || ""));
     }
   };
 

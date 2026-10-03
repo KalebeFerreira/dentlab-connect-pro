@@ -8,7 +8,6 @@ import { ArrowUpRight, ArrowDownRight, Minus, TrendingUp, FileDown, Loader2 } fr
 import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
 import html2canvas from "html2canvas";
-import * as ExcelJS from "exceljs";
 import { toast } from "sonner";
 import { generatePDFBlob } from "@/lib/pdfGenerator";
 
@@ -247,6 +246,7 @@ export const FinancialComparativeReport = ({ transactions, filterYear }: Financi
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
+      const ExcelJS = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Relatório Comparativo");
 

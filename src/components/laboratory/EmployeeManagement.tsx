@@ -422,10 +422,14 @@ export const EmployeeManagement = ({ employees, onRefresh, showArchived, onShowA
               <UserCheck className="h-3 w-3" />
               {activeCount} ativos
             </Badge>
-            <Button onClick={() => handleOpenDialog()} size="sm" className="w-full sm:w-auto">
+            <Button variant={showArchived ? "secondary" : "outline"} size="sm" onClick={() => onShowArchivedChange(!showArchived)}>
+              {showArchived ? <ArchiveRestore className="h-4 w-4 mr-1" /> : <Archive className="h-4 w-4 mr-1" />}
+              {showArchived ? "Ver ativos" : "Arquivados"}
+            </Button>
+            {!showArchived && <Button onClick={() => handleOpenDialog()} size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-1" />
               Adicionar
-            </Button>
+            </Button>}
           </div>
         </CardHeader>
         <CardContent>
@@ -537,19 +541,20 @@ export const EmployeeManagement = ({ employees, onRefresh, showArchived, onShowA
                               <KeyRound className="h-3 w-3 mr-1" /> Acesso
                             </Badge>
                           )}
-                          <Button
+                          {!showArchived && <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleOpenDialog(employee)}
                           >
                             <Pencil className="h-4 w-4" />
-                          </Button>
+                          </Button>}
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(employee)}
+                            onClick={() => handleArchive(employee)}
+                            title={showArchived ? "Restaurar funcionário" : "Arquivar funcionário"}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                           </Button>
                         </div>
                       </TableCell>

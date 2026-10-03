@@ -51,7 +51,6 @@ const Patients = () => {
 
   useEffect(() => {
     checkAuth();
-    loadPatients();
   }, []);
 
   const checkAuth = async () => {
@@ -168,7 +167,7 @@ const Patients = () => {
       toast.success(archive ? "Paciente arquivado com sucesso!" : "Paciente restaurado com sucesso!");
       loadPatients();
     } catch (error: any) {
-      toast.error("Erro ao excluir paciente", { description: error.message });
+      toast.error("Erro ao atualizar paciente", { description: error.message });
     }
   };
 

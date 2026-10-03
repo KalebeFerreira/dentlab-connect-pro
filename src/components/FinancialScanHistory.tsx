@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import ExcelJS from 'exceljs';
 import { 
   History, 
   Loader2, 
@@ -171,6 +170,7 @@ export const FinancialScanHistory = ({ refreshTrigger }: FinancialScanHistoryPro
 
   const handleExportExcel = async () => {
     try {
+      const { default: ExcelJS } = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Histórico de Escaneamentos');
       
