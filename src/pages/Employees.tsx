@@ -7,15 +7,17 @@ import { Loader2 } from "lucide-react";
 
 export default function Employees() {
   const { user } = useAuth();
+  const [showArchived, setShowArchived] = useState(false);
 
   const { data: employees = [], isLoading, refetch } = useQuery({
-    queryKey: ['employees', user?.id],
+    queryKey: ['employees', user?.id, showArchived],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('employees')
-        .select('*')
+        .select('id, user_id, name, role, status, notes, phone, email, auth_enabled, auth_user_id, created_at, updated_at, archived_at')
         .eq('user_id', user.id)
+        .filter('archived_at', showArchived ? 'not.is' : 'is', null)
         .order('name');
       
       if (error) throw error;
@@ -44,6 +46,8 @@ export default function Employees() {
       <EmployeeManagement 
         employees={employees} 
         onRefresh={refetch} 
+        showArchived={showArchived}
+        onShowArchivedChange={setShowArchived}
       />
     </div>
   );

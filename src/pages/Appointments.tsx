@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Archive, ArchiveRestore, MessageCircle, CheckCircle2 } from "lucide-react";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { ScheduleAnalyzer } from "@/components/clinic/ScheduleAnalyzer";
 
@@ -35,6 +35,7 @@ interface Appointment {
   dentist_payment: number;
   procedure_type: string | null;
   patients: Patient;
+  archived_at: string | null;
 }
 
 const Appointments = () => {
@@ -45,6 +46,7 @@ const Appointments = () => {
   const [dentists, setDentists] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [formData, setFormData] = useState({
     patient_id: "",
     appointment_date: "",
@@ -113,6 +115,7 @@ const Appointments = () => {
           *,
           patients (id, name, phone)
         `)
+        .filter("archived_at", showArchived ? "not.is" : "is", null)
         .order("appointment_date", { ascending: true });
 
       if (error) throw error;
@@ -123,6 +126,10 @@ const Appointments = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadAppointments();
+  }, [showArchived]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,13 +217,13 @@ const Appointments = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este agendamento?")) return;
+  const handleArchive = async (id: string) => {
+    if (!confirm(showArchived ? "Restaurar este agendamento?" : "Arquivar este agendamento? O histórico será preservado.")) return;
 
     try {
-      const { error } = await supabase.from("appointments").delete().eq("id", id);
+      const { error } = await supabase.from("appointments").update({ archived_at: showArchived ? null : new Date().toISOString() }).eq("id", id);
       if (error) throw error;
-      toast.success("Agendamento excluído com sucesso!");
+      toast.success(showArchived ? "Agendamento restaurado!" : "Agendamento arquivado!");
       loadAppointments();
     } catch (error: any) {
       toast.error("Erro ao excluir agendamento", { description: error.message });
@@ -655,9 +662,10 @@ const Appointments = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(appointment.id)}
+                          onClick={() => handleArchive(appointment.id)}
+                          title={showArchived ? "Restaurar agendamento" : "Arquivar agendamento"}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                         </Button>
                       </div>
                     </TableCell>
