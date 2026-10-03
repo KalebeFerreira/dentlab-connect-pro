@@ -2,8 +2,19 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, AlertTriangle, Send } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ShieldCheck, AlertTriangle, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ClientInsight {
   client_name: string;
@@ -23,6 +34,8 @@ const formatBRL = (n: number) =>
 export const ClientPaymentInsights = () => {
   const [insights, setInsights] = useState<ClientInsight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientToSettle, setClientToSettle] = useState<ClientInsight | null>(null);
+  const [settling, setSettling] = useState(false);
 
   const load = async () => {
     try {
@@ -63,6 +76,33 @@ export const ClientPaymentInsights = () => {
   const sendWhatsApp = (clientName: string, amount: number) => {
     const msg = `Olá ${clientName}, tudo bem? Identificamos faturas em aberto no valor de ${formatBRL(amount)}. Pode confirmar a data de pagamento? Obrigado!`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const settleOverdueInvoices = async () => {
+    if (!clientToSettle || settling) return;
+    setSettling(true);
+    try {
+      const { data, error } = await supabase.rpc("mark_client_overdue_paid", {
+        p_client_name: clientToSettle.client_name,
+      });
+      if (error) throw error;
+
+      const result = data?.[0];
+      if (!result || result.updated_count === 0) {
+        toast.info("Nenhuma cobrança vencida estava em aberto");
+      } else {
+        toast.success(
+          `${result.updated_count} cobrança${result.updated_count === 1 ? "" : "s"} marcada${result.updated_count === 1 ? "" : "s"} como paga${result.updated_count === 1 ? "" : "s"}`
+        );
+      }
+      setClientToSettle(null);
+      await load();
+    } catch (error) {
+      console.error("settle overdue invoices error", error);
+      toast.error("Não foi possível retirar o cliente da inadimplência");
+    } finally {
+      setSettling(false);
+    }
   };
 
   if (loading) {
@@ -118,18 +158,22 @@ export const ClientPaymentInsights = () => {
           ) : (
             <ul className="space-y-2">
               {delinquents.map((c) => (
-                <li key={c.client_name} className="flex items-center justify-between gap-2 border-b pb-2 last:border-0">
+                <li key={c.client_name} className="flex flex-col gap-2 border-b pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{c.client_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {c.open_overdue} fatura(s) vencida(s) · em dia: {c.on_time_rate}%
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     <span className="text-sm font-semibold text-red-700">{formatBRL(c.open_overdue_amount)}</span>
                     <Button size="sm" variant="outline" onClick={() => sendWhatsApp(c.client_name, c.open_overdue_amount)}>
                       <Send className="h-3.5 w-3.5 mr-1" />
                       Cobrar
+                    </Button>
+                    <Button size="sm" onClick={() => setClientToSettle(c)}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Marcar como pago
                     </Button>
                   </div>
                 </li>
@@ -138,6 +182,28 @@ export const ClientPaymentInsights = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={Boolean(clientToSettle)} onOpenChange={(open) => !open && !settling && setClientToSettle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quitar cobranças vencidas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {clientToSettle && (
+                <>
+                  Serão marcadas como pagas {clientToSettle.open_overdue} cobrança(s) vencida(s) de <strong>{clientToSettle.client_name}</strong>, no total de <strong>{formatBRL(clientToSettle.open_overdue_amount)}</strong>. O cliente continuará ativo e todo o histórico será preservado.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={settling}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={settleOverdueInvoices} disabled={settling}>
+              {settling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirmar pagamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
