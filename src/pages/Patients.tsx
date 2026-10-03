@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Loader2, Plus, Pencil, Archive, ArchiveRestore, MessageCircle } from "lucide-react";
 import { MessageHistory } from "@/components/MessageHistory";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -25,6 +25,7 @@ interface Patient {
   address: string | null;
   notes: string | null;
   created_at: string;
+  archived_at: string | null;
 }
 
 const Patients = () => {
@@ -36,6 +37,7 @@ const Patients = () => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const limits = useFreemiumLimits();
   const [formData, setFormData] = useState({
     name: "",
@@ -49,7 +51,6 @@ const Patients = () => {
 
   useEffect(() => {
     checkAuth();
-    loadPatients();
   }, []);
 
   const checkAuth = async () => {
@@ -64,6 +65,7 @@ const Patients = () => {
       const { data, error } = await supabase
         .from("patients")
         .select("*")
+        .filter("archived_at", showArchived ? "not.is" : "is", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -74,6 +76,10 @@ const Patients = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadPatients();
+  }, [showArchived]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,16 +158,16 @@ const Patients = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este paciente?")) return;
+  const handleArchive = async (id: string, archive: boolean) => {
+    if (!confirm(archive ? "Arquivar este paciente? O histórico será preservado." : "Restaurar este paciente?")) return;
 
     try {
-      const { error } = await supabase.from("patients").delete().eq("id", id);
+      const { error } = await supabase.from("patients").update({ archived_at: archive ? new Date().toISOString() : null }).eq("id", id);
       if (error) throw error;
-      toast.success("Paciente excluído com sucesso!");
+      toast.success(archive ? "Paciente arquivado com sucesso!" : "Paciente restaurado com sucesso!");
       loadPatients();
     } catch (error: any) {
-      toast.error("Erro ao excluir paciente", { description: error.message });
+      toast.error("Erro ao atualizar paciente", { description: error.message });
     }
   };
 
@@ -199,7 +205,12 @@ const Patients = () => {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Pacientes</h1>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
+        <div className="flex items-center gap-2">
+        <Button variant={showArchived ? "secondary" : "outline"} onClick={() => setShowArchived((value) => !value)}>
+          {showArchived ? <ArchiveRestore className="h-4 w-4 mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
+          {showArchived ? "Ver ativos" : "Arquivados"}
+        </Button>
+        {!showArchived && <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -283,7 +294,8 @@ const Patients = () => {
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
+        </div>
       </div>
 
       <Card>
@@ -321,7 +333,7 @@ const Patients = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
+                        {!showArchived && <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
@@ -331,7 +343,7 @@ const Patients = () => {
                           title="Ver histórico de mensagens"
                         >
                           <MessageCircle className="h-4 w-4" />
-                        </Button>
+                        </Button>}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -342,9 +354,10 @@ const Patients = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(patient.id)}
+                          onClick={() => handleArchive(patient.id, !showArchived)}
+                          title={showArchived ? "Restaurar paciente" : "Arquivar paciente"}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                         </Button>
                       </div>
                     </TableCell>

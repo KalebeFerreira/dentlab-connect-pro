@@ -40,11 +40,19 @@ export const ClientPaymentInsights = () => {
 
   useEffect(() => {
     load();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const reloadSoon = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(load, 350);
+    };
     const channel = supabase
       .channel("client-insights")
-      .on("postgres_changes", { event: "*", schema: "public", table: "services" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "services" }, reloadSoon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "financial_transactions" }, reloadSoon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "client_payment_profiles" }, reloadSoon)
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, []);

@@ -124,7 +124,6 @@ const Billing = () => {
     const { data, error } = await supabase
       .from("services")
       .select("*")
-      .eq("status", "active")
       .order("service_date", { ascending: false });
 
     if (error) {
@@ -135,6 +134,8 @@ const Billing = () => {
 
     setServices(data || []);
   };
+
+  const activeServices = services.filter((service) => service.status === "active");
 
   const handleCompanyInfoSave = async (info: CompanyInfo) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -178,7 +179,7 @@ const Billing = () => {
       return;
     }
 
-    toast.success("Serviço excluído com sucesso!");
+    toast.success("Serviço arquivado com sucesso!");
     await loadServices();
   };
 
@@ -204,11 +205,11 @@ const Billing = () => {
       </Suspense>
 
       <Suspense fallback={<ComponentLoader />}>
-        <BillingStats services={services} />
+        <BillingStats services={activeServices} />
       </Suspense>
 
       <Suspense fallback={<ComponentLoader />}>
-        <PaymentSummaryCards services={services} />
+        <PaymentSummaryCards services={activeServices} />
       </Suspense>
 
       <Suspense fallback={<ComponentLoader />}>
@@ -271,7 +272,7 @@ const Billing = () => {
 
         <TabsContent value="fiscal" className="space-y-6">
           <Suspense fallback={<ComponentLoader />}>
-            <BillingFiscalIntegration services={services} onSuccess={loadServices} />
+            <BillingFiscalIntegration services={activeServices} onSuccess={loadServices} />
           </Suspense>
         </TabsContent>
 
@@ -283,19 +284,19 @@ const Billing = () => {
 
         <TabsContent value="monthly">
           <Suspense fallback={<ComponentLoader />}>
-            <MonthlyReports services={services} companyInfo={companyInfo} onServiceUpdate={loadServices} />
+            <MonthlyReports services={activeServices} companyInfo={companyInfo} onServiceUpdate={loadServices} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="clients">
           <Suspense fallback={<ComponentLoader />}>
-            <ClientReports services={services} companyInfo={companyInfo} />
+            <ClientReports services={activeServices} companyInfo={companyInfo} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="automatic">
           <Suspense fallback={<ComponentLoader />}>
-            <AutomaticReportSettings services={services} />
+            <AutomaticReportSettings services={activeServices} />
           </Suspense>
         </TabsContent>
       </Tabs>

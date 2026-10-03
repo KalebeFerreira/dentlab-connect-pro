@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Plus, Pencil, Trash2, Filter, UserCheck, Phone, Mail, KeyRound, Loader2, Crown } from "lucide-react";
+import { Users, Plus, Pencil, Archive, ArchiveRestore, Filter, UserCheck, Phone, Mail, KeyRound, Loader2, Crown } from "lucide-react";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +32,7 @@ export interface Employee {
   auth_user_id?: string | null;
   created_at: string;
   updated_at: string;
+  archived_at?: string | null;
 }
 
 const EMPLOYEE_ROLES = [
@@ -49,9 +50,11 @@ const EMPLOYEE_ROLES = [
 interface EmployeeManagementProps {
   employees: Employee[];
   onRefresh: () => void;
+  showArchived: boolean;
+  onShowArchivedChange: (value: boolean) => void;
 }
 
-export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementProps) => {
+export const EmployeeManagement = ({ employees, onRefresh, showArchived, onShowArchivedChange }: EmployeeManagementProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [accessDialogOpen, setAccessDialogOpen] = useState(false);
   const [selectedEmployeeForAccess, setSelectedEmployeeForAccess] = useState<Employee | null>(null);
@@ -192,17 +195,17 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
     }
   };
 
-  const handleDelete = async (employee: Employee) => {
-    if (!confirm(`Excluir funcionário "${employee.name}"? Isso também removerá todos os trabalhos associados.`)) return;
+  const handleArchive = async (employee: Employee) => {
+    if (!confirm(showArchived ? `Restaurar funcionário "${employee.name}"?` : `Arquivar funcionário "${employee.name}"? Os trabalhos serão preservados.`)) return;
 
     try {
       const { error } = await supabase
         .from("employees")
-        .delete()
+        .update({ archived_at: showArchived ? null : new Date().toISOString() })
         .eq("id", employee.id);
 
       if (error) throw error;
-      toast.success("Funcionário excluído!");
+      toast.success(showArchived ? "Funcionário restaurado!" : "Funcionário arquivado!");
       onRefresh();
     } catch (error: any) {
       toast.error("Erro ao excluir", { description: error.message });
@@ -318,9 +321,10 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => handleDelete(employee)}
+                  onClick={() => handleArchive(employee)}
+                  title={showArchived ? "Restaurar funcionário" : "Arquivar funcionário"}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -418,10 +422,14 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
               <UserCheck className="h-3 w-3" />
               {activeCount} ativos
             </Badge>
-            <Button onClick={() => handleOpenDialog()} size="sm" className="w-full sm:w-auto">
+            <Button variant={showArchived ? "secondary" : "outline"} size="sm" onClick={() => onShowArchivedChange(!showArchived)}>
+              {showArchived ? <ArchiveRestore className="h-4 w-4 mr-1" /> : <Archive className="h-4 w-4 mr-1" />}
+              {showArchived ? "Ver ativos" : "Arquivados"}
+            </Button>
+            {!showArchived && <Button onClick={() => handleOpenDialog()} size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-1" />
               Adicionar
-            </Button>
+            </Button>}
           </div>
         </CardHeader>
         <CardContent>
@@ -533,19 +541,20 @@ export const EmployeeManagement = ({ employees, onRefresh }: EmployeeManagementP
                               <KeyRound className="h-3 w-3 mr-1" /> Acesso
                             </Badge>
                           )}
-                          <Button
+                          {!showArchived && <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleOpenDialog(employee)}
                           >
                             <Pencil className="h-4 w-4" />
-                          </Button>
+                          </Button>}
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(employee)}
+                            onClick={() => handleArchive(employee)}
+                            title={showArchived ? "Restaurar funcionário" : "Arquivar funcionário"}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                           </Button>
                         </div>
                       </TableCell>

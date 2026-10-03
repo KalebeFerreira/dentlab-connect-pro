@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil, FileSignature, Trash2, PackageCheck } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Building2, User, Calendar, Filter, Pencil, FileSignature, Archive, ArchiveRestore, PackageCheck } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { EditOrderDialog } from "@/components/EditOrderDialog";
 import {
   AlertDialog,
@@ -40,6 +39,7 @@ interface Order {
   created_at: string;
   laboratory_id: string | null;
   laboratory_info?: Laboratory | null;
+  archived_at: string | null;
 }
 
 const Orders = () => {
@@ -51,13 +51,7 @@ const Orders = () => {
   const [selectedLab, setSelectedLab] = useState<string>("all");
   const [editOrder, setEditOrder] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-  // Realtime subscription para ordens
-  useRealtimeSubscription({
-    table: 'orders',
-    queryKey: ['orders'],
-    enabled: true
-  });
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoadOrders();
@@ -78,7 +72,7 @@ const Orders = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     filterOrders();
@@ -102,6 +96,7 @@ const Orders = () => {
           )
         `)
         .eq("user_id", user.id)
+        .filter("archived_at", showArchived ? "not.is" : "is", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -140,16 +135,16 @@ const Orders = () => {
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
+  const handleArchiveOrder = async (orderId: string, archive: boolean) => {
     try {
-      const { error } = await supabase.from("orders").delete().eq("id", orderId);
+      const { error } = await supabase.from("orders").update({ archived_at: archive ? new Date().toISOString() : null }).eq("id", orderId);
       if (error) throw error;
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
       setFilteredOrders((prev) => prev.filter((o) => o.id !== orderId));
-      toast.success("Ordem excluída com sucesso");
+      toast.success(archive ? "Ordem arquivada" : "Ordem restaurada");
     } catch (error: any) {
       console.error("Error deleting order:", error);
-      toast.error("Erro ao excluir ordem: " + (error.message || ""));
+      toast.error("Erro ao atualizar ordem: " + (error.message || ""));
     }
   };
 
@@ -205,10 +200,16 @@ const Orders = () => {
                 {selectedLab !== "all" && " filtrada(s)"}
               </p>
             </div>
-            <Button onClick={() => navigate("/orders/new")}>
+            <div className="flex items-center gap-2">
+            <Button variant={showArchived ? "secondary" : "outline"} onClick={() => setShowArchived((value) => !value)}>
+              {showArchived ? <ArchiveRestore className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
+              {showArchived ? "Ver ativas" : "Arquivadas"}
+            </Button>
+            {!showArchived && <Button onClick={() => navigate("/orders/new")}>
               <Plus className="mr-2 h-4 w-4" />
               Nova Ordem
-            </Button>
+            </Button>}
+            </div>
           </div>
           <p className="text-xs text-muted-foreground">
             💡 A despesa da ordem é lançada no financeiro automaticamente ao clicar em <strong>Entregue</strong>.
@@ -272,7 +273,7 @@ const Orders = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {order.status !== "completed" && (
+                      {!showArchived && order.status !== "completed" && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -287,7 +288,7 @@ const Orders = () => {
                           Entregue
                         </Button>
                       )}
-                      <Button
+                      {!showArchived && <Button
                         size="sm"
                         className="h-8 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-md hover:opacity-90"
                         onClick={(e) => {
@@ -298,8 +299,8 @@ const Orders = () => {
                       >
                         <FileSignature className="h-4 w-4 mr-1" />
                         Contrato IA
-                      </Button>
-                      <Button
+                      </Button>}
+                      {!showArchived && <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
@@ -311,7 +312,7 @@ const Orders = () => {
                         title="Editar ordem"
                       >
                         <Pencil className="h-4 w-4" />
-                      </Button>
+                      </Button>}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -319,16 +320,16 @@ const Orders = () => {
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={(e) => e.stopPropagation()}
-                            title="Excluir ordem"
+                            title={showArchived ? "Restaurar ordem" : "Arquivar ordem"}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir ordem?</AlertDialogTitle>
+                            <AlertDialogTitle>{showArchived ? "Restaurar ordem?" : "Arquivar ordem?"}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. A ordem do paciente {order.patient_name} será excluída permanentemente.
+                              {showArchived ? "A ordem voltará para a lista ativa." : `A ordem de ${order.patient_name} sairá da lista ativa, mas todo o histórico será preservado.`}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -336,10 +337,10 @@ const Orders = () => {
                             <AlertDialogAction
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteOrder(order.id);
+                                handleArchiveOrder(order.id, !showArchived);
                               }}
                             >
-                              Excluir
+                              {showArchived ? "Restaurar" : "Arquivar"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

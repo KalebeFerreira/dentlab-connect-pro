@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import ExcelJS from 'exceljs';
 import { SignaturePad } from "./SignaturePad";
 import { toast } from "sonner";
 import {
@@ -162,6 +161,7 @@ export const ClientReports = ({ services, companyInfo }: ClientReportsProps) => 
     }
 
     try {
+      const { default: ExcelJS } = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Relatório Cliente');
       

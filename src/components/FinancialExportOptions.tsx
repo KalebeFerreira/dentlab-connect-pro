@@ -9,7 +9,6 @@ import {
 import { FileDown, Loader2, FileText, FileSpreadsheet, Image } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
-import * as ExcelJS from "exceljs";
 import { generatePDF, createElementFromHTML, cleanupElement } from "@/lib/pdfGenerator";
 interface Transaction {
   id: string;
@@ -263,6 +262,7 @@ export const FinancialExportOptions = ({
     try {
       setExporting("excel");
 
+      const ExcelJS = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Relatório Financeiro");
 

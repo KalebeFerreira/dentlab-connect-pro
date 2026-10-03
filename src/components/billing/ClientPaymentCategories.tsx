@@ -5,13 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wallet, CalendarClock, HelpCircle, Search } from "lucide-react";
+import { Loader2, Wallet, CalendarClock, HelpCircle, Search, Archive, ArchiveRestore } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type PaymentType = "a_vista" | "mensalista" | "nao_definido";
 
 interface ProfileRow {
   client_name: string;
   payment_type: PaymentType;
+  archived_at: string | null;
 }
 
 const TYPE_LABEL: Record<PaymentType, string> = {
@@ -25,6 +27,8 @@ export function ClientPaymentCategories() {
   const [userId, setUserId] = useState<string | null>(null);
   const [clients, setClients] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<Record<string, PaymentType>>({});
+  const [archivedClients, setArchivedClients] = useState<Set<string>>(new Set());
+  const [showArchived, setShowArchived] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -44,7 +48,7 @@ export function ClientPaymentCategories() {
             .not("client_name", "is", null),
           supabase
             .from("client_payment_profiles")
-            .select("client_name, payment_type")
+            .select("client_name, payment_type, archived_at")
             .eq("user_id", user.id),
         ]);
 
@@ -60,6 +64,7 @@ export function ClientPaymentCategories() {
         (profilesData as ProfileRow[] | null)?.forEach((p) => {
           profMap[p.client_name] = p.payment_type;
         });
+        setArchivedClients(new Set((profilesData as ProfileRow[] | null)?.filter((p) => p.archived_at).map((p) => p.client_name) || []));
         // Include orphan profile entries (clients without active services)
         (profilesData as ProfileRow[] | null)?.forEach((p) => {
           if (!names.includes(p.client_name)) names.push(p.client_name);
@@ -95,21 +100,38 @@ export function ClientPaymentCategories() {
     }
   };
 
+  const toggleArchive = async (clientName: string, archive: boolean) => {
+    if (!userId) return;
+    const { error } = await supabase.from("client_payment_profiles").upsert({
+      user_id: userId,
+      client_name: clientName,
+      payment_type: profiles[clientName] ?? "nao_definido",
+      archived_at: archive ? new Date().toISOString() : null,
+    }, { onConflict: "user_id,client_name" });
+    if (error) return toast.error("Não foi possível atualizar o cliente");
+    setArchivedClients((current) => {
+      const next = new Set(current);
+      archive ? next.add(clientName) : next.delete(clientName);
+      return next;
+    });
+    toast.success(archive ? "Cliente arquivado" : "Cliente restaurado");
+  };
+
   const filtered = useMemo(
-    () => clients.filter((c) => c.toLowerCase().includes(search.toLowerCase())),
-    [clients, search]
+    () => clients.filter((c) => archivedClients.has(c) === showArchived && c.toLowerCase().includes(search.toLowerCase())),
+    [clients, archivedClients, showArchived, search]
   );
 
   const counts = useMemo(() => {
     let aVista = 0, mensal = 0, indef = 0;
-    clients.forEach((c) => {
+    clients.filter((c) => !archivedClients.has(c)).forEach((c) => {
       const t = profiles[c] ?? "nao_definido";
       if (t === "a_vista") aVista++;
       else if (t === "mensalista") mensal++;
       else indef++;
     });
     return { aVista, mensal, indef };
-  }, [clients, profiles]);
+  }, [clients, profiles, archivedClients]);
 
   if (loading) {
     return (
@@ -158,7 +180,13 @@ export function ClientPaymentCategories() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Classificação de clientes</CardTitle>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="text-lg">Classificação de clientes</CardTitle>
+            <Button variant={showArchived ? "secondary" : "outline"} size="sm" onClick={() => setShowArchived((value) => !value)}>
+              {showArchived ? <ArchiveRestore className="h-4 w-4 mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
+              {showArchived ? "Ver ativos" : "Arquivados"}
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             Marque cada cliente como <strong>À vista</strong> ou <strong>Mensalista</strong>. É apenas para seu controle — não altera lançamentos financeiros.
           </p>
@@ -198,7 +226,8 @@ export function ClientPaymentCategories() {
                         <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">Mensalista</Badge>
                       )}
                     </div>
-                    <Select
+                    <div className="flex items-center gap-2">
+                    {!showArchived && <Select
                       value={type}
                       onValueChange={(v) => setClientType(name, v as PaymentType)}
                     >
@@ -210,7 +239,11 @@ export function ClientPaymentCategories() {
                         <SelectItem value="a_vista">À vista</SelectItem>
                         <SelectItem value="mensalista">Mensalista</SelectItem>
                       </SelectContent>
-                    </Select>
+                    </Select>}
+                    <Button variant="ghost" size="icon" onClick={() => toggleArchive(name, !showArchived)} title={showArchived ? "Restaurar cliente" : "Arquivar cliente"}>
+                      {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                    </Button>
+                    </div>
                   </div>
                 );
               })}

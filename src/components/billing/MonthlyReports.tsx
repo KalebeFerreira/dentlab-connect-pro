@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import ExcelJS from 'exceljs';
 import { Badge } from "@/components/ui/badge";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 
@@ -323,6 +322,7 @@ export const MonthlyReports = ({ services, companyInfo, onServiceUpdate }: Month
         return acc;
       }, {} as Record<string, typeof monthlyServices>);
 
+      const { default: ExcelJS } = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Relatório Mensal');
       

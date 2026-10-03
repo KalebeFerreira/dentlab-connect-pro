@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, TrendingDown, Calendar, Filter, FileSpreadsheet, Download, Search } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import ExcelJS from 'exceljs';
 import { useHideValues } from "@/hooks/useHideValues";
 import { HideValuesToggle } from "@/components/HideValuesToggle";
 
@@ -146,6 +145,7 @@ export const TransactionHistory = () => {
   }, [transactions, deferredSearch]);
 
   const handleExportExcel = async () => {
+    const { default: ExcelJS } = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Histórico de Transações');
     
