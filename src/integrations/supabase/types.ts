@@ -2546,13 +2546,6 @@ export type Database = {
       increment_invoice_usage: { Args: { p_user_id: string }; Returns: number }
       increment_pdf_usage: { Args: { p_user_id: string }; Returns: number }
       increment_scanner_usage: { Args: { p_user_id: string }; Returns: number }
-      mark_client_overdue_paid: {
-        Args: { p_client_name: string }
-        Returns: {
-          updated_amount: number
-          updated_count: number
-        }[]
-      }
     }
     Enums: {
       app_role: "admin" | "clinic" | "laboratory" | "dentist" | "employee"
